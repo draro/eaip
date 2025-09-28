@@ -11,18 +11,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       title,
-      sectionCode,
-      subsectionCode,
-      content,
+      country,
+      airport,
+      documentType,
+      sections,
       versionId,
       userId,
       source,
       metadata,
     } = body;
 
-    if (!title || !sectionCode || !subsectionCode || !versionId || !userId) {
+    if (!title || !country || !versionId || !userId || !sections) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Missing required fields: title, country, versionId, userId, sections' },
         { status: 400 }
       );
     }
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
     }
 
     const existingDoc = await AIPDocument.findOne({
-      sectionCode,
-      subsectionCode,
+      country,
+      airport,
       version: versionId,
     });
 
@@ -56,9 +57,14 @@ export async function POST(request: NextRequest) {
         existingDoc._id,
         {
           title,
-          content: content || { type: 'doc', content: [] },
+          documentType: documentType || 'AIP',
+          sections: sections || [],
           updatedBy: userId,
           updatedAt: new Date(),
+          metadata: {
+            ...existingDoc.metadata,
+            ...metadata,
+          },
         },
         { new: true }
       ).populate('version', 'versionNumber airacCycle')
@@ -68,20 +74,23 @@ export async function POST(request: NextRequest) {
     } else {
       document = await AIPDocument.create({
         title,
-        sectionCode,
-        subsectionCode,
-        content: content || { type: 'doc', content: [] },
+        country,
+        airport,
+        documentType: documentType || 'AIP',
+        sections: sections || [],
         version: versionId,
         createdBy: userId,
         updatedBy: userId,
         airacCycle: version.airacCycle,
         effectiveDate: version.effectiveDate,
-        autoNumbering: {
-          enabled: true,
-          prefix: sectionCode,
-          currentNumber: 1,
+        metadata: {
+          language: 'en',
+          authority: 'Civil Aviation Authority',
+          contact: 'contact@aviation.gov',
+          lastReview: new Date(),
+          nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          ...metadata,
         },
-        images: [],
       });
 
       await AIPVersion.findByIdAndUpdate(versionId, {
@@ -102,8 +111,10 @@ export async function POST(request: NextRequest) {
       event: existingDoc ? 'document.imported.updated' : 'document.imported.created',
       docId: document._id.toString(),
       title: document.title,
-      sectionCode: document.sectionCode,
-      subsectionCode: document.subsectionCode,
+      country: document.country,
+      airport: document.airport,
+      documentType: document.documentType,
+      sectionsCount: document.sections.length,
       timestamp: new Date().toISOString(),
       source: source || 'n8n',
       metadata: metadata || {},

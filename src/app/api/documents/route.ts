@@ -3,35 +3,40 @@ import connectDB from '@/lib/mongodb';
 import AIPDocument from '@/models/AIPDocument';
 import AIPVersion from '@/models/AIPVersion';
 import { generateAiracCycle } from '@/lib/utils';
-import { getOrCreateDefaultUser } from '@/lib/defaultUser';
+import { withAuth, createErrorResponse, paginateQuery } from '@/lib/apiMiddleware';
+import { DataIsolationService } from '@/lib/dataIsolation';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const { page, limit, skip } = paginateQuery(request);
     const versionId = searchParams.get('versionId');
     const status = searchParams.get('status');
-    const sectionCode = searchParams.get('sectionCode');
+    const documentType = searchParams.get('documentType');
 
-    const filter: any = {};
+    // Build base filter with organization isolation
+    let filter = DataIsolationService.enforceOrganizationFilter(user);
+
     if (versionId) filter.version = versionId;
     if (status) filter.status = status;
-    if (sectionCode) filter.sectionCode = sectionCode;
+    if (documentType) filter.documentType = documentType;
 
-    const skip = (page - 1) * limit;
+    // Log access attempt
+    DataIsolationService.logAccess(user, 'documents', 'read', true);
 
-    const documents = await AIPDocument.find(filter)
-      .populate('version', 'versionNumber airacCycle')
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email')
-      .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await AIPDocument.countDocuments(filter);
+    const [documents, total] = await Promise.all([
+      AIPDocument.find(filter)
+        .populate('version', 'versionNumber airacCycle effectiveDate')
+        .populate('createdBy', 'name email')
+        .populate('updatedBy', 'name email')
+        .populate('organization', 'name domain')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      AIPDocument.countDocuments(filter)
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -44,38 +49,51 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching documents:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch documents' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Failed to fetch documents');
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
     await connectDB();
 
     const body = await request.json();
     const {
       title,
-      sectionCode,
-      subsectionCode,
-      content,
+      documentType,
+      country,
+      airport,
+      sections,
       versionId,
-      createdBy,
       effectiveDate,
+      metadata
     } = body;
 
-    if (!title || !sectionCode || !subsectionCode || !versionId) {
+    // Validate required fields for new multi-tenant structure
+    if (!title || !documentType || !country || !versionId || !user.organization) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Get or create a default user if createdBy is not provided
-    const userId = createdBy || await getOrCreateDefaultUser();
+    // Check if user can create documents
+    if (!user.canEdit()) {
+      return NextResponse.json(
+        { success: false, error: 'Insufficient permissions to create documents' },
+        { status: 403 }
+      );
+    }
+
+    // Validate document creation limits
+    const currentDocCount = await AIPDocument.countDocuments({
+      organization: user.organization._id
+    });
+
+    await DataIsolationService.validateDocumentCreation(
+      user.organization._id,
+      currentDocCount
+    );
 
     const version = await AIPVersion.findById(versionId);
     if (!version) {
@@ -85,56 +103,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for existing document with same criteria
     const existingDoc = await AIPDocument.findOne({
-      sectionCode,
-      subsectionCode,
+      organization: user.organization._id,
+      country: country.toUpperCase(),
+      airport: airport?.toUpperCase(),
       version: versionId,
+      documentType
     });
 
     if (existingDoc) {
       return NextResponse.json(
-        { success: false, error: 'Document with this section and subsection already exists for this version' },
+        { success: false, error: 'Document with these criteria already exists for this version' },
         { status: 409 }
       );
     }
 
+    // Create document with organization isolation
     const document = await AIPDocument.create({
       title,
-      sectionCode,
-      subsectionCode,
-      content: content || { type: 'doc', content: [] },
+      documentType,
+      country: country.toUpperCase(),
+      airport: airport?.toUpperCase(),
+      sections: sections || [],
       version: versionId,
-      createdBy: userId,
-      updatedBy: userId,
+      organization: user.organization._id,
+      createdBy: user._id,
+      updatedBy: user._id,
       airacCycle: version.airacCycle,
       effectiveDate: effectiveDate || version.effectiveDate,
-      autoNumbering: {
-        enabled: true,
-        prefix: sectionCode,
-        currentNumber: 1,
-      },
-      images: [],
+      metadata: {
+        language: metadata?.language || 'en',
+        authority: metadata?.authority || user.organization?.name || 'Authority',
+        contact: metadata?.contact || user.organization?.contact?.email || 'contact@authority.gov',
+        lastReview: new Date(),
+        nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
+      }
     });
 
     await AIPVersion.findByIdAndUpdate(versionId, {
       $push: { documents: document._id },
     });
 
-    const populatedDocument = await AIPDocument.findById(document._id)
-      .populate('version', 'versionNumber airacCycle')
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email');
+    // Log creation
+    DataIsolationService.logAccess(user, 'documents', 'create', true);
 
+    const populatedDocument = await AIPDocument.findById(document._id)
+      .populate('version', 'versionNumber airacCycle effectiveDate')
+      .populate('createdBy', 'name email')
+      .populate('updatedBy', 'name email')
+      .populate('organization', 'name domain');
+
+    // Send webhook notification
     const webhookPayload = {
       event: 'document.created' as const,
       docId: document._id.toString(),
       title: document.title,
-      updatedBy: userId,
+      updatedBy: user._id,
       timestamp: new Date().toISOString(),
       data: {
-        sectionCode: document.sectionCode,
-        subsectionCode: document.subsectionCode,
+        documentType: document.documentType,
+        country: document.country,
+        airport: document.airport,
         status: document.status,
+        organizationId: user.organization._id
       },
     };
 
@@ -155,10 +187,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating document:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create document' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Failed to create document');
   }
-}
+});

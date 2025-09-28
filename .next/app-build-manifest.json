@@ -21,10 +21,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/setup/page.js"
     ],
-    "/documents/page": [
+    "/eaip/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/documents/page.js"
+      "static/chunks/app/eaip/page.js"
     ]
   }
 }

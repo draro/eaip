@@ -1,10 +1,8 @@
 {
-  "/page": "app/page.js",
+  "/auth/signin/page": "app/auth/signin/page.js",
   "/setup/page": "app/setup/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/setup/check/route": "app/api/setup/check/route.js",
-  "/documents/page": "app/documents/page.js",
-  "/api/auth/register/route": "app/api/auth/register/route.js",
-  "/api/documents/route": "app/api/documents/route.js",
-  "/auth/signin/page": "app/auth/signin/page.js"
+  "/eaip/page": "app/eaip/page.js",
+  "/page": "app/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js"
 }

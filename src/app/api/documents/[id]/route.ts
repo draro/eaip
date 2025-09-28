@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import AIPDocument from '@/models/AIPDocument';
+import AIPVersion from '@/models/AIPVersion';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
+import { webhookService } from '@/lib/webhooks';
+import { remoteStorage } from '@/lib/remoteStorage';
 
 export async function GET(
   request: NextRequest,
@@ -45,8 +48,11 @@ export async function PUT(
     const body = await request.json();
     const {
       title,
-      content,
+      country,
+      airport,
+      sections,
       status,
+      metadata,
       updatedBy,
     } = body;
 
@@ -55,6 +61,14 @@ export async function PUT(
       return NextResponse.json(
         { success: false, error: 'Document not found' },
         { status: 404 }
+      );
+    }
+
+    // Check status transition validity
+    if (status && !isValidStatusTransition(document.status, status)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid status transition from ${document.status} to ${status}` },
+        { status: 400 }
       );
     }
 
@@ -67,43 +81,59 @@ export async function PUT(
     };
 
     if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
+    if (country !== undefined) updateData.country = country;
+    if (airport !== undefined) updateData.airport = airport;
+    if (sections !== undefined) {
+      updateData.sections = sections;
+      // Update lastModified for all subsections
+      updateData.sections.forEach((section: any) => {
+        section.subsections.forEach((subsection: any) => {
+          subsection.lastModified = new Date();
+          subsection.modifiedBy = userId;
+        });
+      });
+    }
     if (status !== undefined) updateData.status = status;
+    if (metadata !== undefined) {
+      updateData.metadata = { ...document.metadata, ...metadata };
+    }
 
     const updatedDocument = await AIPDocument.findByIdAndUpdate(
       params.id,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     )
       .populate('version', 'versionNumber airacCycle')
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email');
 
-    const webhookPayload = {
-      event: 'document.updated' as const,
-      docId: params.id,
-      title: updatedDocument?.title,
-      updatedBy: userId,
-      timestamp: new Date().toISOString(),
-      data: {
-        sectionCode: updatedDocument?.sectionCode,
-        subsectionCode: updatedDocument?.subsectionCode,
-        status: updatedDocument?.status,
-        contentChanged: content !== undefined,
-      },
-    };
-
-    try {
-      if (process.env.N8N_WEBHOOK_URL) {
-        await fetch(process.env.N8N_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
-        });
+    // Push to remote storage if configured
+    if (remoteStorage.isConfigured()) {
+      try {
+        await remoteStorage.pushDocumentVersion(
+          params.id,
+          updatedDocument!.version.toString(),
+          updatedDocument,
+          userId
+        );
+      } catch (error) {
+        console.error('Failed to push to remote storage:', error);
       }
-    } catch (webhookError) {
-      console.error('Failed to send webhook:', webhookError);
     }
+
+    // Send webhook notification
+    await webhookService.sendDocumentUpdate(
+      params.id,
+      updatedDocument!.title,
+      userId,
+      {
+        country: updatedDocument!.country,
+        airport: updatedDocument!.airport,
+        status: updatedDocument!.status,
+        sectionsCount: updatedDocument!.sections.length,
+        contentChanged: sections !== undefined,
+      }
+    );
 
     return NextResponse.json({
       success: true,
@@ -116,6 +146,16 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+function isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
+  const validTransitions: Record<string, string[]> = {
+    'draft': ['review', 'published'],
+    'review': ['draft', 'published'],
+    'published': ['draft'], // Can only go back to draft for revisions
+  };
+
+  return validTransitions[currentStatus]?.includes(newStatus) || false;
 }
 
 export async function DELETE(
@@ -133,30 +173,33 @@ export async function DELETE(
       );
     }
 
+    // Check if document can be deleted (only drafts can be deleted)
+    if (document.status === 'published') {
+      return NextResponse.json(
+        { success: false, error: 'Cannot delete published documents. Please create a new revision instead.' },
+        { status: 403 }
+      );
+    }
+
+    // Remove document from version
+    await AIPVersion.findByIdAndUpdate(document.version, {
+      $pull: { documents: params.id },
+    });
+
+    // Delete the document
     await AIPDocument.findByIdAndDelete(params.id);
 
-    const webhookPayload = {
-      event: 'document.deleted' as const,
-      docId: params.id,
-      title: document.title,
-      timestamp: new Date().toISOString(),
-      data: {
-        sectionCode: document.sectionCode,
-        subsectionCode: document.subsectionCode,
-      },
-    };
-
-    try {
-      if (process.env.N8N_WEBHOOK_URL) {
-        await fetch(process.env.N8N_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
-        });
+    // Send webhook notification
+    await webhookService.sendDocumentDeleted(
+      params.id,
+      document.title,
+      {
+        country: document.country,
+        airport: document.airport,
+        status: document.status,
+        sectionsCount: document.sections.length,
       }
-    } catch (webhookError) {
-      console.error('Failed to send webhook:', webhookError);
-    }
+    );
 
     return NextResponse.json({
       success: true,

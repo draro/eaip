@@ -6,7 +6,9 @@
       "Bash(npm uninstall:*)",
       "WebFetch(domain:e-aip.azurefd.net)",
       "WebSearch",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(curl -X POST http://localhost:3000/api/auth/login )"
     ],
     "deny": [],
     "ask": []

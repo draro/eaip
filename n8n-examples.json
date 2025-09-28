@@ -250,31 +250,81 @@
   "incomingWebhooks": {
     "import": {
       "url": "POST /api/webhooks/n8n/import",
-      "description": "Import AIP content from external sources",
+      "description": "Import complete AIP document with all sections from external sources",
       "examplePayload": {
-        "title": "AD 2.1 Aerodrome Information",
-        "sectionCode": "AD",
-        "subsectionCode": "2.1",
-        "content": {
-          "type": "doc",
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "This section contains aerodrome information..."
-                }
-              ]
-            }
-          ]
-        },
+        "title": "Complete AIP Document v2025.05",
+        "country": "US",
+        "airport": "KJFK",
+        "documentType": "AIP",
+        "sections": [
+          {
+            "id": "gen-section",
+            "type": "GEN",
+            "title": "General Information",
+            "order": 1,
+            "subsections": [
+              {
+                "id": "gen-1-1",
+                "code": "1.1",
+                "title": "Designated Authorities",
+                "content": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "The Federal Aviation Administration (FAA) is the designated authority..."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "images": [],
+                "order": 1
+              }
+            ]
+          },
+          {
+            "id": "enr-section",
+            "type": "ENR",
+            "title": "En-Route Information",
+            "order": 2,
+            "subsections": [
+              {
+                "id": "enr-1-1",
+                "code": "1.1",
+                "title": "General Rules",
+                "content": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "En-route navigation procedures..."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "images": [],
+                "order": 1
+              }
+            ]
+          }
+        ],
         "versionId": "507f1f77bcf86cd799439016",
         "userId": "507f1f77bcf86cd799439017",
         "source": "external-system",
         "metadata": {
+          "language": "en",
+          "authority": "Federal Aviation Administration",
+          "contact": "aip@faa.gov",
           "importedFrom": "Legacy AIP System",
-          "originalId": "AD-2-1-2025"
+          "originalId": "AIP-US-2025.05"
         }
       }
     },
