@@ -1,0 +1,296 @@
+{
+  "workflows": [
+    {
+      "name": "eAIP Document Update Handler",
+      "description": "Handles document update notifications from eAIP Editor",
+      "trigger": {
+        "type": "webhook",
+        "method": "POST",
+        "path": "/webhook/eaip",
+        "responseMode": "onReceived"
+      },
+      "nodes": [
+        {
+          "name": "Webhook Trigger",
+          "type": "n8n-nodes-base.webhook",
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "eaip",
+            "responseMode": "onReceived"
+          }
+        },
+        {
+          "name": "Filter Document Events",
+          "type": "n8n-nodes-base.if",
+          "parameters": {
+            "conditions": {
+              "string": [
+                {
+                  "value1": "={{ $json.event }}",
+                  "operation": "startsWith",
+                  "value2": "document."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Document Change",
+          "type": "n8n-nodes-base.function",
+          "parameters": {
+            "functionCode": "console.log('Document changed:', $json.event, $json.title);\nreturn $json;"
+          }
+        },
+        {
+          "name": "Send Slack Notification",
+          "type": "n8n-nodes-base.slack",
+          "parameters": {
+            "channel": "#aip-updates",
+            "text": "eAIP Document Updated: {{ $json.title }} ({{ $json.event }})",
+            "username": "eAIP Bot"
+          }
+        }
+      ]
+    },
+    {
+      "name": "eAIP Export Processor",
+      "description": "Processes export requests and handles completed exports",
+      "trigger": {
+        "type": "webhook",
+        "method": "POST",
+        "path": "/webhook/eaip-export"
+      },
+      "nodes": [
+        {
+          "name": "Export Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "eaip-export"
+          }
+        },
+        {
+          "name": "Check Export Event",
+          "type": "n8n-nodes-base.switch",
+          "parameters": {
+            "values": [
+              {
+                "conditions": [
+                  {
+                    "value1": "={{ $json.event }}",
+                    "value2": "export.completed"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "Process Completed Export",
+          "type": "n8n-nodes-base.function",
+          "parameters": {
+            "functionCode": "const exportData = $json.data;\nconst downloadUrl = exportData.downloadUrl;\nconst format = exportData.format;\n\nreturn {\n  message: `Export completed: ${format} format`,\n  downloadUrl: downloadUrl,\n  documentCount: exportData.documentCount\n};"
+          }
+        },
+        {
+          "name": "Email Export Link",
+          "type": "n8n-nodes-base.emailSend",
+          "parameters": {
+            "toEmail": "{{ $json.data.requestedBy.email }}",
+            "subject": "eAIP Export Ready - {{ $json.data.format.toUpperCase() }}",
+            "text": "Your eAIP export is ready for download:\n\nFormat: {{ $json.data.format }}\nDocuments: {{ $json.data.documentCount }}\nDownload: {{ $json.data.downloadUrl }}\n\nThis link will expire in 24 hours."
+          }
+        }
+      ]
+    },
+    {
+      "name": "eAIP Version Publisher",
+      "description": "Handles version publishing and static site generation",
+      "trigger": {
+        "type": "webhook",
+        "method": "POST",
+        "path": "/webhook/eaip-publish"
+      },
+      "nodes": [
+        {
+          "name": "Publish Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "eaip-publish"
+          }
+        },
+        {
+          "name": "Extract Publish Data",
+          "type": "n8n-nodes-base.function",
+          "parameters": {
+            "functionCode": "const data = $json.data;\nreturn {\n  versionId: data.versionId,\n  version: data.version,\n  airacCycle: data.airacCycle,\n  targetEnvironment: data.targetEnvironment,\n  documentCount: data.documents.length,\n  publishedBy: data.metadata.publishedBy.name\n};"
+          }
+        },
+        {
+          "name": "Generate Static Site",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://your-static-site-generator.com/api/generate",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Authorization",
+                  "value": "Bearer {{ $env.STATIC_SITE_API_KEY }}"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "bodyParameters": {
+              "parameters": [
+                {
+                  "name": "versionId",
+                  "value": "={{ $json.versionId }}"
+                },
+                {
+                  "name": "environment",
+                  "value": "={{ $json.targetEnvironment }}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Navigation Index",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "PUT",
+            "url": "https://your-navigation-api.com/api/index",
+            "sendBody": true,
+            "bodyParameters": {
+              "parameters": [
+                {
+                  "name": "version",
+                  "value": "={{ $json.version }}"
+                },
+                {
+                  "name": "airacCycle",
+                  "value": "={{ $json.airacCycle }}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Notify Stakeholders",
+          "type": "n8n-nodes-base.emailSend",
+          "parameters": {
+            "toEmail": "stakeholders@aviation.com",
+            "subject": "eAIP Version {{ $json.version }} Published to {{ $json.targetEnvironment }}",
+            "text": "A new eAIP version has been published:\n\nVersion: {{ $json.version }}\nAIRAC Cycle: {{ $json.airacCycle }}\nEnvironment: {{ $json.targetEnvironment }}\nDocuments: {{ $json.documentCount }}\nPublished by: {{ $json.publishedBy }}\n\nThe updated AIP is now available online."
+          }
+        }
+      ]
+    }
+  ],
+  "examplePayloads": {
+    "documentUpdated": {
+      "event": "document.updated",
+      "docId": "507f1f77bcf86cd799439011",
+      "title": "GEN 1.2 Entry/Exit Points",
+      "updatedBy": "user@example.com",
+      "timestamp": "2025-09-16T10:30:00Z",
+      "data": {
+        "sectionCode": "GEN",
+        "subsectionCode": "1.2",
+        "status": "published",
+        "contentChanged": true
+      }
+    },
+    "documentCreated": {
+      "event": "document.created",
+      "docId": "507f1f77bcf86cd799439012",
+      "title": "ENR 2.1 Airspace Structure",
+      "updatedBy": "editor@example.com",
+      "timestamp": "2025-09-16T11:00:00Z",
+      "data": {
+        "sectionCode": "ENR",
+        "subsectionCode": "2.1",
+        "status": "draft"
+      }
+    },
+    "versionPublished": {
+      "event": "version.published",
+      "versionId": "507f1f77bcf86cd799439013",
+      "timestamp": "2025-09-16T12:00:00Z",
+      "data": {
+        "versionNumber": "v202505",
+        "airacCycle": "202505",
+        "effectiveDate": "2025-05-01T00:00:00Z",
+        "documentCount": 25
+      }
+    },
+    "exportCompleted": {
+      "event": "export.completed",
+      "exportJobId": "507f1f77bcf86cd799439014",
+      "timestamp": "2025-09-16T12:30:00Z",
+      "data": {
+        "format": "pdf",
+        "documentCount": 5,
+        "downloadUrl": "/exports/v202505-1694865000000.pdf",
+        "requestedBy": {
+          "id": "507f1f77bcf86cd799439015",
+          "name": "John Doe",
+          "email": "john.doe@example.com"
+        }
+      }
+    }
+  },
+  "incomingWebhooks": {
+    "import": {
+      "url": "POST /api/webhooks/n8n/import",
+      "description": "Import AIP content from external sources",
+      "examplePayload": {
+        "title": "AD 2.1 Aerodrome Information",
+        "sectionCode": "AD",
+        "subsectionCode": "2.1",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "This section contains aerodrome information..."
+                }
+              ]
+            }
+          ]
+        },
+        "versionId": "507f1f77bcf86cd799439016",
+        "userId": "507f1f77bcf86cd799439017",
+        "source": "external-system",
+        "metadata": {
+          "importedFrom": "Legacy AIP System",
+          "originalId": "AD-2-1-2025"
+        }
+      }
+    },
+    "publish": {
+      "url": "POST /api/webhooks/n8n/publish",
+      "description": "Trigger publication of AIP version to staging or production",
+      "examplePayload": {
+        "versionId": "507f1f77bcf86cd799439018",
+        "targetEnvironment": "production",
+        "userId": "507f1f77bcf86cd799439019",
+        "publishOptions": {
+          "generateStaticSite": true,
+          "updateNavigationIndex": true,
+          "notifyStakeholders": true
+        }
+      }
+    }
+  }
+}
