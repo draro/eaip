@@ -46,7 +46,10 @@ export class ApprovalWorkflowService {
         icaoCompliant: false,
         eurocontrolCompliant: false,
         dataQualityVerified: false,
-        securityCleared: false
+        securityCleared: false,
+        validationDate: new Date(),
+        validatedBy: initiatedBy,
+        issues: []
       },
       digitalSignatures: [],
       auditTrail: [{
@@ -136,7 +139,7 @@ export class ApprovalWorkflowService {
       'final_review': ['final_reviewer', 'authority_approver']
     };
 
-    return authorityLevels[approval.approvalLevel]?.includes(approval.approverRole) || false;
+    return authorityLevels[approval.approvalLevel as keyof typeof authorityLevels]?.includes(approval.approverRole) || false;
   }
 
   private static async createDigitalSignature(

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const connection = user.companySettings.remoteConnections.find(
-      conn => conn.id === connectionId
+      (conn: any) => conn.id === connectionId
     );
 
     if (!connection) {
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const connection = user.companySettings.remoteConnections.find(
-      conn => conn.id === connectionId
+      (conn: any) => conn.id === connectionId
     );
 
     if (!connection) {

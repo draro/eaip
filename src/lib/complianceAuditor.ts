@@ -385,7 +385,7 @@ export class ComplianceAuditor {
     });
 
     // Remove duplicates
-    return [...new Set(recommendations)];
+    return Array.from(new Set(recommendations));
   }
 
   private static async generateRemediationPlan(auditReport: ComplianceAuditReport): Promise<RemediationAction[]> {

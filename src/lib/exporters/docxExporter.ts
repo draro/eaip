@@ -186,7 +186,7 @@ export class DocxExporter {
     return [];
   }
 
-  private getHeadingLevel(level: number): HeadingLevel {
+  private getHeadingLevel(level: number): typeof HeadingLevel[keyof typeof HeadingLevel] {
     switch (level) {
       case 1: return HeadingLevel.HEADING_1;
       case 2: return HeadingLevel.HEADING_2;

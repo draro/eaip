@@ -4,15 +4,61 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/Header';
+import Layout from '@/components/Layout';
 import { FileText, Book, Upload, Download, Settings, Users, Radio } from 'lucide-react';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
 
+  const user = session?.user as any;
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Electronic Aeronautical Information Publication Editor
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+              Create, edit, and publish EUROCONTROL Spec 3.0 compliant eAIP documents with our modern,
+              feature-rich editor supporting images, tables, and automated exports.
+            </p>
+            <div className="space-x-4">
+              <Link href="/auth/signin">
+                <Button size="lg" className="px-8 py-3 text-lg">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button size="lg" variant="outline" className="px-8 py-3 text-lg">
+                  Create Account
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header currentPage="home" />
+    <Layout user={{
+      name: user.name || 'User',
+      email: user.email || '',
+      role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+      organization: user.organization
+    }}>
+      <div className="min-h-screen bg-gray-50">
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
@@ -182,14 +228,15 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p>&copy; 2025 eAIP Editor. Built with Next.js 14, TipTap, and MongoDB.</p>
-            <p className="text-gray-400 mt-2">EUROCONTROL Spec 3.0 Compliant</p>
+        <footer className="bg-gray-800 text-white mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center">
+              <p>&copy; 2025 eAIP Editor. Built with Next.js 14, TipTap, and MongoDB.</p>
+              <p className="text-gray-400 mt-2">EUROCONTROL Spec 3.0 Compliant</p>
+            </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </Layout>
   );
 }

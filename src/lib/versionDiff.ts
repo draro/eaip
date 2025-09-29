@@ -78,7 +78,7 @@ export class VersionDiffService {
     const toSectionMap = new Map(toSections.map(s => [s.id, s]));
 
     // Find removed sections
-    for (const [id, section] of fromSectionMap) {
+    for (const [id, section] of Array.from(fromSectionMap)) {
       if (!toSectionMap.has(id)) {
         changes.push({
           id: uuidv4(),
@@ -94,7 +94,7 @@ export class VersionDiffService {
     }
 
     // Find added and modified sections
-    for (const [id, section] of toSectionMap) {
+    for (const [id, section] of Array.from(toSectionMap)) {
       const fromSection = fromSectionMap.get(id);
 
       if (!fromSection) {
@@ -149,7 +149,7 @@ export class VersionDiffService {
     const toSubMap = new Map(toSubsections.map(s => [s.id, s]));
 
     // Find removed subsections
-    for (const [id, subsection] of fromSubMap) {
+    for (const [id, subsection] of Array.from(fromSubMap)) {
       if (!toSubMap.has(id)) {
         changes.push({
           id: uuidv4(),
@@ -166,7 +166,7 @@ export class VersionDiffService {
     }
 
     // Find added and modified subsections
-    for (const [id, subsection] of toSubMap) {
+    for (const [id, subsection] of Array.from(toSubMap)) {
       const fromSubsection = fromSubMap.get(id);
 
       if (!fromSubsection) {
@@ -281,7 +281,7 @@ export class VersionDiffService {
 
     const keys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
 
-    for (const key of keys) {
+    for (const key of Array.from(keys)) {
       const value1 = obj1?.[key];
       const value2 = obj2?.[key];
 

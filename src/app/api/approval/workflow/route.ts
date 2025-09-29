@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
           icaoCompliant: false,
           eurocontrolCompliant: false,
           dataQualityVerified: false,
-          securityCleared: false
+          securityCleared: false,
+          validationDate: new Date(),
+          validatedBy: 'system',
+          issues: []
         },
         digitalSignatures: [],
         auditTrail: []
@@ -118,7 +121,10 @@ export async function POST(request: NextRequest) {
           icaoCompliant: false,
           eurocontrolCompliant: false,
           dataQualityVerified: false,
-          securityCleared: false
+          securityCleared: false,
+          validationDate: new Date(),
+          validatedBy: 'system',
+          issues: []
         },
         digitalSignatures: [],
         auditTrail: []

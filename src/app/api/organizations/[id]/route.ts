@@ -3,12 +3,21 @@ import connectDB from '@/lib/mongodb';
 import Organization from '@/models/Organization';
 import User from '@/models/User';
 import AIPDocument from '@/models/AIPDocument';
+import mongoose from 'mongoose';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid organization ID' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     const organization = await Organization.findById(params.id)
@@ -67,6 +76,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid organization ID' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     const body = await request.json();
@@ -142,6 +159,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid organization ID' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     const organization = await Organization.findById(params.id);

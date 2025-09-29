@@ -8,7 +8,14 @@
       "WebSearch",
       "Bash(npm install:*)",
       "Bash(node:*)",
-      "Bash(curl -X POST http://localhost:3000/api/auth/login )"
+      "Bash(curl -X POST http://localhost:3000/api/auth/login )",
+      "Bash(npx shadcn-ui:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx node:*)",
+      "Bash(MONGODB_URI='mongodb://localhost:27017/eaip' node scripts/check-user-org.js)"
     ],
     "deny": [],
     "ask": []

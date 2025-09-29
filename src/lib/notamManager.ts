@@ -46,20 +46,20 @@ export class NOTAMManager {
       purpose: data.purpose,
       location: data.location,
       effectiveFrom: data.effectiveFrom,
-      effectiveTo: data.effectiveTo,
-      schedule: data.schedule,
+      effectiveTo: data.effectiveTo || null,
+      schedule: data.schedule || null,
       text: data.text,
       category: data.category,
       traffic: data.traffic || 'IV', // I=International, V=Domestic, K=Checklist
-      lower: data.lower,
-      upper: data.upper,
-      coordinates: data.coordinates,
-      radius: data.radius,
+      lower: data.lower || null,
+      upper: data.upper || null,
+      coordinates: data.coordinates || null,
+      radius: data.radius || null,
       status: 'active',
       createdAt: new Date(),
       createdBy: data.createdBy,
       lastModified: new Date(),
-      relatedAIP: data.relatedAIP
+      relatedAIP: data.relatedAIP || null
     };
 
     // Validate NOTAM format
@@ -199,13 +199,13 @@ export class NOTAMManager {
     }
 
     // Validate category
-    if (notam.category && !this.NOTAM_CATEGORIES[notam.category]) {
+    if (notam.category && !this.NOTAM_CATEGORIES[notam.category as keyof typeof this.NOTAM_CATEGORIES]) {
       validation.errors.push('Invalid NOTAM category');
       validation.isValid = false;
     }
 
     // Validate scope
-    if (notam.scope && !this.NOTAM_SCOPES[notam.scope]) {
+    if (notam.scope && !this.NOTAM_SCOPES[notam.scope as keyof typeof this.NOTAM_SCOPES]) {
       validation.errors.push('Invalid NOTAM scope');
       validation.isValid = false;
     }

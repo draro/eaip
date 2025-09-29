@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Layout from '@/components/Layout';
+import DomainConfiguration from '@/components/DomainConfiguration';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,6 +61,8 @@ interface Organization {
 }
 
 export default function OrganizationSetup() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,14 +97,53 @@ export default function OrganizationSetup() {
   });
 
   useEffect(() => {
-    fetchOrganization();
-  }, []);
+    if (session) {
+      fetchOrganization();
+    }
+  }, [session]);
 
   const fetchOrganization = async () => {
     try {
       setLoading(true);
-      // In a real implementation, get the current user's organization ID from auth context
-      const orgId = 'current-org-id'; // This would come from auth context
+
+      // Get organization ID from session - try different possible paths
+      const user = session?.user as any;
+      const orgId = user?.organizationId || user?.organization?.id || user?.organization?._id;
+
+      if (!orgId) {
+        console.error('No organization found in session', user);
+
+        // If user is super_admin, try to get first organization
+        if (user?.role === 'super_admin') {
+          const orgsResponse = await fetch('/api/organizations');
+          if (orgsResponse.ok) {
+            const orgsData = await orgsResponse.json();
+            if (orgsData.success && orgsData.data.organizations.length > 0) {
+              const firstOrg = orgsData.data.organizations[0];
+              setOrganization(firstOrg);
+              setFormData({
+                name: firstOrg.name,
+                domain: firstOrg.domain,
+                country: firstOrg.country,
+                icaoCode: firstOrg.icaoCode || '',
+                contact: firstOrg.contact,
+                branding: firstOrg.branding,
+                settings: {
+                  ...firstOrg.settings,
+                  airacStartDate: new Date(firstOrg.settings.airacStartDate).toISOString().split('T')[0]
+                }
+              });
+              setLogoPreview(firstOrg.branding?.logoUrl || '');
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`/api/organizations/${orgId}`);
 
       if (response.ok) {
@@ -129,7 +174,7 @@ export default function OrganizationSetup() {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof typeof prev],
+        ...(prev[section as keyof typeof prev] as any),
         [field]: value
       }
     }));
@@ -148,6 +193,7 @@ export default function OrganizationSetup() {
   };
 
   const saveChanges = async () => {
+    console.log('Save changes clicked');
     try {
       setSaving(true);
 
@@ -181,7 +227,20 @@ export default function OrganizationSetup() {
         }
       };
 
-      const response = await fetch(`/api/organizations/${organization?._id}`, {
+      // Get organization ID
+      const user = session?.user as any;
+      const orgId = organization?._id || user?.organizationId || user?.organization?.id || user?.organization?._id;
+
+      console.log('Organization ID for update:', orgId);
+      console.log('Update data:', updateData);
+
+      if (!orgId) {
+        console.error('No organization ID available for update');
+        alert('No organization ID found. Please reload the page and try again.');
+        return;
+      }
+
+      const response = await fetch(`/api/organizations/${orgId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -191,10 +250,15 @@ export default function OrganizationSetup() {
 
       if (response.ok) {
         await fetchOrganization(); // Refresh data
-        // Show success message
+        alert('Organization settings saved successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        alert(`Failed to save changes: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving changes:', error);
+      alert(`Error saving changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -215,7 +279,8 @@ export default function OrganizationSetup() {
     { value: 'pt', label: 'Portuguese' }
   ];
 
-  if (loading) {
+  // Check authentication
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -223,8 +288,62 @@ export default function OrganizationSetup() {
     );
   }
 
+  if (!session) {
+    router.push('/auth/signin?callbackUrl=/organization/setup');
+    return null;
+  }
+
+  const user = session.user as any;
+
+  // Check permissions
+  if (!['super_admin', 'org_admin'].includes(user.role)) {
+    return (
+      <Layout user={{
+        name: user.name || 'User',
+        email: user.email || '',
+        role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+        organization: user.organization
+      }}>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <Card>
+              <CardContent className="p-12 text-center">
+                <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+                <p className="text-gray-600">
+                  You don't have permission to access organization settings.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Layout user={{
+        name: user.name || 'User',
+        email: user.email || '',
+        role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+        organization: user.organization
+      }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <Layout user={{
+      name: user.name || 'User',
+      email: user.email || '',
+      role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+      organization: user.organization
+    }}>
+      <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -287,21 +406,25 @@ export default function OrganizationSetup() {
 
         {/* Configuration Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="general" className="flex items-center gap-1 text-xs">
+              <Building2 className="w-3 h-3" />
               General
             </TabsTrigger>
-            <TabsTrigger value="branding" className="flex items-center gap-2">
-              <Palette className="w-4 h-4" />
+            <TabsTrigger value="branding" className="flex items-center gap-1 text-xs">
+              <Palette className="w-3 h-3" />
               Branding
             </TabsTrigger>
-            <TabsTrigger value="public" className="flex items-center gap-2">
-              <Globe className="w-4 h-4" />
-              Public Access
+            <TabsTrigger value="domain" className="flex items-center gap-1 text-xs">
+              <Globe className="w-3 h-3" />
+              Domain
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
+            <TabsTrigger value="public" className="flex items-center gap-1 text-xs">
+              <Eye className="w-3 h-3" />
+              Public
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-1 text-xs">
+              <Settings className="w-3 h-3" />
               Settings
             </TabsTrigger>
           </TabsList>
@@ -622,8 +745,20 @@ export default function OrganizationSetup() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Domain Configuration Tab */}
+          <TabsContent value="domain" className="space-y-6">
+            <DomainConfiguration
+              organizationDomain={organization?.domain}
+              onDomainUpdate={(domain) => {
+                setFormData(prev => ({ ...prev, domain }));
+                saveChanges();
+              }}
+            />
+          </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

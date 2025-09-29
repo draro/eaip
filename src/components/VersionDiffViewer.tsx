@@ -115,7 +115,7 @@ export default function VersionDiffViewer({ diff, showFullDiff = false }: Versio
             Version Comparison Summary
             <div className="flex gap-2">
               <Badge variant="outline">
-                {diff.fromVersion} → {diff.toVersion}
+                {diff.fromVersion?.toString()} → {diff.toVersion?.toString()}
               </Badge>
             </div>
           </CardTitle>

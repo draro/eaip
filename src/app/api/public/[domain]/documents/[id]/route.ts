@@ -56,7 +56,7 @@ export async function GET(
     let responseData = document.toObject();
 
     if (section) {
-      const requestedSection = document.sections.find(s =>
+      const requestedSection = document.sections.find((s: any) =>
         s.id === section || s.type === section
       );
 
@@ -68,7 +68,7 @@ export async function GET(
       }
 
       if (subsection) {
-        const requestedSubsection = requestedSection.subsections.find(sub =>
+        const requestedSubsection = requestedSection.subsections.find((sub: any) =>
           sub.id === subsection || sub.code === subsection
         );
 

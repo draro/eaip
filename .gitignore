@@ -6,4 +6,4 @@ dist
 .idea
 *.log
 .next
-.next/*
+.next/trace

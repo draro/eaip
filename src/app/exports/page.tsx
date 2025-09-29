@@ -1,17 +1,41 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Download, FileText, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle, Book, Plus } from 'lucide-react';
-import { formatDateTime } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Download,
+  FileText,
+  Calendar,
+  User,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Book,
+  Plus,
+} from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 interface ExportJob {
   _id: string;
-  type: 'docx' | 'pdf' | 'xml' | 'html';
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  type: "docx" | "pdf" | "xml" | "html";
+  status: "pending" | "processing" | "completed" | "failed";
   downloadUrl?: string;
   errorMessage?: string;
   requestedBy: {
@@ -56,8 +80,10 @@ export default function ExportsPage() {
 
   // Form state
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState('');
-  const [exportFormat, setExportFormat] = useState<'docx' | 'pdf' | 'xml' | 'html'>('pdf');
+  const [selectedVersion, setSelectedVersion] = useState("");
+  const [exportFormat, setExportFormat] = useState<
+    "docx" | "pdf" | "xml" | "html"
+  >("pdf");
 
   useEffect(() => {
     fetchData();
@@ -66,7 +92,7 @@ export default function ExportsPage() {
   const fetchData = async () => {
     try {
       // Fetch export jobs
-      const exportsResponse = await fetch('/api/exports');
+      const exportsResponse = await fetch("/api/exports");
       if (exportsResponse.ok) {
         const exportsResult = await exportsResponse.json();
         if (exportsResult.success) {
@@ -75,7 +101,7 @@ export default function ExportsPage() {
       }
 
       // Fetch documents
-      const docsResponse = await fetch('/api/documents');
+      const docsResponse = await fetch("/api/documents");
       if (docsResponse.ok) {
         const docsResult = await docsResponse.json();
         if (docsResult.success) {
@@ -84,7 +110,7 @@ export default function ExportsPage() {
       }
 
       // Fetch versions
-      const versionsResponse = await fetch('/api/versions');
+      const versionsResponse = await fetch("/api/versions");
       if (versionsResponse.ok) {
         const versionsResult = await versionsResponse.json();
         if (versionsResult.success) {
@@ -95,7 +121,7 @@ export default function ExportsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -103,22 +129,22 @@ export default function ExportsPage() {
 
   const handleExport = async () => {
     if (selectedDocuments.length === 0 || !selectedVersion) {
-      alert('Please select documents and version');
+      alert("Please select documents and version");
       return;
     }
 
     setExporting(true);
     try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
+      const response = await fetch("/api/export", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           documentIds: selectedDocuments,
           format: exportFormat,
           versionId: selectedVersion,
-          requestedBy: '507f1f77bcf86cd799439011', // TODO: Get from auth context
+          requestedBy: "507f1f77bcf86cd799439011", // TODO: Get from auth context
         }),
       });
 
@@ -131,10 +157,13 @@ export default function ExportsPage() {
           status: result.data.status,
           downloadUrl: result.data.downloadUrl,
           requestedBy: {
-            name: 'Current User', // TODO: Get from auth context
-            email: 'user@example.com',
+            name: "Current User", // TODO: Get from auth context
+            email: "user@example.com",
           },
-          version: versions.find(v => v._id === selectedVersion) || { versionNumber: '', airacCycle: '' },
+          version: versions.find((v) => v._id === selectedVersion) || {
+            versionNumber: "",
+            airacCycle: "",
+          },
           documentIds: selectedDocuments,
           createdAt: new Date().toISOString(),
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -144,14 +173,14 @@ export default function ExportsPage() {
         setSelectedDocuments([]);
 
         if (result.data.downloadUrl) {
-          window.open(result.data.downloadUrl, '_blank');
+          window.open(result.data.downloadUrl, "_blank");
         }
       } else {
         alert(`Export failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error creating export:', error);
-      alert('Export failed');
+      console.error("Error creating export:", error);
+      alert("Export failed");
     } finally {
       setExporting(false);
     }
@@ -159,12 +188,14 @@ export default function ExportsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'failed':
+      case "failed":
         return <XCircle className="h-5 w-5 text-red-600" />;
-      case 'processing':
-        return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />;
+      case "processing":
+        return (
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+        );
       default:
         return <AlertCircle className="h-5 w-5 text-yellow-600" />;
     }
@@ -172,14 +203,20 @@ export default function ExportsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "failed":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "processing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
   };
 
-  const filteredDocuments = documents.filter(doc => doc.version._id === selectedVersion);
+  const filteredDocuments = documents.filter(
+    (doc) => doc.version._id === selectedVersion
+  );
 
   if (loading) {
     return (
@@ -200,7 +237,9 @@ export default function ExportsPage() {
             <div className="flex items-center">
               <Link href="/" className="flex items-center mr-8">
                 <Book className="h-8 w-8 text-blue-600 mr-3" />
-                <h1 className="text-3xl font-bold text-gray-900">eAIP Editor</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  eAIP Editor
+                </h1>
               </Link>
               <nav className="flex space-x-4">
                 <Link href="/documents">
@@ -248,47 +287,68 @@ export default function ExportsPage() {
                   <div>
                     <label className="text-sm font-medium">Export Format</label>
                     <div className="grid grid-cols-4 gap-2 mt-1">
-                      {(['docx', 'pdf', 'xml', 'html'] as const).map((format) => (
-                        <Button
-                          key={format}
-                          variant={exportFormat === format ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setExportFormat(format)}
-                          className="w-full"
-                        >
-                          {format.toUpperCase()}
-                        </Button>
-                      ))}
+                      {(["docx", "pdf", "xml", "html"] as const).map(
+                        (format) => (
+                          <Button
+                            key={format}
+                            variant={
+                              exportFormat === format ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => setExportFormat(format)}
+                            className="w-full"
+                          >
+                            {format.toUpperCase()}
+                          </Button>
+                        )
+                      )}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Documents ({filteredDocuments.length} available)</label>
+                    <label className="text-sm font-medium">
+                      Documents ({filteredDocuments.length} available)
+                    </label>
                     <div className="max-h-64 overflow-y-auto border border-gray-300 rounded-md mt-1">
                       <div className="p-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedDocuments(filteredDocuments.map(d => d._id))}
+                          onClick={() =>
+                            setSelectedDocuments(
+                              filteredDocuments.map((d) => d._id)
+                            )
+                          }
                           className="w-full mb-2"
                         >
                           Select All
                         </Button>
                         {filteredDocuments.map((doc) => (
-                          <div key={doc._id} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
+                          <div
+                            key={doc._id}
+                            className="flex items-center space-x-2 p-2 hover:bg-gray-50"
+                          >
                             <input
                               type="checkbox"
                               checked={selectedDocuments.includes(doc._id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedDocuments([...selectedDocuments, doc._id]);
+                                  setSelectedDocuments([
+                                    ...selectedDocuments,
+                                    doc._id,
+                                  ]);
                                 } else {
-                                  setSelectedDocuments(selectedDocuments.filter(id => id !== doc._id));
+                                  setSelectedDocuments(
+                                    selectedDocuments.filter(
+                                      (id) => id !== doc._id
+                                    )
+                                  );
                                 }
                               }}
                             />
                             <span className="text-sm">
-                              {doc.sectionCode} {doc.subsectionCode} - {doc.title}
+                              {doc.sectionCode} {doc.subsectionCode} -{" "}
+                              {doc.title}
                             </span>
                           </div>
                         ))}
@@ -297,14 +357,23 @@ export default function ExportsPage() {
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4">
-                    <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleExport}
-                      disabled={exporting || selectedDocuments.length === 0 || !selectedVersion}
+                      disabled={
+                        exporting ||
+                        selectedDocuments.length === 0 ||
+                        !selectedVersion
+                      }
                     >
-                      {exporting ? 'Exporting...' : `Export ${selectedDocuments.length} Document(s)`}
+                      {exporting
+                        ? "Exporting..."
+                        : `Export ${selectedDocuments.length} Document(s)`}
                     </Button>
                   </div>
                 </div>
@@ -318,7 +387,8 @@ export default function ExportsPage() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Export Jobs</h2>
           <p className="text-gray-600">
-            Export AIP documents to various formats including DOCX, PDF, and EUROCONTROL-compliant XML/HTML.
+            Export AIP documents to various formats including DOCX, PDF, and
+            EUROCONTROL-compliant XML/HTML.
           </p>
         </div>
 
@@ -334,7 +404,8 @@ export default function ExportsPage() {
                         {exportJob.type.toUpperCase()} Export
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {exportJob.documentIds.length} document(s) • {exportJob.version.versionNumber}
+                        {exportJob.documentIds.length} document(s) •{" "}
+                        {exportJob.version.versionNumber}
                       </p>
                     </div>
                   </div>
@@ -343,7 +414,7 @@ export default function ExportsPage() {
                     <div className="text-right text-sm text-gray-600">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-1" />
-                        {exportJob.requestedBy.name}
+                        {exportJob.requestedBy?.name || "Unknown User"}
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
@@ -351,23 +422,30 @@ export default function ExportsPage() {
                       </div>
                     </div>
 
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(exportJob.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                        exportJob.status
+                      )}`}
+                    >
                       {exportJob.status}
                     </span>
 
-                    {exportJob.status === 'completed' && exportJob.downloadUrl && (
-                      <Button
-                        size="sm"
-                        onClick={() => window.open(exportJob.downloadUrl, '_blank')}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    )}
+                    {exportJob.status === "completed" &&
+                      exportJob.downloadUrl && (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            window.open(exportJob.downloadUrl, "_blank")
+                          }
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      )}
                   </div>
                 </div>
 
-                {exportJob.status === 'failed' && exportJob.errorMessage && (
+                {exportJob.status === "failed" && exportJob.errorMessage && (
                   <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
                     <p className="text-sm text-red-800">
                       <strong>Error:</strong> {exportJob.errorMessage}
@@ -375,7 +453,7 @@ export default function ExportsPage() {
                   </div>
                 )}
 
-                {exportJob.status === 'completed' && (
+                {exportJob.status === "completed" && (
                   <div className="mt-4 text-xs text-gray-500">
                     Expires: {formatDateTime(exportJob.expiresAt)}
                   </div>
@@ -388,9 +466,12 @@ export default function ExportsPage() {
         {exports.length === 0 && (
           <div className="text-center py-12">
             <Download className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No exports found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No exports found
+            </h3>
             <p className="text-gray-600 mb-4">
-              Create your first export job to generate AIP documents in various formats.
+              Create your first export job to generate AIP documents in various
+              formats.
             </p>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />

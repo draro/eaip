@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,13 +34,14 @@ export default function SignInPage() {
 
       if (result?.error) {
         setError('Invalid email or password');
-      } else {
-        // Refresh session and redirect
+      } else if (result?.ok) {
+        // Refresh session and redirect to callback URL
         await getSession();
-        router.push('/documents');
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (error) {
+      console.error('Signin error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);

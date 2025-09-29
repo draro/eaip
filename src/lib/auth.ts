@@ -4,7 +4,7 @@ import User from '@/models/User';
 import Organization from '@/models/Organization';
 import { IUser } from '@/types';
 
-export interface AuthUser extends Omit<IUser, '_id'> {
+export interface AuthUser extends Omit<IUser, '_id' | 'organization'> {
   _id: string;
   organization?: {
     _id: string;

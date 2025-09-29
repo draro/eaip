@@ -78,7 +78,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     }
 
     // Check if user can create documents
-    if (!user.canEdit()) {
+    if (user.role === 'viewer') {
       return NextResponse.json(
         { success: false, error: 'Insufficient permissions to create documents' },
         { status: 403 }
@@ -135,7 +135,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       metadata: {
         language: metadata?.language || 'en',
         authority: metadata?.authority || user.organization?.name || 'Authority',
-        contact: metadata?.contact || user.organization?.contact?.email || 'contact@authority.gov',
+        contact: metadata?.contact || 'contact@authority.gov',
         lastReview: new Date(),
         nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }
