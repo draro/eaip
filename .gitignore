@@ -1,9 +1,8 @@
 node_modules
+.next
 dist
 .env
 .DS_Store
 .vscode
 .idea
 *.log
-.next
-.next/trace
