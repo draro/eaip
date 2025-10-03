@@ -132,7 +132,10 @@ export default function NewDocumentPage() {
     setCreating(true);
     try {
       if (useAI && previousVersionId) {
-        // Use AI-assisted creation endpoint
+        // Show progress message for AI creation
+        console.log('🤖 AI is analyzing and creating document... This may take 30-60 seconds.');
+
+        // Use AI-assisted creation endpoint with timeout handling
         const payload: any = {
           title,
           documentType,
@@ -147,20 +150,36 @@ export default function NewDocumentPage() {
           payload.organizationId = organizationId;
         }
 
-        const response = await fetch('/api/documents/ai-create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
+        // Create abort controller for timeout (120 seconds for AI)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-        const result = await response.json();
-        if (result.success) {
-          alert(`✅ AI has created the document based on the previous version!\n\n${result.data.aiSummary || 'Document created successfully.'}`);
-          router.push(`/documents/${result.data._id}/edit`);
-        } else {
-          alert(`Failed to create document: ${result.error}`);
+        try {
+          const response = await fetch('/api/documents/ai-create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          const result = await response.json();
+          if (result.success) {
+            alert(`✅ AI has created the document based on the previous version!\n\n${result.data.aiSummary || 'Document created successfully.'}`);
+            router.push(`/documents/${result.data._id}/edit`);
+          } else {
+            alert(`Failed to create document: ${result.error}${result.details ? '\n\n' + result.details : ''}`);
+          }
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            alert('AI document creation is taking longer than expected. Please check the documents list in a moment - it may still complete in the background.');
+          } else {
+            throw fetchError;
+          }
         }
       } else {
         // Standard creation
@@ -383,11 +402,23 @@ export default function NewDocumentPage() {
                       checked={useAI}
                       onChange={(e) => setUseAI(e.target.checked)}
                       className="w-4 h-4 text-purple-600 rounded"
+                      disabled={creating}
                     />
                     <label htmlFor="useAI" className="text-sm font-medium text-purple-700 cursor-pointer">
                       Enable AI
                     </label>
                   </div>
+                  {creating && useAI && (
+                    <div className="mb-3 p-3 bg-purple-100 rounded border border-purple-300">
+                      <div className="flex items-center gap-2 text-purple-900 font-medium mb-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                        <span>AI is analyzing and creating your document...</span>
+                      </div>
+                      <p className="text-xs text-purple-700">
+                        This process may take 30-60 seconds. Please wait while Claude analyzes the previous version and generates compliant content.
+                      </p>
+                    </div>
+                  )}
                   <p className="text-sm text-purple-700 mb-3">
                     Let AI analyze a previous version and automatically create updated content for the new AIRAC cycle,
                     applying appropriate changes and maintaining compliance standards.
@@ -430,10 +461,13 @@ export default function NewDocumentPage() {
               <Button
                 onClick={handleCreate}
                 disabled={creating || !title || !documentType || !country || !versionId || (useAI && !previousVersionId)}
-                className={`min-w-[120px] ${useAI ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
+                className={`min-w-[180px] ${useAI ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
               >
                 {creating ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>{useAI ? 'AI Creating...' : 'Creating...'}</span>
+                  </div>
                 ) : (
                   <>
                     {useAI ? (

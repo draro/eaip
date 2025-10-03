@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ICompanySettings, IRemoteConnection } from '@/types';
-import { Plus, Trash2, TestTube, Save, Building, Palette, Cloud } from 'lucide-react';
+import { Plus, Trash2, TestTube, Save, Building, Palette, Cloud, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function SettingsPage() {
@@ -39,6 +39,9 @@ export default function SettingsPage() {
       timezone: 'UTC',
       airacStartDate: new Date(),
     },
+    aiProvider: 'claude' as 'claude' | 'openai',
+    aiApiKey: '',
+    aiModel: 'claude-sonnet-4-5-20250929',
   });
 
   const [preferences, setPreferences] = useState({
@@ -207,14 +210,18 @@ export default function SettingsPage() {
         </div>
 
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="company">
             <Building className="h-4 w-4 mr-2" />
             Company
           </TabsTrigger>
+          <TabsTrigger value="ai">
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Settings
+          </TabsTrigger>
           <TabsTrigger value="remote">
             <Cloud className="h-4 w-4 mr-2" />
-            Remote Connections
+            Remote
           </TabsTrigger>
           <TabsTrigger value="appearance">
             <Palette className="h-4 w-4 mr-2" />
@@ -310,6 +317,103 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Provider Configuration</CardTitle>
+              <p className="text-sm text-gray-600">Configure which AI provider to use for document generation and compliance features</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label htmlFor="ai-provider">AI Provider</Label>
+                <select
+                  id="ai-provider"
+                  value={companySettings.aiProvider}
+                  onChange={(e) => setCompanySettings(prev => ({
+                    ...prev,
+                    aiProvider: e.target.value as 'claude' | 'openai'
+                  }))}
+                  className="w-full p-2 border border-gray-300 rounded-md mt-1"
+                >
+                  <option value="claude">Anthropic Claude</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {companySettings.aiProvider === 'claude'
+                    ? 'Using Anthropic Claude for AI features'
+                    : 'Using OpenAI for AI features'}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="ai-api-key">
+                  {companySettings.aiProvider === 'claude' ? 'Anthropic API Key' : 'OpenAI API Key'}
+                </Label>
+                <Input
+                  id="ai-api-key"
+                  type="password"
+                  value={companySettings.aiApiKey}
+                  onChange={(e) => setCompanySettings(prev => ({
+                    ...prev,
+                    aiApiKey: e.target.value
+                  }))}
+                  placeholder={companySettings.aiProvider === 'claude'
+                    ? 'sk-ant-api03-...'
+                    : 'sk-proj-...'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {companySettings.aiProvider === 'claude'
+                    ? 'Get your API key from console.anthropic.com'
+                    : 'Get your API key from platform.openai.com'}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="ai-model">Model</Label>
+                <select
+                  id="ai-model"
+                  value={companySettings.aiModel}
+                  onChange={(e) => setCompanySettings(prev => ({
+                    ...prev,
+                    aiModel: e.target.value
+                  }))}
+                  className="w-full p-2 border border-gray-300 rounded-md mt-1"
+                >
+                  {companySettings.aiProvider === 'claude' ? (
+                    <>
+                      <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Latest)</option>
+                      <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                      <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select the AI model to use for document generation and compliance checking
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  AI Features
+                </h4>
+                <ul className="text-sm text-blue-800 space-y-1 ml-6 list-disc">
+                  <li>AI-assisted document creation from previous versions</li>
+                  <li>Automatic compliance issue fixes</li>
+                  <li>ICAO Annex 15 and EUROCONTROL validation</li>
+                  <li>Intelligent content generation</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
