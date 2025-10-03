@@ -749,10 +749,11 @@ export default function OrganizationSetup() {
           {/* Domain Configuration Tab */}
           <TabsContent value="domain" className="space-y-6">
             <DomainConfiguration
+              organizationId={organization?._id}
               organizationDomain={organization?.domain}
-              onDomainUpdate={(domain) => {
-                setFormData(prev => ({ ...prev, domain }));
-                saveChanges();
+              onDomainUpdate={(domains) => {
+                console.log('Domains updated:', domains);
+                // Optionally trigger a refresh of the organization data
               }}
             />
           </TabsContent>

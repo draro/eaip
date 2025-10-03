@@ -262,10 +262,12 @@ export default function OrganizationDetailsPage() {
                   <label className="text-sm font-medium text-gray-500">Created</label>
                   <p className="font-medium">{new Date(organization.createdAt).toLocaleDateString()}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Created By</label>
-                  <p className="font-medium">{organization.createdBy.name} ({organization.createdBy.email})</p>
-                </div>
+                {organization.createdBy && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Created By</label>
+                    <p className="font-medium">{organization.createdBy.name} ({organization.createdBy.email})</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

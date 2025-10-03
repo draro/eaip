@@ -114,6 +114,12 @@ export interface IUser extends Document {
   };
   lastLoginAt?: Date;
   isActive: boolean;
+  isTemporaryPassword: boolean;
+  mustChangePassword: boolean;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
+  failedLoginAttempts: number;
+  lockedUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: Types.ObjectId;

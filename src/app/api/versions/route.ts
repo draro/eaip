@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import AIPVersion from '@/models/AIPVersion';
+import AIPDocument from '@/models/AIPDocument';
 import { generateAiracCycle } from '@/lib/utils';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 

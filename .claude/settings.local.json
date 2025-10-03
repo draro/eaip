@@ -15,7 +15,19 @@
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
       "Bash(npx node:*)",
-      "Bash(MONGODB_URI='mongodb://localhost:27017/eaip' node scripts/check-user-org.js)"
+      "Bash(MONGODB_URI='mongodb://localhost:27017/eaip' node scripts/check-user-org.js)",
+      "Bash(pkill:*)",
+      "Bash(find:*)",
+      "Bash(git checkout:*)",
+      "Read(//private/tmp/**)",
+      "Bash(for page in overview document-management notam-management compliance workflow export version-control)",
+      "Bash(do echo -n \"$page: \")",
+      "Bash(done)",
+      "Bash(for file in src/app/features/*/page.tsx)",
+      "Bash(do)",
+      "Bash(echo \"Fixed: $file\")",
+      "Bash(for file in src/app/page.tsx src/app/features/*/page.tsx)",
+      "Bash(echo \"Fixed outline buttons: $file\")"
     ],
     "deny": [],
     "ask": []

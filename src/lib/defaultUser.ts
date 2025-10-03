@@ -6,24 +6,27 @@ export async function getOrCreateDefaultUser() {
   try {
     await connectDB();
 
-    // Try to find any existing user
-    let user = await User.findOne({});
+    // Try to find an existing super admin user
+    let user = await User.findOne({ role: 'super_admin' });
 
-    // If no user exists, create a default one
+    // If no super admin exists, create a default one
     if (!user) {
       const hashedPassword = await bcrypt.hash('admin123', 12);
       user = await User.create({
-        name: 'Default Admin',
+        name: 'System Administrator',
+        firstName: 'System',
+        lastName: 'Administrator',
         email: 'admin@eaip.com',
         password: hashedPassword,
-        role: 'admin',
+        role: 'super_admin',
+        isActive: true
       });
+      console.log('Created default super admin user:', user._id);
     }
 
     return user._id.toString();
   } catch (error) {
     console.error('Error getting or creating default user:', error);
-    // Return a default ObjectId format if all else fails
-    return '675f1f77bcf86cd799439011';
+    throw error; // Throw the error so we can handle it in the calling function
   }
 }

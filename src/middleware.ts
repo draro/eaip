@@ -1,92 +1,171 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { DomainService } from '@/lib/domain';
 
 export default withAuth(
   async function middleware(req) {
     const { hostname, pathname } = req.nextUrl;
+    const token = req.nextauth.token;
 
     // Skip processing for localhost and development
     if (hostname === 'localhost' || hostname.includes('localhost')) {
       return NextResponse.next();
     }
 
-    // Check if this is a custom domain (not our main domain)
-    const isCustomDomain = !hostname.includes('eaip-system.com') &&
-                          !hostname.includes('vercel.app') &&
-                          !hostname.includes('netlify.app');
+    // Simple domain extraction
+    const cleanDomain = hostname.toLowerCase().replace(/^www\./, '');
 
-    if (isCustomDomain) {
-      // Handle custom domain routing
+    // Check if this is a custom domain (not our main application domains)
+    const isMainDomain = hostname.includes('eaip-system.com') ||
+                        hostname.includes('vercel.app') ||
+                        hostname.includes('netlify.app') ||
+                        hostname === 'localhost' ||
+                        hostname.includes('localhost');
+
+    // Handle tenant-specific domain routing
+    if (!isMainDomain && cleanDomain !== 'localhost') {
       try {
-        // Look up organization by domain
-        const response = await fetch(`${req.nextUrl.origin}/api/organizations/by-domain?domain=${hostname}`, {
-          headers: {
-            'x-middleware-request': 'true'
-          }
+        // For custom domains, use an API call to lookup organization
+        // Note: In production, you might want to cache this or use a faster lookup method
+        const domainLookupUrl = new URL('/api/organizations/by-domain', req.nextUrl.origin);
+        domainLookupUrl.searchParams.set('domain', cleanDomain);
+
+        const domainResponse = await fetch(domainLookupUrl.toString(), {
+          headers: { 'x-middleware-request': 'true' }
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.organization) {
-            // Set organization context for custom domain
-            const requestHeaders = new Headers(req.headers);
-            requestHeaders.set('x-organization-domain', hostname);
-            requestHeaders.set('x-organization-id', data.organization._id);
-            requestHeaders.set('x-organization-name', data.organization.name);
+        if (domainResponse.ok) {
+          const domainData = await domainResponse.json();
 
-            // Rewrite to public eAIP for custom domains
+          if (domainData.success && domainData.organization) {
+            // Set organization context headers
+            const requestHeaders = new Headers(req.headers);
+            requestHeaders.set('x-tenant-domain', cleanDomain);
+            requestHeaders.set('x-tenant-org-id', domainData.organization._id);
+            requestHeaders.set('x-tenant-org-name', domainData.organization.name);
+
+            // For authenticated users, validate they belong to this organization
+            if (token) {
+              const userOrgId = token.organizationId as string;
+              const domainOrgId = domainData.organization._id;
+
+              // Block cross-tenant access
+              if (!DomainService.validateUserAccess(userOrgId, domainOrgId) && !pathname.startsWith('/auth/signin')) {
+                console.log(`Access denied: User org ${userOrgId} accessing domain org ${domainOrgId}`);
+
+                // Redirect to domain-specific login
+                const loginUrl = new URL('/auth/signin', req.url);
+                loginUrl.searchParams.set('error', 'unauthorized');
+                loginUrl.searchParams.set('callbackUrl', pathname);
+
+                return NextResponse.redirect(loginUrl);
+              }
+            }
+
+            // Handle different route types for custom domains
             if (pathname === '/' || pathname.startsWith('/public')) {
+              // Serve public eAIP content
               const url = req.nextUrl.clone();
-              url.pathname = `/public/${data.organization.domain}`;
+              url.pathname = pathname === '/' ? `/public` : pathname;
+
               return NextResponse.rewrite(url, {
-                request: {
-                  headers: requestHeaders,
-                }
+                request: { headers: requestHeaders }
               });
             }
 
+            // For all other routes, continue with tenant context
             return NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              }
+              request: { headers: requestHeaders }
             });
           }
         }
-      } catch (error) {
-        console.error('Error looking up organization by domain:', error);
-      }
 
-      // If organization not found, show 404 or redirect
-      return new NextResponse('Organization not found', { status: 404 });
+        // Domain not found in our system
+        return new NextResponse(
+          JSON.stringify({
+            error: 'Domain not configured',
+            message: `The domain ${cleanDomain} is not associated with any organization.`,
+            code: 'DOMAIN_NOT_FOUND'
+          }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' }
+          }
+        );
+
+      } catch (error) {
+        console.error('Domain lookup error:', error);
+        return new NextResponse(
+          JSON.stringify({
+            error: 'Domain lookup failed',
+            message: 'Unable to resolve domain configuration.',
+            code: 'DOMAIN_LOOKUP_ERROR'
+          }),
+          {
+            status: 500,
+            headers: { 'content-type': 'application/json' }
+          }
+        );
+      }
     }
 
+    // Main domain handling - no special tenant validation needed
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Define protected routes
-        const protectedRoutes = ['/documents', '/versions', '/exports', '/admin', '/dashboard', '/profile'];
         const { pathname } = req.nextUrl;
 
-        // Allow public routes
-        const publicRoutes = ['/', '/auth', '/public', '/eaip'];
+        // Define route categories
+        const publicRoutes = [
+          '/public',
+          '/eaip',
+          '/api/public',
+          '/auth/signin',
+          '/auth/signup',
+          '/auth/error',
+          '/_next',
+          '/favicon.ico'
+        ];
+
+        const protectedRoutes = [
+          '/admin',
+          '/dashboard',
+          '/documents',
+          '/versions',
+          '/exports',
+          '/profile',
+          '/organization',
+          '/api/admin',
+          '/api/documents',
+          '/api/users'
+        ];
+
+        // Allow public routes without authentication
         if (publicRoutes.some(route => pathname.startsWith(route))) {
           return true;
         }
 
-        // Check if the current path is protected
-        const isProtectedRoute = protectedRoutes.some(route =>
-          pathname.startsWith(route)
-        );
+        // Check if route requires authentication
+        const requiresAuth = protectedRoutes.some(route => pathname.startsWith(route));
 
-        // Allow access to non-protected routes
-        if (!isProtectedRoute) {
+        if (requiresAuth) {
+          // Require valid token for protected routes
+          if (!token) {
+            return false;
+          }
+
+          // Additional role-based checks
+          if (pathname.startsWith('/admin') && token.role !== 'super_admin') {
+            return false;
+          }
+
           return true;
         }
 
-        // Require authentication for protected routes
-        return !!token;
+        // Default: allow access to unspecified routes
+        return true;
       },
     },
   }

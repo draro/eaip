@@ -15,7 +15,7 @@ export default function Header({ currentPage = 'home' }: HeaderProps) {
   const { data: session, status } = useSession();
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: '/auth/login' });
   };
 
   return (

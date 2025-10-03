@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Building2, Users, FileText, TrendingUp, Search, Filter } from 'lucide-react';
+import { Plus, Building2, Users, FileText, TrendingUp, Search, Filter, Settings, BarChart3, Database, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';
@@ -233,6 +233,65 @@ export default function SuperAdminDashboard() {
               <Plus className="w-4 h-4 mr-2" />
               Create Organization
             </Button>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/versions')}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Database className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Version Control</CardTitle>
+                    <CardDescription className="text-xs">Manage AIRAC versions</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/settings')}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Settings className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">System Settings</CardTitle>
+                    <CardDescription className="text-xs">Configure global settings</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/documents')}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <FileText className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">All Documents</CardTitle>
+                    <CardDescription className="text-xs">View all system documents</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/compliance')}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <Shield className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Compliance</CardTitle>
+                    <CardDescription className="text-xs">ICAO & EUROCONTROL audit</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
           </div>
 
           {/* Statistics Cards */}

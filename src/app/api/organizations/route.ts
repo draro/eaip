@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import Organization from '@/models/Organization';
 import User from '@/models/User';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
+import { SecurityUtils } from '@/lib/security';
+import { emailService } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -100,6 +102,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Extract first and last name from contact email or use defaults
+    const emailLocalPart = contact.email.split('@')[0];
+    const defaultFirstName = 'Organization';
+    const defaultLastName = 'Administrator';
+
     // Check if domain already exists
     const existingOrg = await Organization.findOne({ domain: domain.toLowerCase() });
     if (existingOrg) {
@@ -110,18 +117,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the user creating this organization (should be super admin)
-    const userId = await getOrCreateDefaultUser();
+    let userId;
+    try {
+      userId = await getOrCreateDefaultUser();
+    } catch (userError) {
+      console.error('Error getting default user:', userError);
+      // Continue without createdBy for now
+      userId = null;
+    }
+
+    // Generate slug from name
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
     // Create new organization
-    const organization = new Organization({
+    const organizationData = {
       name,
+      slug,
       domain: domain.toLowerCase(),
       country: country.toUpperCase(),
       icaoCode: icaoCode?.toUpperCase(),
       contact,
       settings: {
         ...settings,
-        publicUrl: settings.publicUrl.toLowerCase()
+        publicUrl: settings.publicUrl.toLowerCase(),
+        airacStartDate: settings.airacStartDate || new Date('2024-01-01'), // Default AIRAC start date
+        enablePublicAccess: settings.enablePublicAccess !== false // Default to true
       },
       subscription: {
         plan: subscription?.plan || 'basic',
@@ -129,16 +151,115 @@ export async function POST(request: NextRequest) {
         maxDocuments: subscription?.maxDocuments || 10,
         features: subscription?.features || []
       },
-      createdBy: userId
+      status: 'active',
+      branding: {
+        primaryColor: '#2563eb',
+        secondaryColor: '#64748b'
+      }
+    };
+
+    // Only add createdBy if we have a valid userId
+    if (userId) {
+      organizationData.createdBy = userId;
+    }
+
+    const organization = new Organization(organizationData);
+
+    const savedOrg = await organization.save();
+    console.log('Organization created successfully:', savedOrg._id);
+
+    // Create organization admin user with secure temporary password
+    const { password: temporaryPassword, hashedPassword } = SecurityUtils.generateSecurePassword(16);
+
+    const firstName = contact.firstName || defaultFirstName;
+    const lastName = contact.lastName || defaultLastName;
+
+    const adminUser = new User({
+      email: contact.email,
+      name: `${firstName} ${lastName}`.trim(),
+      firstName: firstName,
+      lastName: lastName,
+      password: hashedPassword,
+      role: 'org_admin',
+      organization: savedOrg._id,
+      isActive: true,
+      isTemporaryPassword: true,
+      mustChangePassword: true,
+      permissions: ['org.manage', 'users.manage', 'documents.manage'],
+      preferences: {
+        theme: 'auto',
+        language: settings.language || 'en',
+        timezone: settings.timezone || 'UTC',
+        notifications: {
+          email: true,
+          browser: true,
+          slack: false
+        },
+        editor: {
+          autoSave: true,
+          spellCheck: true,
+          wordWrap: true
+        }
+      }
     });
 
-    await organization.save();
+    // Add createdBy if we have a valid userId
+    if (userId) {
+      adminUser.createdBy = userId;
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: organization,
-      message: 'Organization created successfully'
-    }, { status: 201 });
+    try {
+      const savedUser = await adminUser.save();
+      console.log('Organization admin created successfully:', savedUser._id);
+
+      // Send welcome email with temporary credentials
+      const emailSent = await emailService.sendWelcomeEmail({
+        organizationName: name,
+        organizationDomain: domain,
+        adminName: adminUser.name,
+        adminEmail: contact.email,
+        temporaryPassword,
+        loginUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+        supportEmail: process.env.SUPPORT_EMAIL
+      });
+
+      if (!emailSent) {
+        console.warn('Failed to send welcome email to:', contact.email);
+      }
+
+      // Remove password from response data
+      const responseData = {
+        ...savedOrg.toObject(),
+        adminUser: {
+          _id: savedUser._id,
+          email: savedUser.email,
+          name: savedUser.name,
+          role: savedUser.role
+        }
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: responseData,
+        message: `Organization created successfully. ${emailSent ? 'Welcome email sent to admin.' : 'Please contact admin manually with login credentials.'}`
+      }, { status: 201 });
+
+    } catch (userError) {
+      console.error('Error creating organization admin:', userError);
+
+      // Clean up - delete the organization if user creation failed
+      try {
+        await Organization.findByIdAndDelete(savedOrg._id);
+        console.log('Cleaned up organization after user creation failure');
+      } catch (cleanupError) {
+        console.error('Failed to cleanup organization:', cleanupError);
+      }
+
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to create organization administrator. Please try again.'
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error('Error creating organization:', error);
     return NextResponse.json(

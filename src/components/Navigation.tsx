@@ -28,7 +28,9 @@ import {
   ChevronDown,
   Home,
   PlusCircle,
-  Eye
+  Eye,
+  Bell,
+  GitBranch
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -60,24 +62,10 @@ export default function Navigation({ user }: NavigationProps) {
   // Define navigation items based on roles
   const navigationItems: NavItem[] = [
     {
-      title: 'Home',
-      href: '/',
-      icon: Home,
-      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
-    },
-    {
       title: 'Dashboard',
-      href: '/dashboard',
+      href: user?.role === 'super_admin' ? '/admin' : '/dashboard',
       icon: BarChart3,
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
-    },
-    // Super Admin specific items
-    {
-      title: 'Admin',
-      href: '/admin',
-      icon: Shield,
-      description: 'System management',
-      roles: ['super_admin']
     },
     // Document management
     {
@@ -85,6 +73,30 @@ export default function Navigation({ user }: NavigationProps) {
       href: '/documents',
       icon: FileText,
       description: 'AIP documents',
+      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    // NOTAM management
+    {
+      title: 'NOTAM',
+      href: '/notam',
+      icon: Bell,
+      description: 'NOTAM management',
+      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    // Workflow management
+    {
+      title: 'Workflow',
+      href: '/workflow',
+      icon: GitBranch,
+      description: 'Approval workflows',
+      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    // Compliance
+    {
+      title: 'Compliance',
+      href: '/compliance',
+      icon: Shield,
+      description: 'Compliance monitoring',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
     // Organization management (condensed)
@@ -121,14 +133,17 @@ export default function Navigation({ user }: NavigationProps) {
   };
 
   const isActiveRoute = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
     if (href === '/dashboard') {
-      return pathname === '/' || pathname === '/dashboard';
+      return pathname === '/dashboard';
     }
     return pathname.startsWith(href);
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: '/auth/login' });
   };
 
   const visibleItems = getVisibleItems();

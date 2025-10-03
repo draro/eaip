@@ -4,7 +4,7 @@ import AIPDocument from '@/models/AIPDocument';
 import AIPVersion from '@/models/AIPVersion';
 import ExportJob from '@/models/ExportJob';
 import { DocxExporter } from '@/lib/exporters/docxExporter';
-import { SimplePdfExporter } from '@/lib/exporters/simplePdfExporter';
+import { PdfExporter } from '@/lib/exporters/pdfExporter';
 import { XmlExporter, HtmlExporter } from '@/lib/exporters/xmlExporter';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 import fs from 'fs/promises';
@@ -222,7 +222,7 @@ async function exportToDocx(documents: any[]): Promise<Buffer> {
 }
 
 async function exportToPdf(documents: any[]): Promise<Buffer> {
-  const exporter = new SimplePdfExporter();
+  const exporter = new PdfExporter();
 
   if (documents.length === 1) {
     const doc = documents[0];

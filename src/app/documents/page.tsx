@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +33,8 @@ import {
   GitBranch,
   Calendar,
   User,
-  Globe
+  Globe,
+  Copy
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,6 +65,7 @@ interface Document {
 }
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,7 +79,7 @@ export default function DocumentsPage() {
     // Mock data - in real app, fetch from API based on user's organization
     const mockDocuments: Document[] = [
       {
-        _id: '1',
+        _id: '507f1f77bcf86cd799439011',
         title: 'General Information - Italy AIP',
         documentType: 'AIP',
         country: 'IT',
@@ -91,7 +95,7 @@ export default function DocumentsPage() {
         ]
       },
       {
-        _id: '2',
+        _id: '507f1f77bcf86cd799439012',
         title: 'Milan Malpensa Airport Information',
         documentType: 'AIP',
         country: 'IT',
@@ -107,7 +111,7 @@ export default function DocumentsPage() {
         ]
       },
       {
-        _id: '3',
+        _id: '507f1f77bcf86cd799439013',
         title: 'Emergency NOTAM - Runway Closure',
         documentType: 'NOTAM',
         country: 'IT',
@@ -163,6 +167,66 @@ export default function DocumentsPage() {
 
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  const handleViewDocument = (documentId: string) => {
+    router.push(`/documents/${documentId}`);
+  };
+
+  const handleEditDocument = (documentId: string) => {
+    router.push(`/documents/${documentId}/edit`);
+  };
+
+  const handleDeleteDocument = async (documentId: string, documentTitle: string) => {
+    if (confirm(`Are you sure you want to delete "${documentTitle}"? This action cannot be undone.`)) {
+      try {
+        // TODO: Add actual delete API call
+        console.log('Deleting document:', documentId);
+        // For now, just remove from local state
+        setDocuments(prev => prev.filter(doc => doc._id !== documentId));
+      } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('Failed to delete document. Please try again.');
+      }
+    }
+  };
+
+  const handleExportDocument = (documentId: string) => {
+    // TODO: Add actual export functionality
+    console.log('Exporting document:', documentId);
+    alert('Export functionality will be implemented soon.');
+  };
+
+  const handleCloneDocument = async (document: Document) => {
+    const confirmed = confirm(
+      `Clone "${document.title}"?\n\n` +
+      `This will create a new document with:\n` +
+      `- All sections and content from the original\n` +
+      `- Draft status\n` +
+      `- Current date as creation date\n\n` +
+      `You can edit the cloned document after creation.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch('/api/documents/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: document._id })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert(`✅ Document cloned successfully!\n\nNew document: "${result.data.title}"`);
+        router.push(`/documents/${result.data._id}/edit`);
+      } else {
+        alert(`Failed to clone document: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error cloning document:', error);
+      alert('Failed to clone document. Please try again.');
+    }
+  };
 
   // Enhanced Diff Viewer Component
   const DocumentDiffViewer = ({ document }: { document: Document }) => (
@@ -263,22 +327,30 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <Layout>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
             <p className="text-gray-600">Manage AIP documents, supplements, and NOTAMs</p>
           </div>
-          {['super_admin', 'org_admin', 'editor'].includes(userRole) && (
-            <Link href="/documents/create">
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Document
+          <div className="flex gap-2">
+            <Link href="/dashboard">
+              <Button variant="outline">
+                Back to Dashboard
               </Button>
             </Link>
-          )}
+            {['super_admin', 'org_admin', 'editor'].includes(userRole) && (
+              <Link href="/documents/new">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Document
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -379,7 +451,9 @@ export default function DocumentsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleViewDocument(document._id)}
+                      >
                         <Eye className="w-4 h-4 mr-2" />
                         View Document
                       </DropdownMenuItem>
@@ -395,19 +469,33 @@ export default function DocumentsPage() {
                       </DropdownMenuItem>
 
                       {canEdit(document) && (
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleEditDocument(document._id)}
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Document
                         </DropdownMenuItem>
                       )}
 
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleCloneDocument(document)}
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Clone Document
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => handleExportDocument(document._id)}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Export
                       </DropdownMenuItem>
 
                       {canDelete(document) && (
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDeleteDocument(document._id, document.title)}
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -460,7 +548,8 @@ export default function DocumentsPage() {
             )}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }

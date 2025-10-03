@@ -90,6 +90,31 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    isTemporaryPassword: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    passwordResetToken: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    passwordResetExpires: {
+      type: Date,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockedUntil: {
+      type: Date,
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -110,6 +135,11 @@ UserSchema.index({ organization: 1, role: 1 });
 // Virtual for full name
 UserSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`.trim();
+});
+
+// Virtual for orgId (alias for organization field)
+UserSchema.virtual('orgId').get(function() {
+  return this.organization?.toString();
 });
 
 // Pre-save middleware
@@ -144,9 +174,55 @@ UserSchema.methods.hasPermission = function(permission: string) {
   return this.permissions.includes(permission);
 };
 
-UserSchema.methods.verifyPassword = function(password: string) {
-  const hashedPassword = crypto.createHash('sha256').update(password + 'eAIP_salt_2025').digest('hex');
-  return this.password === hashedPassword;
+UserSchema.methods.verifyPassword = async function(password: string) {
+  const bcrypt = require('bcryptjs');
+  return bcrypt.compare(password, this.password);
+};
+
+UserSchema.methods.isAccountLocked = function() {
+  return !!(this.lockedUntil && this.lockedUntil > Date.now());
+};
+
+UserSchema.methods.incrementLoginAttempts = function() {
+  if (this.lockedUntil && this.lockedUntil < Date.now()) {
+    return this.updateOne({
+      $unset: {
+        failedLoginAttempts: 1,
+        lockedUntil: 1
+      }
+    });
+  }
+
+  const updates = { $inc: { failedLoginAttempts: 1 } };
+
+  if (this.failedLoginAttempts + 1 >= 5 && !this.isAccountLocked()) {
+    updates.$set = { lockedUntil: Date.now() + 30 * 60 * 1000 }; // Lock for 30 minutes
+  }
+
+  return this.updateOne(updates);
+};
+
+UserSchema.methods.resetLoginAttempts = function() {
+  return this.updateOne({
+    $unset: {
+      failedLoginAttempts: 1,
+      lockedUntil: 1
+    }
+  });
+};
+
+UserSchema.methods.createPasswordResetToken = function() {
+  const crypto = require('crypto');
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  return resetToken;
 };
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

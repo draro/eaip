@@ -66,15 +66,53 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       sections,
       versionId,
       effectiveDate,
-      metadata
+      metadata,
+      organizationId
     } = body;
 
     // Validate required fields for new multi-tenant structure
-    if (!title || !documentType || !country || !versionId || !user.organization) {
+    if (!title || !documentType || !country || !versionId) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Missing required fields: title, documentType, country, and versionId are required' },
         { status: 400 }
       );
+    }
+
+    // Validate ICAO codes
+    if (country.length !== 2) {
+      return NextResponse.json(
+        { success: false, error: 'Country code must be exactly 2 characters (ICAO format)' },
+        { status: 400 }
+      );
+    }
+
+    if (airport && airport.length !== 4) {
+      return NextResponse.json(
+        { success: false, error: 'Airport code must be exactly 4 characters (ICAO format) or omitted' },
+        { status: 400 }
+      );
+    }
+
+    // Determine which organization to use
+    let targetOrganizationId = null;
+    if (user.role === 'super_admin') {
+      // Super admin can specify organization
+      if (!organizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Super admin must specify an organizationId' },
+          { status: 400 }
+        );
+      }
+      targetOrganizationId = organizationId;
+    } else {
+      // Regular users use their own organization
+      if (!user.organization) {
+        return NextResponse.json(
+          { success: false, error: 'User must belong to an organization' },
+          { status: 400 }
+        );
+      }
+      targetOrganizationId = user.organization._id;
     }
 
     // Check if user can create documents
@@ -87,11 +125,11 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     // Validate document creation limits
     const currentDocCount = await AIPDocument.countDocuments({
-      organization: user.organization._id
+      organization: targetOrganizationId
     });
 
     await DataIsolationService.validateDocumentCreation(
-      user.organization._id,
+      targetOrganizationId,
       currentDocCount
     );
 
@@ -104,42 +142,61 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     }
 
     // Check for existing document with same criteria
-    const existingDoc = await AIPDocument.findOne({
-      organization: user.organization._id,
+    const existingDocQuery: any = {
       country: country.toUpperCase(),
-      airport: airport?.toUpperCase(),
       version: versionId,
-      documentType
-    });
+      documentType,
+      organization: targetOrganizationId
+    };
+
+    if (airport) {
+      existingDocQuery.airport = airport.toUpperCase();
+    }
+
+    const existingDoc = await AIPDocument.findOne(existingDocQuery);
 
     if (existingDoc) {
       return NextResponse.json(
-        { success: false, error: 'Document with these criteria already exists for this version' },
+        {
+          success: false,
+          error: `Document with these criteria already exists for this version`,
+          details: {
+            existingDocumentId: existingDoc._id,
+            existingDocumentTitle: existingDoc.title,
+            message: `A ${documentType} document for country ${country.toUpperCase()}${airport ? ` at airport ${airport.toUpperCase()}` : ''} already exists in this version.`
+          }
+        },
         { status: 409 }
       );
     }
 
+    // Get organization name for metadata
+    const Organization = (await import('@/models/Organization')).default;
+    const targetOrg = await Organization.findById(targetOrganizationId);
+
     // Create document with organization isolation
-    const document = await AIPDocument.create({
+    const documentData: any = {
       title,
       documentType,
       country: country.toUpperCase(),
-      airport: airport?.toUpperCase(),
+      airport: airport?.toUpperCase() || undefined,
       sections: sections || [],
       version: versionId,
-      organization: user.organization._id,
+      organization: targetOrganizationId,
       createdBy: user._id,
       updatedBy: user._id,
       airacCycle: version.airacCycle,
       effectiveDate: effectiveDate || version.effectiveDate,
       metadata: {
         language: metadata?.language || 'en',
-        authority: metadata?.authority || user.organization?.name || 'Authority',
+        authority: metadata?.authority || targetOrg?.name || 'Authority',
         contact: metadata?.contact || 'contact@authority.gov',
         lastReview: new Date(),
         nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }
-    });
+    };
+
+    const document = await AIPDocument.create(documentData);
 
     await AIPVersion.findByIdAndUpdate(versionId, {
       $push: { documents: document._id },

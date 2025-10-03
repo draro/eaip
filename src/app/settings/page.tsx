@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +16,8 @@ import { Plus, Trash2, TestTube, Save, Building, Palette, Cloud } from 'lucide-r
 import { v4 as uuidv4 } from 'uuid';
 
 export default function SettingsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [companySettings, setCompanySettings] = useState<ICompanySettings>({
     domain: '',
     name: '',
@@ -169,15 +174,37 @@ export default function SettingsPage() {
     }
   };
 
-  return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <Button onClick={saveSettings} disabled={loading}>
-          <Save className="h-4 w-4 mr-2" />
-          {loading ? 'Saving...' : 'Save Settings'}
-        </Button>
+  // Check authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
+    );
+  }
+
+  if (!session) {
+    router.push('/auth/login?callbackUrl=/settings');
+    return null;
+  }
+
+  const user = session.user as any;
+
+  return (
+    <Layout user={{
+      name: user.name || 'User',
+      email: user.email || '',
+      role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+      organization: user.organization
+    }}>
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <Button onClick={saveSettings} disabled={loading}>
+            <Save className="h-4 w-4 mr-2" />
+            {loading ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </div>
 
       <Tabs defaultValue="company" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -573,5 +600,6 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 }

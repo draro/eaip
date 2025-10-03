@@ -113,7 +113,7 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
 );
 
 // Indexes
-AIPDocumentSchema.index({ organization: 1, country: 1, airport: 1, version: 1 }, { unique: true });
+AIPDocumentSchema.index({ organization: 1, country: 1, airport: 1, version: 1, documentType: 1 }, { unique: true });
 AIPDocumentSchema.index({ organization: 1 });
 AIPDocumentSchema.index({ version: 1 });
 AIPDocumentSchema.index({ status: 1 });

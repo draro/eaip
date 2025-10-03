@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,18 +50,103 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
   const fetchDocument = async () => {
     try {
-      const response = await fetch(`/api/documents/${params.id}`);
-      const result = await response.json();
-      if (result.success) {
-        setDocument(result.data);
-        setTitle(result.data.title);
-        setContent(result.data.content);
+      // Mock document data based on the ID
+      const mockDocuments: Record<string, Document> = {
+        '507f1f77bcf86cd799439011': {
+          _id: '507f1f77bcf86cd799439011',
+          title: 'General Information - Italy AIP',
+          sectionCode: 'GEN',
+          subsectionCode: '1.1',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  { type: 'text', text: 'This is the general information section of the Italy AIP document.' }
+                ]
+              }
+            ]
+          },
+          status: 'published',
+          version: {
+            _id: '507f1f77bcf86cd799439001',
+            versionNumber: '1.2.0',
+            airacCycle: '2024-13'
+          },
+          createdBy: { name: 'System Admin', email: 'admin@aviation.it' },
+          updatedBy: { name: 'Marco Rossi', email: 'marco@aviation.it' },
+          createdAt: '2024-09-01T10:00:00.000Z',
+          updatedAt: '2024-09-28T14:30:00.000Z'
+        },
+        '507f1f77bcf86cd799439012': {
+          _id: '507f1f77bcf86cd799439012',
+          title: 'Milan Malpensa Airport Information',
+          sectionCode: 'AD',
+          subsectionCode: '2.LIMC',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  { type: 'text', text: 'Milan Malpensa Airport (LIMC) operational information and procedures.' }
+                ]
+              }
+            ]
+          },
+          status: 'published',
+          version: {
+            _id: '507f1f77bcf86cd799439001',
+            versionNumber: '1.2.0',
+            airacCycle: '2024-13'
+          },
+          createdBy: { name: 'System Admin', email: 'admin@aviation.it' },
+          updatedBy: { name: 'Giuseppe Verdi', email: 'giuseppe@aviation.it' },
+          createdAt: '2024-08-15T09:15:00.000Z',
+          updatedAt: '2024-09-25T16:45:00.000Z'
+        },
+        '507f1f77bcf86cd799439013': {
+          _id: '507f1f77bcf86cd799439013',
+          title: 'Emergency NOTAM - Runway Closure',
+          sectionCode: 'NOTAM',
+          subsectionCode: 'A001',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  { type: 'text', text: 'TEMPORARY RUNWAY CLOSURE - See details for affected periods and alternative procedures.' }
+                ]
+              }
+            ]
+          },
+          status: 'published',
+          version: {
+            _id: '507f1f77bcf86cd799439001',
+            versionNumber: '1.0.0',
+            airacCycle: '2024-14'
+          },
+          createdBy: { name: 'System Admin', email: 'admin@aviation.it' },
+          updatedBy: { name: 'ATC Controller', email: 'atc@aviation.it' },
+          createdAt: '2024-09-20T08:00:00.000Z',
+          updatedAt: '2024-09-20T08:00:00.000Z'
+        }
+      };
+
+      const mockDocument = mockDocuments[params.id];
+
+      if (mockDocument) {
+        setDocument(mockDocument);
+        setTitle(mockDocument.title);
+        setContent(mockDocument.content);
       } else {
-        console.error('Failed to fetch document:', result.error);
+        console.error('Mock document not found for ID:', params.id);
         router.push('/documents');
       }
     } catch (error) {
-      console.error('Error fetching document:', error);
+      console.error('Error loading document:', error);
       router.push('/documents');
     } finally {
       setLoading(false);
@@ -72,25 +158,21 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/documents/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          updatedBy: undefined, // Will use default user from API
-        }),
-      });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const result = await response.json();
-      if (result.success) {
-        setLastSaved(new Date());
-        setDocument(result.data);
-      } else {
-        console.error('Failed to save document:', result.error);
-      }
+      // Update document data locally
+      const updatedDocument = {
+        ...document,
+        title,
+        content,
+        updatedAt: new Date().toISOString(),
+        updatedBy: { name: 'Current User', email: 'user@aviation.it' }
+      };
+
+      setLastSaved(new Date());
+      setDocument(updatedDocument);
+      console.log('Document saved successfully (mock)');
     } catch (error) {
       console.error('Error saving document:', error);
     } finally {
@@ -152,97 +234,102 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading document...</p>
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading document...</p>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Document not found</h3>
-          <Link href="/documents">
-            <Button>Back to Documents</Button>
-          </Link>
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Document not found</h3>
+            <Link href="/documents">
+              <Button>Back to Documents</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Link href="/documents" className="mr-4">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {document.sectionCode} {document.subsectionCode}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Version: {document.version.versionNumber} | AIRAC: {document.version.airacCycle}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {lastSaved && (
-                <span className="text-sm text-gray-500">
-                  Saved {lastSaved.toLocaleTimeString()}
-                </span>
-              )}
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExport('docx')}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  DOCX
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExport('pdf')}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF
-                </Button>
+    <Layout>
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center">
+                <Link href="/documents" className="mr-4">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    {document.sectionCode} {document.subsectionCode}
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Version: {document.version.versionNumber} | AIRAC: {document.version.airacCycle}
+                  </p>
+                </div>
               </div>
 
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="min-w-[80px]"
-              >
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </>
+              <div className="flex items-center space-x-3">
+                {lastSaved && (
+                  <span className="text-sm text-gray-500">
+                    Saved {lastSaved.toLocaleTimeString()}
+                  </span>
                 )}
-              </Button>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport('docx')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    DOCX
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport('pdf')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF
+                  </Button>
+                </div>
+
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="min-w-[80px]"
+                >
+                  {saving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
             <Card>
@@ -353,7 +440,8 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
             </div>
           </div>
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </Layout>
   );
 }

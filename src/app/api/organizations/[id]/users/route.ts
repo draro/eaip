@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import Organization from '@/models/Organization';
 import User from '@/models/User';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
+import { SecurityUtils } from '@/lib/security';
+import { emailService } from '@/lib/email';
 
 export async function GET(
   request: NextRequest,
@@ -141,14 +143,21 @@ export async function POST(
     // Get creating user
     const createdBy = await getOrCreateDefaultUser();
 
+    // Generate secure temporary password
+    const { password: temporaryPassword, hashedPassword } = SecurityUtils.generateSecurePassword(16);
+
     // Create new user
     const user = new User({
       email: email.toLowerCase(),
       firstName,
       lastName,
       name: `${firstName} ${lastName}`.trim(),
+      password: hashedPassword,
       role,
       organization: params.id,
+      isActive: true,
+      isTemporaryPassword: true,
+      mustChangePassword: true,
       permissions: permissions || [],
       preferences: {
         theme: preferences?.theme || 'auto',
@@ -168,16 +177,36 @@ export async function POST(
       createdBy
     });
 
-    await user.save();
+    const savedUser = await user.save();
 
     // Populate references for response
-    await user.populate('organization', 'name domain');
-    await user.populate('createdBy', 'name email');
+    await savedUser.populate('organization', 'name domain');
+    await savedUser.populate('createdBy', 'name email');
+
+    // Send welcome email with credentials
+    try {
+      const emailSent = await emailService.sendWelcomeEmail({
+        organizationName: organization.name,
+        organizationDomain: organization.domain,
+        adminName: savedUser.name,
+        adminEmail: savedUser.email,
+        temporaryPassword,
+        loginUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+        supportEmail: process.env.SUPPORT_EMAIL
+      });
+
+      if (!emailSent) {
+        console.warn('Failed to send welcome email to:', savedUser.email);
+      }
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // Don't fail user creation if email fails
+    }
 
     return NextResponse.json({
       success: true,
-      data: user,
-      message: 'User created successfully'
+      data: savedUser,
+      message: 'User created successfully and welcome email sent'
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating organization user:', error);
