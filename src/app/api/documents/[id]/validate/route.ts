@@ -10,6 +10,13 @@ export async function GET(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const document = await AIPDocument.findById(params.id);
 
     if (!document) {

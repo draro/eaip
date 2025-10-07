@@ -8,6 +8,13 @@ export const PATCH = withAuth(async (request: NextRequest, { params, user }: { p
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const body = await request.json();
     const { isActive } = body;
 
@@ -68,6 +75,13 @@ export const GET = withAuth(async (request: NextRequest, { params, user }: { par
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const workflow = await WorkflowTemplate.findById(params.id)
       .populate('organization', 'name domain')
       .populate('createdBy', 'name email');

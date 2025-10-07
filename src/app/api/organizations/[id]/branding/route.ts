@@ -9,6 +9,13 @@ export async function GET(
 ) {
   try {
     // Validate ObjectId
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
     if (!mongoose.Types.ObjectId.isValid(params.id)) {
       return NextResponse.json(
         { success: false, error: 'Invalid organization ID' },
@@ -45,6 +52,13 @@ export async function PUT(
   { params }: { params?: { id: string } }
 ) {
   try {
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(params.id)) {
       return NextResponse.json(

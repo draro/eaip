@@ -9,6 +9,13 @@ export async function PUT(
 ) {
   try {
     await connectDB();
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
 
     // Authenticate user
     const authUser = await authenticateUser(request);

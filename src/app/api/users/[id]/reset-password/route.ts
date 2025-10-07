@@ -10,6 +10,13 @@ export async function POST(
 ) {
   try {
     await connectDB();
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
 
     // Find user
     const user = await User.findById(params.id).populate('organization', 'name domain');

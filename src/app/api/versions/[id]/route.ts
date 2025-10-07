@@ -10,6 +10,13 @@ export async function GET(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const version = await AIPVersion.findById(params.id)
       .populate('createdBy', 'name email')
       .populate({
@@ -48,6 +55,13 @@ export async function PUT(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const body = await request.json();
     const {
       versionNumber,
@@ -131,6 +145,13 @@ export async function DELETE(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const version = await AIPVersion.findById(params.id);
     if (!version) {
       return NextResponse.json(

@@ -11,7 +11,14 @@ export async function GET(
 ) {
   try {
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(params?.id || '')) {
       return NextResponse.json(
         { success: false, error: 'Invalid organization ID' },
         { status: 400 }
@@ -20,7 +27,7 @@ export async function GET(
 
     await connectDB();
 
-    const organization = await Organization.findById(params.id)
+    const organization = await Organization.findById(params?.id)
       .populate('createdBy', 'name email');
 
     if (!organization) {
@@ -32,17 +39,17 @@ export async function GET(
 
     // Get organization statistics
     const [userCount, documentCount, activeUsers] = await Promise.all([
-      User.countDocuments({ organization: params.id }),
-      AIPDocument.countDocuments({ organization: params.id }),
+      User.countDocuments({ organization: params?.id }),
+      AIPDocument.countDocuments({ organization: params?.id }),
       User.countDocuments({
-        organization: params.id,
+        organization: params?.id,
         isActive: true,
         lastLoginAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
       })
     ]);
 
     // Get recent activity
-    const recentDocuments = await AIPDocument.find({ organization: params.id })
+    const recentDocuments = await AIPDocument.find({ organization: params?.id })
       .populate('updatedBy', 'name email')
       .sort({ updatedAt: -1 })
       .limit(5)
@@ -77,7 +84,7 @@ export async function PUT(
 ) {
   try {
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(params?.id || '')) {
       return NextResponse.json(
         { success: false, error: 'Invalid organization ID' },
         { status: 400 }
@@ -87,7 +94,7 @@ export async function PUT(
     await connectDB();
 
     // First get the existing organization
-    const existingOrg = await Organization.findById(params.id);
+    const existingOrg = await Organization.findById(params?.id);
     if (!existingOrg) {
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
@@ -110,7 +117,7 @@ export async function PUT(
       // Check if new domain already exists
       const domainExists = await Organization.findOne({
         domain: updateData.domain,
-        _id: { $ne: params.id }
+        _id: { $ne: params?.id }
       });
 
       if (domainExists) {
@@ -150,7 +157,7 @@ export async function PUT(
     }
 
     const organization = await Organization.findByIdAndUpdate(
-      params.id,
+      params?.id,
       updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'name email');
@@ -182,7 +189,7 @@ export async function DELETE(
 ) {
   try {
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(params?.id || '')) {
       return NextResponse.json(
         { success: false, error: 'Invalid organization ID' },
         { status: 400 }
@@ -191,7 +198,7 @@ export async function DELETE(
 
     await connectDB();
 
-    const organization = await Organization.findById(params.id);
+    const organization = await Organization.findById(params?.id);
     if (!organization) {
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
@@ -200,7 +207,7 @@ export async function DELETE(
     }
 
     // Check if organization has users
-    const userCount = await User.countDocuments({ organization: params.id });
+    const userCount = await User.countDocuments({ organization: params?.id });
     if (userCount > 0) {
       return NextResponse.json(
         {
@@ -212,7 +219,7 @@ export async function DELETE(
     }
 
     // Check if organization has documents
-    const documentCount = await AIPDocument.countDocuments({ organization: params.id });
+    const documentCount = await AIPDocument.countDocuments({ organization: params?.id });
     if (documentCount > 0) {
       return NextResponse.json(
         {
@@ -223,7 +230,7 @@ export async function DELETE(
       );
     }
 
-    await Organization.findByIdAndDelete(params.id);
+    await Organization.findByIdAndDelete(params?.id);
 
     return NextResponse.json({
       success: true,

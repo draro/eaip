@@ -13,6 +13,13 @@ export async function GET(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -83,6 +90,13 @@ export async function POST(
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const body = await request.json();
     const {
       email,
