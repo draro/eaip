@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { withAuth } from '@/lib/apiMiddleware';
 import connectDB from '@/lib/mongodb';
 import Domain from '@/models/Domain';
 import { DNSChecker } from '@/lib/domainServer';
@@ -8,17 +8,9 @@ interface RouteParams {
   params: { id: string };
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    const { params, user } = context;
     await connectDB();
 
     const domain = await Domain.findById(params.id)
@@ -32,8 +24,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check permissions
-    if (session.user.role !== 'super_admin') {
-      if (session.user.organizationId !== domain.organizationId._id.toString()) {
+    if (user.role !== 'super_admin') {
+      if (!user.organization || user.organization._id !== domain.organizationId._id.toString()) {
         return NextResponse.json(
           { success: false, error: 'Insufficient permissions' },
           { status: 403 }
@@ -53,20 +45,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export const PUT = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
   try {
-    const session = await getServerSession();
+    const { params, user } = context;
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    if (!['org_admin', 'super_admin'].includes(session.user.role)) {
+    if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Insufficient permissions' },
         { status: 403 }
@@ -88,8 +73,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check permissions
-    if (session.user.role !== 'super_admin') {
-      if (session.user.organizationId !== domain.organizationId.toString()) {
+    if (user.role !== 'super_admin') {
+      if (!user.organization || user.organization._id !== domain.organizationId.toString()) {
         return NextResponse.json(
           { success: false, error: 'Insufficient permissions' },
           { status: 403 }
@@ -122,20 +107,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
   try {
-    const session = await getServerSession();
+    const { params, user } = context;
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    if (!['org_admin', 'super_admin'].includes(session.user.role)) {
+    if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Insufficient permissions' },
         { status: 403 }
@@ -154,8 +132,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check permissions
-    if (session.user.role !== 'super_admin') {
-      if (session.user.organizationId !== domain.organizationId.toString()) {
+    if (user.role !== 'super_admin') {
+      if (!user.organization || user.organization._id !== domain.organizationId.toString()) {
         return NextResponse.json(
           { success: false, error: 'Insufficient permissions' },
           { status: 403 }
@@ -177,4 +155,4 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-}
+});

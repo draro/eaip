@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
     // Default: DNS check
     const defaultTargetIP = process.env.EAIP_TARGET_IP || '127.0.0.1';
     const dnsResult = await checkDNSRecords(domain, defaultTargetIP);
+    const setupInstructions = getDNSSetupInstructions(domain, defaultTargetIP);
 
     // Also check if domain is registered in our system
     const registeredDomain = await Domain.findOne({
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
         domain,
         targetIP: defaultTargetIP,
         dnsCheck: dnsResult,
+        setupInstructions,
         isConfigured: dnsResult.valid,
         isRegistered: !!registeredDomain,
         registeredTo: registeredDomain?.organizationId?.name,
