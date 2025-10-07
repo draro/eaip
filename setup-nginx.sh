@@ -22,7 +22,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 DOMAIN="eaip.flyclim.com"
-EMAIL="raro.davide@gmail.com"
+EMAIL="davide@flyclim.com"
 
 echo "Configuration:"
 echo "  Domain: $DOMAIN"
