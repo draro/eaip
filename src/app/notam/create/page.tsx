@@ -113,9 +113,13 @@ export default function CreateNOTAMPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || status === 'unauthenticated' || !session) {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin?callbackUrl=/notam/create');
+      return null;
+    }
     return (
-      <Layout user={session?.user as any}>
+      <Layout user={undefined}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
@@ -123,12 +127,7 @@ export default function CreateNOTAMPage() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    router.push('/auth/signin?callbackUrl=/notam/create');
-    return null;
-  }
-
-  const user = session?.user as any;
+  const user = session.user as any;
 
   return (
     <Layout user={user}>

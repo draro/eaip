@@ -68,6 +68,10 @@ interface Document {
     versionNumber: string;
     airacCycle: string;
   };
+  organization: {
+    _id: string;
+    name: string;
+  };
   sections: Array<{
     id: string;
     type: string;

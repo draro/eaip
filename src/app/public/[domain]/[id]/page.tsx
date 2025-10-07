@@ -55,6 +55,12 @@ interface Document {
     versionNumber: string;
     airacCycle: string;
   };
+  organizationBranding?: {
+    settings?: {
+      enableExport?: boolean;
+      allowedExportFormats?: string[];
+    };
+  };
 }
 
 interface Organization {
@@ -142,7 +148,7 @@ export default function PublicDocumentViewer() {
 
     // Ensure section is expanded
     if (!expandedSections.has(sectionId)) {
-      setExpandedSections(new Set([...expandedSections, sectionId]));
+      setExpandedSections(new Set([...Array.from(expandedSections), sectionId]));
     }
 
     // Scroll to top of content

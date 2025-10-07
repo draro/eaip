@@ -45,6 +45,13 @@ interface Document {
     type: string;
     title: string;
     content: string;
+    subsections?: Array<{
+      id: string;
+      code: string;
+      title: string;
+      content?: string;
+      order: number;
+    }>;
   }>;
 }
 

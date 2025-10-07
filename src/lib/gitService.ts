@@ -345,9 +345,7 @@ and their complete revision history for ${orgName}.
       await git.checkout(targetBranch);
 
       // Merge source branch
-      await git.merge([sourceBranch, '--no-ff'], {
-        '--author': `${userName} <${userEmail}>`
-      });
+      await git.merge([sourceBranch, '--no-ff', '--author', `${userName} <${userEmail}>`]);
 
       return { success: true };
     } catch (error: any) {

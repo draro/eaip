@@ -232,7 +232,7 @@ export default function CreateDocumentPage() {
     }
   };
 
-  const availableSections = formData.type ? documentSections[formData.type as keyof typeof documentSections] || [] : [];
+  const availableSections = formData.documentType ? documentSections[formData.documentType.toLowerCase() as keyof typeof documentSections] || [] : [];
 
   return (
     <Layout user={{

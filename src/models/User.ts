@@ -197,7 +197,7 @@ UserSchema.methods.incrementLoginAttempts = function() {
     });
   }
 
-  const updates = { $inc: { failedLoginAttempts: 1 } };
+  const updates: any = { $inc: { failedLoginAttempts: 1 } };
 
   if (this.failedLoginAttempts + 1 >= 5 && !this.isAccountLocked()) {
     updates.$set = { lockedUntil: Date.now() + 30 * 60 * 1000 }; // Lock for 30 minutes

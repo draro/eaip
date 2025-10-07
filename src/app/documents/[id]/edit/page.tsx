@@ -78,7 +78,7 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
         }));
 
         setSections(initializedSections);
-        const allSectionIds = new Set(initializedSections.map((s: Section) => s.id));
+        const allSectionIds = new Set<string>(initializedSections.map((s: Section) => s.id));
         setExpandedSections(allSectionIds);
       } else {
         console.error('Failed to fetch document:', data.error);

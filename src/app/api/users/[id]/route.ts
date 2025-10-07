@@ -18,7 +18,7 @@ export async function GET(
         { status: 400 }
       );
     }
-    const user = await User.findById(params.id)
+    const user = await User.findById(params?.id)
       .populate('organization', 'name domain')
       .populate('createdBy', 'name email')
       .select('-password'); // Exclude password from response
@@ -50,6 +50,13 @@ export async function PUT(
   try {
     await connectDB();
 
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
     // Authenticate user
     const authUser = await authenticateUser(request);
     requireOrgAdmin(authUser);
@@ -65,7 +72,7 @@ export async function PUT(
     } = body;
 
     // Find user
-    const user = await User.findById(params.id).populate('organization');
+    const user = await User.findById(params?.id).populate('organization');
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -114,7 +121,7 @@ export async function PUT(
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
-      params.id,
+      params?.id,
       updateData,
       { new: true, runValidators: true }
     )
@@ -143,6 +150,13 @@ export async function DELETE(
   try {
     await connectDB();
 
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
     // Authenticate user
     const authUser = await authenticateUser(request);
     requireOrgAdmin(authUser);
@@ -151,7 +165,7 @@ export async function DELETE(
     const hardDelete = searchParams.get('hard') === 'true';
 
     // Find user
-    const user = await User.findById(params.id).populate('organization');
+    const user = await User.findById(params?.id).populate('organization');
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -188,13 +202,13 @@ export async function DELETE(
 
     if (hardDelete && authUser.role === 'super_admin') {
       // Hard delete: completely remove from database (super admin only)
-      await User.findByIdAndDelete(params.id);
-      result = { _id: params.id };
+      await User.findByIdAndDelete(params?.id);
+      result = { _id: params?.id };
       message = 'User permanently deleted from database';
     } else {
       // Soft delete: deactivate user (preserves data integrity and audit trails)
       result = await User.findByIdAndUpdate(
-        params.id,
+        params?.id,
         {
           isActive: false,
           deletedAt: new Date(),

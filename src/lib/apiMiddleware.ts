@@ -26,7 +26,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       await connectDB();
       const dbUser = await User.findOne({ email: session.user.email })
         .populate('organization', 'name domain status _id')
-        .lean();
+        .lean() as any;
 
       if (!dbUser) {
         return NextResponse.json(
@@ -47,14 +47,20 @@ export function withAuth(handler: AuthenticatedHandler) {
         _id: dbUser._id.toString(),
         email: dbUser.email,
         name: dbUser.name,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
         role: dbUser.role,
+        permissions: dbUser.permissions,
+        isActive: dbUser.isActive,
+        createdAt: dbUser.createdAt,
+        updatedAt: dbUser.updatedAt,
         organization: dbUser.organization ? {
           _id: (dbUser.organization as any)._id.toString(),
           name: (dbUser.organization as any).name,
           domain: (dbUser.organization as any).domain,
           status: (dbUser.organization as any).status
         } : undefined
-      };
+      } as AuthUser;
 
       return await handler(request, { ...context, user });
     } catch (error) {

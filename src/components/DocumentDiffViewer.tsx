@@ -56,11 +56,11 @@ function createContentDiff(oldDoc: any, newDoc: any): ContentDiff {
   }
 
   // Create maps for easy lookup
-  const oldSections = new Map(oldDoc.sections?.map((s: any) => [s.id, s]) || []);
-  const newSections = new Map(newDoc.sections?.map((s: any) => [s.id, s]) || []);
+  const oldSections = new Map<string, any>(oldDoc.sections?.map((s: any) => [s.id, s]) || []);
+  const newSections = new Map<string, any>(newDoc.sections?.map((s: any) => [s.id, s]) || []);
 
   // Check for modified and deleted sections
-  oldSections.forEach((oldSection, sectionId) => {
+  oldSections.forEach((oldSection: any, sectionId: string) => {
     const newSection = newSections.get(sectionId);
 
     if (!newSection) {
@@ -85,10 +85,10 @@ function createContentDiff(oldDoc: any, newDoc: any): ContentDiff {
       }
 
       // Compare subsections
-      const oldSubs = new Map(oldSection.subsections?.map((s: any) => [s.code, s]) || []);
-      const newSubs = new Map(newSection.subsections?.map((s: any) => [s.code, s]) || []);
+      const oldSubs = new Map<string, any>(oldSection.subsections?.map((s: any) => [s.code, s]) || []);
+      const newSubs = new Map<string, any>(newSection.subsections?.map((s: any) => [s.code, s]) || []);
 
-      oldSubs.forEach((oldSub, subCode) => {
+      oldSubs.forEach((oldSub: any, subCode: string) => {
         const newSub = newSubs.get(subCode);
 
         if (!newSub) {
