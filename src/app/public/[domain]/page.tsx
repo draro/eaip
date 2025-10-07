@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
 import SEOStructuredData from '@/components/SEOStructuredData';
+import CanonicalLink from '@/components/CanonicalLink';
 
 interface Organization {
   name: string;
@@ -150,10 +151,13 @@ export default function PublicEAIPViewer() {
   }
 
   const { organization } = data;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
+  const canonicalUrl = `${baseUrl}/public/${domain}`;
 
   return (
     <>
-      {/* SEO Structured Data */}
+      {/* SEO Components */}
+      <CanonicalLink url={canonicalUrl} />
       <SEOStructuredData
         organization={organization}
         domain={domain}

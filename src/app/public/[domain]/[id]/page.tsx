@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
 import SEOStructuredData from '@/components/SEOStructuredData';
+import CanonicalLink from '@/components/CanonicalLink';
 
 interface Subsection {
   id: string;
@@ -303,9 +304,13 @@ export default function PublicDocumentViewer() {
   const nextSubsection = getNextSubsection();
   const prevSubsection = getPreviousSubsection();
 
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
+  const canonicalUrl = `${baseUrl}/public/${domain}/${documentId}`;
+
   return (
     <>
-      {/* SEO Structured Data */}
+      {/* SEO Components */}
+      <CanonicalLink url={canonicalUrl} />
       <SEOStructuredData
         organization={organization}
         document={document}
