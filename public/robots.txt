@@ -1,0 +1,40 @@
+# robots.txt for eAIP Platform
+# Allow all web crawlers to access public content
+
+User-agent: *
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /features/
+Disallow: /_next/
+
+# Sitemap location
+Sitemap: https://eaip.flyclim.com/sitemap.xml
+Sitemap: http://localhost:3000/sitemap.xml
+
+# Crawl delay (in seconds) - optional
+Crawl-delay: 1
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /admin/
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /admin/
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /admin/
+Crawl-delay: 1

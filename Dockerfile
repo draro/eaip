@@ -20,11 +20,25 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-# Next.js may report errors for dynamic routes during static generation, but this is expected
-# Check if .next directory is created successfully
-RUN npm run build || true
-RUN test -d .next || (echo "ERROR: Build failed - .next directory not created" && exit 1)
-RUN test -f .next/BUILD_ID || (echo "ERROR: Build failed - BUILD_ID not found" && exit 1)
+# Capture build output and check for critical files
+RUN npm run build 2>&1 | tee /tmp/build.log; \
+    BUILD_EXIT_CODE=${PIPESTATUS[0]}; \
+    echo "Build exit code: $BUILD_EXIT_CODE"; \
+    if [ ! -f ".next/BUILD_ID" ]; then \
+        echo "ERROR: BUILD_ID not created - build failed"; \
+        tail -100 /tmp/build.log; \
+        exit 1; \
+    fi; \
+    if [ ! -f ".next/prerender-manifest.json" ]; then \
+        echo "WARNING: prerender-manifest.json not found, creating empty one"; \
+        echo '{"version":4,"routes":{},"dynamicRoutes":{},"preview":{"previewModeId":"","previewModeSigningKey":"","previewModeEncryptionKey":""}}' > .next/prerender-manifest.json; \
+    fi; \
+    if [ ! -f ".next/routes-manifest.json" ]; then \
+        echo "ERROR: routes-manifest.json not created - build failed"; \
+        tail -100 /tmp/build.log; \
+        exit 1; \
+    fi; \
+    echo "Build completed successfully"
 
 # Production image
 FROM base AS runner

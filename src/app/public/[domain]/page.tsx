@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
+import SEOStructuredData from '@/components/SEOStructuredData';
 
 interface Organization {
   name: string;
@@ -151,16 +152,23 @@ export default function PublicEAIPViewer() {
   const { organization } = data;
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundColor: `${organization.branding.primaryColor}10`,
-        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-        fontSize: (organization.branding as any).fontSize || '16px',
-        color: (organization.branding as any).textColor || '#000000'
-      }}
-    >
-      {/* Header */}
+    <>
+      {/* SEO Structured Data */}
+      <SEOStructuredData
+        organization={organization}
+        domain={domain}
+      />
+
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: `${organization.branding.primaryColor}10`,
+          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: (organization.branding as any).fontSize || '16px',
+          color: (organization.branding as any).textColor || '#000000'
+        }}
+      >
+        {/* Header */}
       <header
         className="shadow-sm"
         style={{ backgroundColor: organization.branding.primaryColor }}
@@ -486,6 +494,7 @@ export default function PublicEAIPViewer() {
           </p>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
