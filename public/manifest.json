@@ -1,0 +1,35 @@
+{
+  "name": "eAIP - Electronic Aeronautical Information Publication",
+  "short_name": "eAIP",
+  "description": "Electronic Aeronautical Information Publication Editor and Viewer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b77b0",
+  "icons": [
+    {
+      "src": "/icon?<generated>",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon?<generated>",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download } from 
 import { formatAiracCycle } from '@/lib/utils';
 import SEOStructuredData from '@/components/SEOStructuredData';
 import CanonicalLink from '@/components/CanonicalLink';
+import FaviconLoader from '@/components/FaviconLoader';
 
 interface Organization {
   name: string;
@@ -158,6 +159,10 @@ export default function PublicEAIPViewer() {
     <>
       {/* SEO Components */}
       <CanonicalLink url={canonicalUrl} />
+      <FaviconLoader
+        logoUrl={organization.branding?.logoUrl}
+        organizationName={organization.name}
+      />
       <SEOStructuredData
         organization={organization}
         domain={domain}

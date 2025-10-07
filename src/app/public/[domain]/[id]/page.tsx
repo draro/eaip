@@ -20,6 +20,7 @@ import {
 import { formatAiracCycle } from '@/lib/utils';
 import SEOStructuredData from '@/components/SEOStructuredData';
 import CanonicalLink from '@/components/CanonicalLink';
+import FaviconLoader from '@/components/FaviconLoader';
 
 interface Subsection {
   id: string;
@@ -311,6 +312,10 @@ export default function PublicDocumentViewer() {
     <>
       {/* SEO Components */}
       <CanonicalLink url={canonicalUrl} />
+      <FaviconLoader
+        logoUrl={organization?.branding?.logoUrl}
+        organizationName={organization?.name}
+      />
       <SEOStructuredData
         organization={organization}
         document={document}

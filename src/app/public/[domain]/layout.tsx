@@ -93,6 +93,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: {
         canonical: `${baseUrl}/public/${domain}`,
       },
+      icons: org.branding?.logoUrl ? {
+        icon: [
+          { url: org.branding.logoUrl, type: 'image/png' },
+        ],
+        apple: [
+          { url: org.branding.logoUrl, type: 'image/png' },
+        ],
+      } : undefined,
       other: {
         'aviation-authority': org.name,
         'icao-code': org.icaoCode || '',
