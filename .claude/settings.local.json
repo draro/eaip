@@ -39,7 +39,9 @@
       "Bash(./fix-typescript-errors.sh)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(cat:*)",
+      "Bash(docker build:*)"
     ],
     "deny": [],
     "ask": []
