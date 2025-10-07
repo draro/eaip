@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Nginx + SSL Setup Script for eAIP
 # Run this on your VPS after deploying the Docker container

@@ -537,6 +537,7 @@ export default function NewDocumentPage() {
             </CardContent>
           </Card>
         </div>
+        </div>
       </div>
     </Layout>
   );

@@ -33,7 +33,8 @@
       "Bash(openssl rand:*)",
       "Read(//usr/local/bin/**)",
       "Bash(sudo rm:*)",
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Bash(npx next build:*)"
     ],
     "deny": [],
     "ask": []

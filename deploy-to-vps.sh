@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # eAIP VPS Deployment Script
 # This script should be run on your VPS (72.60.213.232)
@@ -69,18 +69,17 @@ else
     echo -e "${GREEN}✓ .env file found${NC}"
 
     # Check for required variables
-    required_vars=("MONGODB_URI" "NEXTAUTH_URL" "NEXTAUTH_SECRET" "EAIP_TARGET_IP")
-    missing_vars=()
+    missing_vars=""
 
-    for var in "${required_vars[@]}"; do
+    for var in MONGODB_URI NEXTAUTH_URL NEXTAUTH_SECRET EAIP_TARGET_IP; do
         if ! grep -q "^${var}=" .env || grep -q "^${var}=$" .env; then
-            missing_vars+=("$var")
+            missing_vars="$missing_vars $var"
         fi
     done
 
-    if [ ${#missing_vars[@]} -ne 0 ]; then
+    if [ -n "$missing_vars" ]; then
         echo -e "${RED}Error: Missing or empty required variables:${NC}"
-        printf '%s\n' "${missing_vars[@]}"
+        echo "$missing_vars"
         exit 1
     fi
 
