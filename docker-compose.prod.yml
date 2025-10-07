@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  eaip-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eaip-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # MongoDB Atlas Connection
+      - MONGODB_URI=${MONGODB_URI}
+
+      # NextAuth Configuration
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+
+      # AI Provider Configuration
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Domain Configuration
+      - EAIP_TARGET_IP=${EAIP_TARGET_IP}
+
+      # Node Environment
+      - NODE_ENV=production
+    volumes:
+      # Persist git repositories for version control
+      - git-repos:/app/git-repos
+    networks:
+      - eaip-network
+
+volumes:
+  git-repos:
+    driver: local
+
+networks:
+  eaip-network:
+    driver: bridge
