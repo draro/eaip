@@ -206,7 +206,7 @@ echo "Step 6: Obtaining SSL certificate..."
 echo "-----------------------------------"
 
 echo "Running Certbot..."
-certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --email $EMAIL --redirect
+certbot --nginx -d $DOMAIN -d eaip.$DOMAIN --non-interactive --agree-tos --email $EMAIL --redirect
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ SSL certificate obtained and installed${NC}"
