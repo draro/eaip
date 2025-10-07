@@ -9,28 +9,24 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      # MongoDB Atlas Connection
-      - MONGODB_URI=${MONGODB_URI}
-
-      # NextAuth Configuration
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-
-      # AI Provider Configuration
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-
-      # Domain Configuration
-      - EAIP_TARGET_IP=${EAIP_TARGET_IP}
-
-      # Node Environment
+      # Override with specific production settings
       - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
     volumes:
       # Persist git repositories for version control
       - git-repos:/app/git-repos
     networks:
       - eaip-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   git-repos:

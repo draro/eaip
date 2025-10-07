@@ -100,30 +100,67 @@ case $choice in
         echo ""
         print_status "Connecting to VPS to start application..."
 
-        ssh "$VPS_USER@$VPS_IP" << 'EOF'
+        ssh "$VPS_USER@$VPS_IP" << 'ENDSSH'
 cd /root/apps/eAIP
 
+echo "========================================"
 echo "Building Docker image..."
+echo "========================================"
 docker-compose -f docker-compose.prod.yml build
 
+if [ $? -ne 0 ]; then
+    echo "Error: Docker build failed"
+    exit 1
+fi
+
+echo ""
+echo "========================================"
 echo "Starting application..."
+echo "========================================"
 docker-compose -f docker-compose.prod.yml down
 docker-compose -f docker-compose.prod.yml up -d
 
+echo ""
 echo "Waiting for application to start..."
-sleep 5
+sleep 10
 
-echo "Checking status..."
+echo ""
+echo "========================================"
+echo "Container Status"
+echo "========================================"
 docker-compose -f docker-compose.prod.yml ps
 
 echo ""
-echo "Testing application..."
-curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:3000
+echo "========================================"
+echo "Health Check"
+echo "========================================"
+curl -s http://localhost:3000/api/health | python3 -m json.tool || echo "Health check endpoint not responding yet"
 
 echo ""
-echo "Recent logs:"
-docker-compose -f docker-compose.prod.yml logs --tail=20
-EOF
+echo "========================================"
+echo "Application Test"
+echo "========================================"
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+echo "HTTP Status: $HTTP_STATUS"
+
+if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
+    echo "✓ Application is responding"
+else
+    echo "⚠ Application may not be ready yet (Status: $HTTP_STATUS)"
+fi
+
+echo ""
+echo "========================================"
+echo "Recent Logs"
+echo "========================================"
+docker-compose -f docker-compose.prod.yml logs --tail=30
+
+echo ""
+echo "========================================"
+echo "Resource Usage"
+echo "========================================"
+docker stats --no-stream eaip-app
+ENDSSH
 
         if [ $? -eq 0 ]; then
             print_status "Deployment completed successfully!"

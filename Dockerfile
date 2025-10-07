@@ -22,6 +22,12 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Set dummy environment variables for build time
+# These will be overridden at runtime by the actual .env file
+ENV MONGODB_URI="mongodb://placeholder:27017/placeholder"
+ENV NEXTAUTH_URL="http://localhost:3000"
+ENV NEXTAUTH_SECRET="build-time-secret-will-be-replaced"
+
 # Build the application
 RUN npm run build
 
