@@ -28,7 +28,7 @@ echo "Configuration:"
 echo "  Domain: $DOMAIN"
 echo "  Email:  $EMAIL"
 echo ""
-read -p "Is this correct? (y/n) " -n 1 -r
+read -p "Is this correct? (y/n) " -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Please edit the script to set your domain and email"
