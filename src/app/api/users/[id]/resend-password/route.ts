@@ -16,7 +16,7 @@ function hashPassword(password: string): string {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();

@@ -10,10 +10,17 @@ import User from '@/models/User';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Document ID is required' },
+        { status: 400 }
+      );
+    }
 
     const document = await AIPDocument.findById(params.id)
       .populate('version', 'versionNumber airacCycle effectiveDate')
@@ -42,10 +49,17 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Document ID is required' },
+        { status: 400 }
+      );
+    }
 
     const body = await request.json();
     const {
@@ -198,10 +212,17 @@ function isValidStatusTransition(currentStatus: string, newStatus: string): bool
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Document ID is required' },
+        { status: 400 }
+      );
+    }
 
     const document = await AIPDocument.findById(params.id);
     if (!document) {

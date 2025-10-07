@@ -39,7 +39,7 @@ const NOTAM = mongoose.models.NOTAM || mongoose.model('NOTAM', NOTAMSchema);
 // GET /api/notam/[id] - Get single NOTAM
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     const session = await getServerSession();
@@ -74,7 +74,7 @@ export async function GET(
 // PATCH /api/notam/[id] - Update NOTAM (mainly for cancellation)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     const session = await getServerSession();
@@ -129,7 +129,7 @@ export async function PATCH(
 // DELETE /api/notam/[id] - Delete NOTAM
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     const session = await getServerSession();

@@ -50,7 +50,7 @@ const Workflow = mongoose.models.Workflow || mongoose.model('Workflow', Workflow
 // POST /api/workflow/[id]/approve - Process approval
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     const session = await getServerSession();

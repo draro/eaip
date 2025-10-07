@@ -4,7 +4,7 @@ import WorkflowTemplate from '@/models/Workflow';
 import { withAuth, createErrorResponse } from '@/lib/apiMiddleware';
 import { DataIsolationService } from '@/lib/dataIsolation';
 
-export const PATCH = withAuth(async (request: NextRequest, { params, user }: { params: { id: string }, user: any }) => {
+export const PATCH = withAuth(async (request: NextRequest, { params, user }: { params?: { id: string }, user: any }) => {
   try {
     await connectDB();
 
@@ -64,7 +64,7 @@ export const PATCH = withAuth(async (request: NextRequest, { params, user }: { p
   }
 });
 
-export const GET = withAuth(async (request: NextRequest, { params, user }: { params: { id: string }, user: any }) => {
+export const GET = withAuth(async (request: NextRequest, { params, user }: { params?: { id: string }, user: any }) => {
   try {
     await connectDB();
 

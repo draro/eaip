@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { withAuth } from '@/lib/apiMiddleware';
 import connectDB from '@/lib/mongodb';
 import Domain from '@/models/Domain';
 import { DNSChecker, domainService } from '@/lib/domainServer';
 
 interface RouteParams {
-  params: { id: string };
+  params?: { id: string };
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export const POST = withAuth(async (request: NextRequest, context: { params?: { id: string }; user: any }) => {
   try {
-    const session = await getServerSession();
+    const { params, user } = context;
 
-    if (!session?.user) {
+    if (!params?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Domain ID is required' },
+        { status: 400 }
       );
     }
 
-    if (!['org_admin', 'super_admin'].includes(session.user.role)) {
+    if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Insufficient permissions' },
         { status: 403 }
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check permissions
-    if (session.user.role !== 'super_admin') {
-      if (session.user.organizationId !== domain.organizationId.toString()) {
+    if (user.role !== 'super_admin') {
+      if (!user.organization || user.organization._id !== domain.organizationId.toString()) {
         return NextResponse.json(
           { success: false, error: 'Insufficient permissions' },
           { status: 403 }
@@ -98,4 +98,4 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-}
+});

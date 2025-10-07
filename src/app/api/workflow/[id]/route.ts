@@ -49,7 +49,7 @@ const Workflow = mongoose.models.Workflow || mongoose.model('Workflow', Workflow
 // GET /api/workflow/[id] - Get single workflow
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     const session = await getServerSession();

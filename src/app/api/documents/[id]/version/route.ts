@@ -5,7 +5,7 @@ import { gitService } from '@/lib/gitService';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();

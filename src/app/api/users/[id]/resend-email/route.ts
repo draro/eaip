@@ -6,7 +6,7 @@ import { emailService } from '@/lib/email';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
@@ -77,7 +77,7 @@ export async function POST(
         success: true,
         message: 'Email sent successfully to user'
       });
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('Error sending email:', emailError);
       return NextResponse.json({
         success: false,
@@ -86,7 +86,7 @@ export async function POST(
         error: emailError.message
       }, { status: 500 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error resending email:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to resend email' },

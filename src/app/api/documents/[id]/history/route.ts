@@ -5,10 +5,17 @@ import { gitService } from '@/lib/gitService';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Document ID is required' },
+        { status: 400 }
+      );
+    }
 
     const document = await AIPDocument.findById(params.id).populate('organization');
 

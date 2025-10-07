@@ -34,7 +34,11 @@
       "Read(//usr/local/bin/**)",
       "Bash(sudo rm:*)",
       "Bash(brew install:*)",
-      "Bash(npx next build:*)"
+      "Bash(npx next build:*)",
+      "Bash(chmod:*)",
+      "Bash(./fix-typescript-errors.sh)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

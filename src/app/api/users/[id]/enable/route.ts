@@ -5,7 +5,7 @@ import { authenticateUser, requireOrgAdmin, canManageOrganization } from '@/lib/
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();

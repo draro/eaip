@@ -5,12 +5,19 @@ import Domain from '@/models/Domain';
 import { DNSChecker } from '@/lib/domainServer';
 
 interface RouteParams {
-  params: { id: string };
+  params?: { id: string };
 }
 
-export const GET = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
+export const GET = withAuth(async (request: NextRequest, context: { params?: { id: string }; user: any }) => {
   try {
     const { params, user } = context;
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Domain ID is required' },
+        { status: 400 }
+      );
+    }
     await connectDB();
 
     const domain = await Domain.findById(params.id)
@@ -47,9 +54,16 @@ export const GET = withAuth(async (request: NextRequest, context: { params: { id
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
+export const PUT = withAuth(async (request: NextRequest, context: { params?: { id: string }; user: any }) => {
   try {
     const { params, user } = context;
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Domain ID is required' },
+        { status: 400 }
+      );
+    }
 
     if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
@@ -109,9 +123,16 @@ export const PUT = withAuth(async (request: NextRequest, context: { params: { id
   }
 });
 
-export const DELETE = withAuth(async (request: NextRequest, context: { params: { id: string }; user: any }) => {
+export const DELETE = withAuth(async (request: NextRequest, context: { params?: { id: string }; user: any }) => {
   try {
     const { params, user } = context;
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Domain ID is required' },
+        { status: 400 }
+      );
+    }
 
     if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
