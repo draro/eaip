@@ -28,12 +28,7 @@ echo "Configuration:"
 echo "  Domain: $DOMAIN"
 echo "  Email:  $EMAIL"
 echo ""
-read -p "Is this correct? (y/n) " -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Please edit the script to set your domain and email"
-    exit 1
-fi
+
 
 echo ""
 echo "Step 1: Installing Nginx and Certbot..."
