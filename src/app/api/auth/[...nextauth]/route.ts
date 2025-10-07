@@ -12,7 +12,8 @@ function hashPassword(password: string) {
     .update(password + "eAIP_salt_2025")
     .digest("hex");
 }
-const handler = NextAuth({
+
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -129,6 +130,8 @@ const handler = NextAuth({
     signIn: "/auth/signin",
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

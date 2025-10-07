@@ -152,6 +152,8 @@ export default function DomainConfiguration({
       if (result.success) {
         setNewDomain('');
         await loadDomains(); // Reload domains list
+        // Automatically fetch DNS instructions for the newly added domain
+        await handleCheckDNS(newDomain.toLowerCase());
       } else {
         setError(result.error);
       }
