@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Organization from '@/models/Organization';
 import AIPDocument from '@/models/AIPDocument';
+import AIPVersion from '@/models/AIPVersion';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { domain: string; id: string } }
 ) {
   try {
+    // Ensure AIPVersion model is registered
+    if (!AIPVersion) {
+      throw new Error('AIPVersion model not loaded');
+    }
     await connectDB();
 
     const { searchParams } = new URL(request.url);

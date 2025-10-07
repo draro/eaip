@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/mongodb';
 import mongoose from 'mongoose';
+import { withAuth, createErrorResponse } from '@/lib/apiMiddleware';
 
 // NOTAM Schema
 const NOTAMSchema = new mongoose.Schema({
@@ -37,45 +37,28 @@ const NOTAMSchema = new mongoose.Schema({
 const NOTAM = mongoose.models.NOTAM || mongoose.model('NOTAM', NOTAMSchema);
 
 // GET /api/notam - List NOTAMs
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     await dbConnect();
 
-    const user = session.user as any;
     const query: any = {};
 
     // Filter by organization if not super admin
     if (user.role !== 'super_admin') {
-      query.organizationId = user.organizationId;
+      query.organizationId = user.organization?._id;
     }
 
     const notams = await NOTAM.find(query).sort({ createdAt: -1 }).limit(100);
 
     return NextResponse.json({ success: true, notams });
   } catch (error) {
-    console.error('Error fetching NOTAMs:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch NOTAMs' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Failed to fetch NOTAMs');
   }
-}
+});
 
 // POST /api/notam - Create NOTAM
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = session.user as any;
-
     // Check permissions
     if (!['super_admin', 'org_admin', 'editor'].includes(user.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -106,6 +89,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine organization ID
+    let organizationId = user.organization?._id;
+
+    // If super admin without organization, use the one from the data if provided, or create a fallback
+    if (user.role === 'super_admin' && !organizationId) {
+      if (data.organizationId) {
+        organizationId = data.organizationId;
+      } else {
+        return NextResponse.json(
+          { error: 'Super admin must specify an organizationId when creating NOTAMs' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create NOTAM
     const notam = new NOTAM({
       id: notamId,
@@ -127,9 +125,9 @@ export async function POST(request: NextRequest) {
       coordinates: data.coordinates || null,
       radius: data.radius || null,
       status: 'active',
-      organizationId: user.organizationId,
+      organizationId: organizationId,
       createdBy: {
-        id: user.id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
       },
@@ -145,10 +143,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Error creating NOTAM:', error);
-    return NextResponse.json(
-      { error: 'Failed to create NOTAM' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Failed to create NOTAM');
   }
-}
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
@@ -41,6 +41,7 @@ export default function CreateNOTAMPage() {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [organizations, setOrganizations] = useState<any[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -60,7 +61,27 @@ export default function CreateNOTAMPage() {
     upper: '',
     coordinates: '',
     radius: '',
+    organizationId: '',
   });
+
+  useEffect(() => {
+    // Fetch organizations for super admin
+    if (session?.user && (session.user as any).role === 'super_admin') {
+      fetchOrganizations();
+    }
+  }, [session]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const response = await fetch('/api/organizations');
+      const result = await response.json();
+      if (result.success) {
+        setOrganizations(result.data?.organizations || []);
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,6 +278,28 @@ export default function CreateNOTAMPage() {
                 <CardDescription>Geographic location and effective dates</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {(session?.user as any)?.role === 'super_admin' && (
+                  <div>
+                    <Label htmlFor="organizationId">Organization *</Label>
+                    <select
+                      id="organizationId"
+                      value={formData.organizationId}
+                      onChange={(e) => handleChange('organizationId', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      required
+                    >
+                      <option value="">Select organization</option>
+                      {organizations.map((org) => (
+                        <option key={org._id} value={org._id}>
+                          {org.name} ({org.domain})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select the organization this NOTAM belongs to
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="location">ICAO Location Code *</Label>

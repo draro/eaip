@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
+import DocumentDiffViewer from '@/components/DocumentDiffViewer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { formatAiracCycle } from '@/lib/utils';
+import { ICAO_AIP_STRUCTURE, AIPSection } from '@/lib/aipStructure';
+import {
   FileText,
   Plus,
   Search,
@@ -34,7 +44,9 @@ import {
   Calendar,
   User,
   Globe,
-  Copy
+  Copy,
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -60,12 +72,17 @@ interface Document {
     id: string;
     type: string;
     title: string;
-    subsections: any[];
+    subsections: Array<{
+      id: string;
+      code: string;
+      title: string;
+    }>;
   }>;
 }
 
 export default function DocumentsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,9 +90,33 @@ export default function DocumentsPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showDiffDialog, setShowDiffDialog] = useState(false);
-  const [userRole, setUserRole] = useState<string>('editor'); // This would come from auth context
+  const [viewMode, setViewMode] = useState<'list' | 'structure'>('list');
+  const userRole = (session?.user as any)?.role || 'viewer';
 
   useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/documents');
+      const data = await response.json();
+
+      if (data.success) {
+        setDocuments(data.data);
+      } else {
+        console.error('Failed to fetch documents:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remove the old mock data code
+  /*useEffect(() => {
     // Mock data - in real app, fetch from API based on user's organization
     const mockDocuments: Document[] = [
       {
@@ -128,7 +169,7 @@ export default function DocumentsPage() {
 
     setDocuments(mockDocuments);
     setLoading(false);
-  }, []);
+  }, []);*/
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -168,6 +209,65 @@ export default function DocumentsPage() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  // Group documents by ICAO AIP structure sections
+  const groupDocumentsByStructure = () => {
+    const grouped = new Map<string, { section: AIPSection; documents: Document[] }>();
+
+    // Initialize with ICAO structure
+    ICAO_AIP_STRUCTURE.forEach(part => {
+      if (part.children) {
+        part.children.forEach(section => {
+          grouped.set(section.code, { section, documents: [] });
+        });
+      }
+    });
+
+    // Group documents by their sections
+    filteredDocuments.forEach(doc => {
+      doc.sections.forEach(docSection => {
+        // Match based on section type (GEN, ENR, AD)
+        const sectionType = docSection.type; // "GEN", "ENR", or "AD"
+
+        docSection.subsections?.forEach((subsection: any) => {
+          // Try to find matching ICAO section by constructing the full code
+          const fullCode = `${sectionType} ${subsection.code}`;
+
+          // Look through all ICAO sections to find a match
+          ICAO_AIP_STRUCTURE.forEach(part => {
+            if (part.code === sectionType && part.children) {
+              part.children.forEach(section => {
+                // Check if this section or its children match
+                if (section.code === fullCode) {
+                  const existing = grouped.get(section.code);
+                  if (existing && !existing.documents.find(d => d._id === doc._id)) {
+                    existing.documents.push(doc);
+                  }
+                }
+
+                // Also check subsections within the section
+                if (section.children) {
+                  section.children.forEach(subsec => {
+                    if (subsec.code === fullCode) {
+                      // Add to parent section
+                      const existing = grouped.get(section.code);
+                      if (existing && !existing.documents.find(d => d._id === doc._id)) {
+                        existing.documents.push(doc);
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        });
+      });
+    });
+
+    return grouped;
+  };
+
+  const structuredDocuments = groupDocumentsByStructure();
+
   const handleViewDocument = (documentId: string) => {
     router.push(`/documents/${documentId}`);
   };
@@ -177,23 +277,79 @@ export default function DocumentsPage() {
   };
 
   const handleDeleteDocument = async (documentId: string, documentTitle: string) => {
-    if (confirm(`Are you sure you want to delete "${documentTitle}"? This action cannot be undone.`)) {
-      try {
-        // TODO: Add actual delete API call
-        console.log('Deleting document:', documentId);
-        // For now, just remove from local state
+    if (!confirm(`Are you sure you want to delete "${documentTitle}"?\n\nThis action cannot be undone.\n\nNote: Only draft documents can be deleted. Published documents must be archived instead.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Remove from local state
         setDocuments(prev => prev.filter(doc => doc._id !== documentId));
-      } catch (error) {
-        console.error('Error deleting document:', error);
-        alert('Failed to delete document. Please try again.');
+        alert('Document deleted successfully');
+      } else {
+        alert(`Failed to delete document: ${result.error}`);
       }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
     }
   };
 
-  const handleExportDocument = (documentId: string) => {
-    // TODO: Add actual export functionality
-    console.log('Exporting document:', documentId);
-    alert('Export functionality will be implemented soon.');
+  const handleExportDocument = async (document: Document) => {
+    const format = prompt(
+      `Export "${document.title}"\n\n` +
+      `Choose export format:\n` +
+      `1. JSON - Structured data format\n` +
+      `2. XML - ICAO Annex 15 / EUROCONTROL Spec 3.0 compliant\n` +
+      `3. HTML - Printable web format\n\n` +
+      `Enter format (json/xml/html):`,
+      'json'
+    );
+
+    if (!format) return;
+
+    const normalizedFormat = format.toLowerCase().trim();
+    if (!['json', 'xml', 'html'].includes(normalizedFormat)) {
+      alert('Invalid format. Please choose: json, xml, or html');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/documents/${document._id}/export?format=${normalizedFormat}`);
+
+      if (!response.ok) {
+        const result = await response.json();
+        alert(`Export failed: ${result.error}`);
+        return;
+      }
+
+      // Get the filename from Content-Disposition header or generate one
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch?.[1] || `${document.country}-${document.documentType}-${document.airacCycle}.${normalizedFormat}`;
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      window.document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      window.document.body.removeChild(a);
+
+      alert(`✅ Document exported successfully as ${normalizedFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      alert('Failed to export document. Please try again.');
+    }
   };
 
   const handleCloneDocument = async (document: Document) => {
@@ -228,96 +384,6 @@ export default function DocumentsPage() {
     }
   };
 
-  // Enhanced Diff Viewer Component
-  const DocumentDiffViewer = ({ document }: { document: Document }) => (
-    <div className="space-y-6">
-      {/* Change Summary */}
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-        <h4 className="font-semibold mb-3 flex items-center gap-2">
-          <GitBranch className="w-4 h-4" />
-          Document Changes Summary
-        </h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span><strong>Added:</strong> Emergency procedures section (2.3)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-            <span><strong>Modified:</strong> Contact information updated</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-            <span><strong>Removed:</strong> Outdated emergency frequency</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Side-by-side diff view */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-medium mb-2 text-red-700 flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Previous Version (v{(parseFloat(document.version.versionNumber) - 0.1).toFixed(1)})
-          </h4>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="font-mono text-sm space-y-2">
-              <div className="font-semibold">1.1 Contact Information</div>
-              <div>Phone: +39 06 1234567</div>
-              <div>Email: old-contact@aviation.it</div>
-              <div className="line-through text-red-600 bg-red-100 p-1 rounded">
-                Emergency Freq: 118.250 MHz
-              </div>
-              <div className="text-gray-400">[Section 2.3 not present]</div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-medium mb-2 text-green-700 flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Current Version (v{document.version.versionNumber})
-          </h4>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="font-mono text-sm space-y-2">
-              <div className="font-semibold">1.1 Contact Information</div>
-              <div>Phone: +39 06 1234567</div>
-              <div className="bg-green-200 p-1 rounded">
-                Email: new-contact@aviation.it
-              </div>
-              <div className="bg-green-200 p-1 rounded">
-                Emergency Freq: 121.500 MHz
-              </div>
-              <div className="bg-green-200 p-1 rounded">
-                <div className="font-semibold">2.3 Emergency Procedures</div>
-                <div className="text-xs">In case of emergency, contact tower immediately on 121.500 MHz...</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Change Details */}
-      <div className="space-y-3">
-        <h4 className="font-semibold">Detailed Changes</h4>
-        <div className="space-y-2">
-          <div className="bg-green-50 border-l-4 border-green-400 p-3">
-            <div className="text-sm font-medium text-green-800">Added Section</div>
-            <div className="text-xs text-green-600">Section 2.3 "Emergency Procedures" has been added with comprehensive emergency contact information and procedures.</div>
-          </div>
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3">
-            <div className="text-sm font-medium text-yellow-800">Modified Content</div>
-            <div className="text-xs text-yellow-600">Contact email updated from old-contact@aviation.it to new-contact@aviation.it</div>
-          </div>
-          <div className="bg-red-50 border-l-4 border-red-400 p-3">
-            <div className="text-sm font-medium text-red-800">Removed Content</div>
-            <div className="text-xs text-red-600">Emergency frequency 118.250 MHz removed and replaced with standard 121.500 MHz</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -326,8 +392,10 @@ export default function DocumentsPage() {
     );
   }
 
+  const user = session?.user as any;
+
   return (
-    <Layout>
+    <Layout user={user}>
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -336,12 +404,25 @@ export default function DocumentsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
             <p className="text-gray-600">Manage AIP documents, supplements, and NOTAMs</p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/dashboard">
-              <Button variant="outline">
-                Back to Dashboard
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                List View
               </Button>
-            </Link>
+              <Button
+                variant={viewMode === 'structure' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('structure')}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                ICAO Structure
+              </Button>
+            </div>
             {['super_admin', 'org_admin', 'editor'].includes(userRole) && (
               <Link href="/documents/new">
                 <Button className="bg-blue-600 hover:bg-blue-700">
@@ -396,7 +477,142 @@ export default function DocumentsPage() {
           </CardContent>
         </Card>
 
+        {/* ICAO Structure View */}
+        {viewMode === 'structure' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                ICAO Annex 15 Structure
+              </CardTitle>
+              <CardDescription>
+                Documents organized by ICAO AIP sections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" className="w-full">
+                {ICAO_AIP_STRUCTURE.map((part) => (
+                  <AccordionItem key={part.code} value={part.code}>
+                    <AccordionTrigger className="text-lg font-semibold">
+                      <div className="flex items-center gap-2">
+                        <span>{part.code}</span>
+                        <span className="text-gray-600">-</span>
+                        <span>{part.title}</span>
+                        <Badge variant="outline" className="ml-2">
+                          {part.icaoReference}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        {part.children?.map((section) => {
+                          const sectionData = structuredDocuments.get(section.code);
+                          const docCount = sectionData?.documents.length || 0;
+
+                          return (
+                            <div key={section.code} className="border-l-2 border-blue-200 pl-4 py-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <span className="font-semibold text-gray-900">{section.code}</span>
+                                  <span className="text-gray-600">-</span>
+                                  <span className="text-gray-700">{section.title}</span>
+                                  {section.isMandatory && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Mandatory
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {section.icaoReference}
+                                  </Badge>
+                                </div>
+                                <Badge variant="secondary">{docCount} docs</Badge>
+                              </div>
+
+                              {/* Documents for this section */}
+                              {docCount > 0 && (
+                                <div className="space-y-2 mt-3">
+                                  {sectionData?.documents.map((doc) => (
+                                    <div
+                                      key={doc._id}
+                                      className="bg-gray-50 rounded-md p-3 hover:bg-gray-100 transition-colors"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium text-sm">{doc.title}</span>
+                                            <Badge className={getStatusColor(doc.status)} style={{ fontSize: '10px' }}>
+                                              {doc.status}
+                                            </Badge>
+                                            <Badge className={getTypeColor(doc.documentType)} style={{ fontSize: '10px' }}>
+                                              {doc.documentType}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                                            <span>{doc.country}</span>
+                                            {doc.airport && <span>• {doc.airport}</span>}
+                                            <span>• AIRAC: {formatAiracCycle(doc.airacCycle)}</span>
+                                            <span>• v{doc.version.versionNumber}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleViewDocument(doc._id)}
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                          </Button>
+                                          {canEdit(doc) && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleEditDocument(doc._id)}
+                                            >
+                                              <Edit className="w-4 h-4" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Subsections */}
+                              {section.children && section.children.length > 0 && (
+                                <div className="ml-4 mt-2 space-y-1">
+                                  {section.children.map((subsection) => {
+                                    const subData = structuredDocuments.get(subsection.code);
+                                    const subDocCount = subData?.documents.length || 0;
+
+                                    return (
+                                      <div key={subsection.code} className="text-sm text-gray-700 flex items-center gap-2">
+                                        <span className="font-mono text-xs">{subsection.code}</span>
+                                        <span>-</span>
+                                        <span>{subsection.title}</span>
+                                        {subDocCount > 0 && (
+                                          <Badge variant="secondary" className="text-xs">{subDocCount}</Badge>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Documents List */}
+        {viewMode === 'list' && (
         <div className="space-y-4">
           {filteredDocuments.map((document) => (
             <Card key={document._id} className="hover:shadow-md transition-shadow">
@@ -425,7 +641,7 @@ export default function DocumentsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        <span>AIRAC: {document.airacCycle}</span>
+                        <span>AIRAC: {formatAiracCycle(document.airacCycle)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <GitBranch className="w-4 h-4" />
@@ -485,7 +701,7 @@ export default function DocumentsPage() {
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        onClick={() => handleExportDocument(document._id)}
+                        onClick={() => handleExportDocument(document)}
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Export
@@ -506,7 +722,6 @@ export default function DocumentsPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
 
         {filteredDocuments.length === 0 && (
           <Card>
@@ -529,6 +744,8 @@ export default function DocumentsPage() {
               )}
             </CardContent>
           </Card>
+        )}
+        </div>
         )}
 
         {/* Enhanced Diff Viewer Dialog */}

@@ -27,7 +27,9 @@
       "Bash(do)",
       "Bash(echo \"Fixed: $file\")",
       "Bash(for file in src/app/page.tsx src/app/features/*/page.tsx)",
-      "Bash(echo \"Fixed outline buttons: $file\")"
+      "Bash(echo \"Fixed outline buttons: $file\")",
+      "Read(//Users/davideraro/.pm2/logs/**)",
+      "WebFetch(domain:aip.caam.gov.my)"
     ],
     "deny": [],
     "ask": []

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Calendar, FileText, User, Edit, Trash2, Book } from 'lucide-react';
-import { formatDate, generateAiracCycle } from '@/lib/utils';
+import { formatDate, generateAiracCycle, formatAiracCycle } from '@/lib/utils';
 
 interface Version {
   _id: string;
@@ -285,7 +285,7 @@ export default function VersionsPage() {
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{version.versionNumber}</CardTitle>
                     <CardDescription>
-                      AIRAC Cycle: {version.airacCycle}
+                      AIRAC Cycle: {formatAiracCycle(version.airacCycle)}
                     </CardDescription>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(version.status)}`}>

@@ -155,6 +155,12 @@ export default function WorkflowPage() {
                   Manage multi-level approval workflows for AIP documents
                 </p>
               </div>
+              <Link href="/workflows">
+                <Button variant="outline">
+                  <GitBranch className="w-4 h-4 mr-2" />
+                  Configure Workflows
+                </Button>
+              </Link>
             </div>
 
             {/* Stats */}

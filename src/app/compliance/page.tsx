@@ -15,8 +15,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { ICAO_AIP_STRUCTURE, AIPSection } from '@/lib/aipStructure';
+import {
   Shield, CheckCircle, XCircle, AlertTriangle, FileText,
-  Search, TrendingUp, Award, Target, Zap, Info, MapPin, Sparkles
+  Search, TrendingUp, Award, Target, Zap, Info, MapPin, Sparkles, BookOpen, ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -394,10 +401,170 @@ export default function CompliancePage() {
             </Card>
           </div>
 
+          {/* ICAO Structure Compliance View */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                ICAO Annex 15 Compliance by Section
+              </CardTitle>
+              <CardDescription>
+                Compliance status mapped to ICAO AIP structure sections with regulation references
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" className="w-full">
+                {ICAO_AIP_STRUCTURE.map((part) => (
+                  <AccordionItem key={part.code} value={part.code}>
+                    <AccordionTrigger className="text-lg font-semibold">
+                      <div className="flex items-center gap-2">
+                        <span>{part.code}</span>
+                        <span className="text-gray-600">-</span>
+                        <span>{part.title}</span>
+                        <Badge variant="outline" className="ml-2">
+                          {part.icaoReference}
+                        </Badge>
+                        {part.isMandatory && (
+                          <Badge variant="destructive" className="ml-2 text-xs">
+                            Mandatory
+                          </Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-3 pl-4">
+                        {part.children?.map((section) => {
+                          // Find documents for this section based on title or section code matching
+                          const sectionDocs = documents.filter(doc => {
+                            // Match if document title includes the section code
+                            const titleMatch = doc.title.toLowerCase().includes(section.code.toLowerCase());
+                            // Or if section field includes part of the code
+                            const sectionMatch = doc.section.includes(section.code.replace(/\s/g, ''));
+                            return titleMatch || sectionMatch;
+                          });
+                          const avgScore = sectionDocs.length > 0
+                            ? Math.round(sectionDocs.reduce((sum, d) => sum + d.complianceScore, 0) / sectionDocs.length)
+                            : 0;
+
+                          return (
+                            <div key={section.code} className="border-l-2 border-blue-200 pl-4 py-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <span className="font-semibold text-gray-900">{section.code}</span>
+                                  <span className="text-gray-600">-</span>
+                                  <span className="text-gray-700">{section.title}</span>
+                                  {section.isMandatory && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Mandatory
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {section.icaoReference}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {sectionDocs.length > 0 && (
+                                    <>
+                                      <span className={`text-lg font-bold ${getScoreColor(avgScore)}`}>
+                                        {avgScore}%
+                                      </span>
+                                      {getScoreBadge(avgScore)}
+                                    </>
+                                  )}
+                                  <Badge variant="secondary">{sectionDocs.length} docs</Badge>
+                                </div>
+                              </div>
+
+                              {/* Section regulations */}
+                              {section.regulations && section.regulations.length > 0 && (
+                                <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                                  <h5 className="text-sm font-semibold text-blue-900 mb-2">Regulatory Requirements</h5>
+                                  <div className="space-y-2">
+                                    {section.regulations.map((reg, idx) => (
+                                      <div key={idx} className="text-xs">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-xs">{reg.authority}</Badge>
+                                            <span className="text-gray-700">{reg.document} - {reg.section}</span>
+                                          </div>
+                                          <Badge
+                                            className={`text-xs ${
+                                              reg.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
+                                              reg.complianceStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                              reg.complianceStatus === 'non-compliant' ? 'bg-red-100 text-red-800' :
+                                              'bg-gray-100 text-gray-800'
+                                            }`}
+                                          >
+                                            {reg.complianceStatus}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-gray-600 mt-1 ml-2">{reg.requirement}</p>
+                                        {reg.notes && (
+                                          <p className="text-gray-500 mt-1 ml-2 italic">Note: {reg.notes}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Documents in this section */}
+                              {sectionDocs.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  {sectionDocs.map((doc) => (
+                                    <div
+                                      key={doc._id}
+                                      className="bg-gray-50 rounded-md p-3 hover:bg-gray-100 transition-colors"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium text-sm">{doc.title}</span>
+                                            {getScoreBadge(doc.complianceScore)}
+                                            {doc.issues > 0 && (
+                                              <span className="text-xs text-red-600">
+                                                {doc.issues} issue{doc.issues > 1 ? 's' : ''}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                          <span className={`text-lg font-bold ${getScoreColor(doc.complianceScore)}`}>
+                                            {doc.complianceScore}%
+                                          </span>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              setSelectedDoc(doc);
+                                              setShowDetailsModal(true);
+                                            }}
+                                          >
+                                            <Info className="h-4 w-4 mr-2" />
+                                            Details
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+
           {/* Document Compliance List */}
           <Card>
             <CardHeader>
-              <CardTitle>Document Compliance Status</CardTitle>
+              <CardTitle>All Documents - Compliance Status</CardTitle>
               <CardDescription>Real-time compliance status for all AIP documents</CardDescription>
             </CardHeader>
             <CardContent>

@@ -205,10 +205,10 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Multi-level approvals</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Digital signatures</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Automated notifications</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Deadline tracking</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Custom workflow templates</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />User-specific assignments</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Reviewer & approver roles</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Status transition control</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -228,10 +228,10 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />DOCX, PDF, XML, HTML</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />JSON, XML, HTML exports</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />ICAO/EUROCONTROL compliant</li>
                     <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Professional formatting</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Bulk export operations</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Cloud storage integration</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Automated metadata</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -251,10 +251,10 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />AIRAC cycle automation</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Change tracking</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Visual diff viewer</li>
-                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Rollback capabilities</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Git-based version control</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Word-like change tracking</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Visual diff comparison</li>
+                    <li className="flex items-center"><CheckCircle className="h-4 w-4 text-green-500 mr-2" />Complete audit trail</li>
                   </ul>
                 </CardContent>
               </Card>

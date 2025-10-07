@@ -37,6 +37,10 @@ const SectionSchema = new Schema<ISection>({
     enum: ['GEN', 'ENR', 'AD'],
   },
   title: { type: String, required: true, trim: true },
+  content: {
+    type: String,
+    default: '',
+  },
   subsections: [SubsectionSchema],
   order: { type: Number, required: true },
 });

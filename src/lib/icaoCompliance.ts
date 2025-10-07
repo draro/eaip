@@ -1,10 +1,38 @@
 import { IAIPDocument, ISection, ISubsection } from '@/types';
+import { ICAO_AIP_STRUCTURE, AIPSection } from './aipStructure';
 
 // ICAO Annex 15 - Aeronautical Information Services
 export class ICAOComplianceService {
 
-  // Mandatory sections according to ICAO Annex 15
-  private static readonly MANDATORY_SECTIONS = {
+  // Get mandatory sections from ICAO AIP Structure
+  private static getMandatorySections(): Map<string, { code: string; title: string; section: string }> {
+    const mandatory = new Map<string, { code: string; title: string; section: string }>();
+
+    ICAO_AIP_STRUCTURE.forEach(part => {
+      if (part.children) {
+        part.children.forEach(section => {
+          if (section.isMandatory && section.children) {
+            section.children.forEach(subsection => {
+              if (subsection.isMandatory) {
+                // Extract just the numeric part (e.g., "1.1" from "GEN 1.1")
+                const code = subsection.code.replace(`${part.code} `, '');
+                mandatory.set(`${part.code}-${code}`, {
+                  code,
+                  title: subsection.title,
+                  section: part.code
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+
+    return mandatory;
+  }
+
+  // Legacy mandatory sections for backward compatibility
+  private static readonly MANDATORY_SECTIONS_OLD = {
     GEN: {
       '1.1': 'Designated authorities',
       '1.2': 'Entry, transit and departure of aircraft',
@@ -119,29 +147,30 @@ export class ICAOComplianceService {
 
   private static validateMandatorySections(document: IAIPDocument, report: ICAOValidationReport): void {
     const documentSections = new Map(document.sections.map(s => [s.type, s]));
+    const mandatorySections = this.getMandatorySections();
 
-    Object.entries(this.MANDATORY_SECTIONS).forEach(([sectionType, requiredSubsections]) => {
-      const section = documentSections.get(sectionType as 'GEN' | 'ENR' | 'AD');
+    // Check each mandatory section
+    mandatorySections.forEach((mandatoryInfo, key) => {
+      const { code, title, section: sectionType } = mandatoryInfo;
+      const documentSection = documentSections.get(sectionType as 'GEN' | 'ENR' | 'AD');
 
-      if (!section) {
+      if (!documentSection) {
         report.errors.push(`Missing mandatory section: ${sectionType}`);
         report.isCompliant = false;
         return;
       }
 
-      const sectionSubsections = new Map(section.subsections.map(s => [s.code, s]));
+      const sectionSubsections = new Map(documentSection.subsections.map(s => [s.code, s]));
 
-      Object.entries(requiredSubsections).forEach(([code, title]) => {
-        if (!sectionSubsections.has(code)) {
-          report.missingMandatorySections.push({
-            section: sectionType,
-            subsection: code,
-            title,
-            mandatory: true,
-          });
-          report.isCompliant = false;
-        }
-      });
+      if (!sectionSubsections.has(code)) {
+        report.missingMandatorySections.push({
+          section: sectionType,
+          subsection: code,
+          title,
+          mandatory: true,
+        });
+        report.isCompliant = false;
+      }
     });
   }
 
@@ -173,10 +202,10 @@ export class ICAOComplianceService {
       return;
     }
 
-    // AIRAC cycle format validation (YYMM format)
-    const airacPattern = /^\d{4}$/;
+    // AIRAC cycle format validation (YYMM or YYYYMM format)
+    const airacPattern = /^\d{4}$|^\d{6}$/;
     if (!airacPattern.test(document.airacCycle)) {
-      report.errors.push('Invalid AIRAC cycle format. Must be YYMM (e.g., 2501)');
+      report.errors.push('Invalid AIRAC cycle format. Must be YYMM (e.g., 2501) or YYYYMM (e.g., 202501)');
       report.isCompliant = false;
     }
 

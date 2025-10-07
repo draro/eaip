@@ -107,23 +107,26 @@ export class EmailService {
   }
 
 
-  async sendPasswordResetEmail(email: string, resetToken: string, organizationName: string): Promise<boolean> {
+  async sendPasswordResetEmail(data: {
+    userName: string;
+    userEmail: string;
+    temporaryPassword: string;
+    loginUrl: string;
+    organizationName: string;
+    supportEmail?: string;
+  }): Promise<boolean> {
     try {
-      // For password reset, we'll send the reset token as the password parameter
-      // The n8n workflow can handle this differently based on the context
-      const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`;
-
       const payload: N8nEmailPayload = {
-        emailTo: email,
-        name: 'User', // We don't have the user name in this context
-        username: email,
-        password: resetUrl // Send the reset URL as the password field for password reset emails
+        emailTo: data.userEmail,
+        name: data.userName,
+        username: data.userEmail,
+        password: data.temporaryPassword
       };
 
       const success = await this.sendWebhookRequest(payload);
 
       if (success) {
-        console.log('Password reset email sent successfully to:', SecurityUtils.sanitizeLogInput(email));
+        console.log('Password reset email sent successfully to:', SecurityUtils.sanitizeLogInput(data.userEmail));
       }
 
       return success;

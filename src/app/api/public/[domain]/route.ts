@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Organization from '@/models/Organization';
 import AIPDocument from '@/models/AIPDocument';
+import AIPVersion from '@/models/AIPVersion';
 
 export async function GET(
   request: NextRequest,
@@ -9,6 +10,11 @@ export async function GET(
 ) {
   try {
     await connectDB();
+
+    // Ensure AIPVersion model is registered
+    if (!AIPVersion) {
+      throw new Error('AIPVersion model not loaded');
+    }
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -131,6 +137,10 @@ export async function GET(
               contact: {
                 email: organization.contact.email,
                 website: organization.contact.website
+              },
+              settings: {
+                enableExport: organization.settings.enableExport,
+                allowedExportFormats: organization.settings.allowedExportFormats
               }
             },
             statistics: {

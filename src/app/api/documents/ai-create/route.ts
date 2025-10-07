@@ -5,10 +5,7 @@ import AIPVersion from '@/models/AIPVersion';
 import { withAuth, createErrorResponse } from '@/lib/apiMiddleware';
 import { DataIsolationService } from '@/lib/dataIsolation';
 import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import OpenAI from 'openai';
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
@@ -160,6 +157,28 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         .limit(3);
     }
 
+    // Get organization AI settings
+    const Organization = (await import('@/models/Organization')).default;
+    const org = await Organization.findById(targetOrganizationId).select('+aiApiKey');
+
+    const aiProvider = org?.aiProvider || 'claude';
+    const aiModel = org?.aiModel || 'claude-sonnet-4-5-20250929';
+
+    // Determine API key based on provider
+    let aiApiKey = org?.aiApiKey;
+    if (!aiApiKey) {
+      aiApiKey = aiProvider === 'openai'
+        ? process.env.OPENAI_API_KEY
+        : process.env.ANTHROPIC_API_KEY;
+    }
+
+    if (!aiApiKey) {
+      return NextResponse.json(
+        { success: false, error: `AI API key not configured for ${aiProvider}. Please configure in organization settings or environment variables.` },
+        { status: 500 }
+      );
+    }
+
     // Build AI prompt
     let prompt = `You are an expert in ICAO Annex 15 and EUROCONTROL Specification 3.0 for electronic Aeronautical Information Publications (eAIP).
 
@@ -218,6 +237,8 @@ ${previousDocsContent}
 
     prompt += `
 
+IMPORTANT: Keep content concise but complete. Use placeholder text like [TO BE COMPLETED] for detailed values that will be filled in later.
+
 Please return ONLY a valid JSON object with this structure:
 {
   "sections": [...array of section objects with proper structure...],
@@ -235,25 +256,35 @@ Each section should have this structure:
   "type": "GEN|ENR|AD",
   "code": "section code (e.g., GEN-1.1)",
   "title": "Section Title",
-  "content": "Section content in HTML format with comprehensive information",
-  "subsections": [...nested subsections if applicable...]
-}`;
+  "content": "Section content in HTML format - use concise but complete information",
+  "subsections": [...nested subsections if applicable - limit to essential subsections only...]
+}
 
-    // Call Claude API to generate document
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 16000,
-      temperature: 0.3,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
+CRITICAL: Ensure the JSON is complete and properly closed. Limit total sections to 20-25 to ensure response fits within token limits.`;
 
-    // Extract response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    // Call AI API based on provider
+    let responseText = '';
+
+    if (aiProvider === 'openai') {
+      const openai = new OpenAI({ apiKey: aiApiKey });
+      const completion = await openai.chat.completions.create({
+        model: aiModel,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 4096,
+        temperature: 0.3,
+      });
+      responseText = completion.choices[0]?.message?.content || '';
+    } else {
+      // Claude
+      const anthropic = new Anthropic({ apiKey: aiApiKey });
+      const message = await anthropic.messages.create({
+        model: aiModel,
+        max_tokens: 8000,
+        temperature: 0.3,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    }
 
     // Parse AI response
     let aiResponse;
@@ -278,9 +309,26 @@ Each section should have this structure:
       );
     }
 
-    // Get organization for metadata
-    const Organization = (await import('@/models/Organization')).default;
-    const targetOrg = await Organization.findById(targetOrganizationId);
+    // Add required fields to sections and subsections
+    const processSection = (section: any, index: number) => {
+      return {
+        ...section,
+        order: index,
+        modifiedBy: user._id,
+        modifiedAt: new Date(),
+        subsections: section.subsections?.map((subsection: any, subIndex: number) => ({
+          ...subsection,
+          order: subIndex,
+          modifiedBy: user._id,
+          modifiedAt: new Date()
+        })) || []
+      };
+    };
+
+    const processedSections = aiResponse.sections.map(processSection);
+
+    // Get organization for metadata (already fetched above for AI settings)
+    const targetOrg = org;
 
     // Create document with AI-generated content
     const documentData: any = {
@@ -288,7 +336,7 @@ Each section should have this structure:
       documentType,
       country: country.toUpperCase(),
       airport: airport?.toUpperCase() || undefined,
-      sections: aiResponse.sections,
+      sections: processedSections,
       version: versionId,
       organization: targetOrganizationId,
       createdBy: user._id,
@@ -323,13 +371,14 @@ Each section should have this structure:
       .populate('version', 'versionNumber airacCycle effectiveDate')
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email')
-      .populate('organization', 'name domain');
+      .populate('organization', 'name domain')
+      .lean();
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          ...populatedDocument.toObject(),
+          ...populatedDocument,
           aiSummary: aiResponse.summary
         },
         message: 'Document created successfully with AI assistance'

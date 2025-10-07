@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, UserPlus, Trash2, Edit, Users } from 'lucide-react';
+import { Search, UserPlus, Trash2, Edit, Users, Send } from 'lucide-react';
 
 interface User {
   _id: string;
@@ -146,6 +146,42 @@ export default function UserAssignmentModal({
     } catch (error) {
       console.error('Error removing user:', error);
       alert('Failed to remove user');
+    }
+  };
+
+  const handleResendPassword = async (userId: string, userEmail: string) => {
+    if (!confirm(`Send a new temporary password to ${userEmail}? They will receive an email with login credentials.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${userId}/resend-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        alert(`Failed to resend password. Server returned: ${response.status} ${response.statusText}`);
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.emailSent) {
+          alert(result.message || 'Password reset successfully. Email sent to user.');
+        } else {
+          // Email failed but password was reset - show the password so admin can share it manually
+          alert(`Password reset successfully, but email delivery failed.\n\nTemporary password: ${result.data.temporaryPassword}\n\nPlease share this password with the user manually.`);
+        }
+      } else {
+        alert(result.error || 'Failed to resend password');
+      }
+    } catch (error) {
+      console.error('Error resending password:', error);
+      alert('Failed to resend password. Please try again.');
     }
   };
 
@@ -378,6 +414,13 @@ export default function UserAssignmentModal({
                       title="Edit User"
                     >
                       <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleResendPassword(user._id, user.email)}
+                      className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                      title="Resend Password"
+                    >
+                      <Send className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteUser(user._id, user.email)}

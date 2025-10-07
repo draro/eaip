@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download } from 'lucide-react';
+import { formatAiracCycle } from '@/lib/utils';
 
 interface Organization {
   name: string;
@@ -43,7 +44,12 @@ interface Document {
 }
 
 interface PublicData {
-  organization: Organization;
+  organization: Organization & {
+    settings: {
+      enableExport?: boolean;
+      allowedExportFormats?: string[];
+    };
+  };
   statistics: {
     totalDocuments: number;
   };
@@ -147,7 +153,12 @@ export default function PublicEAIPViewer() {
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: `${organization.branding.primaryColor}10` }}
+      style={{
+        backgroundColor: `${organization.branding.primaryColor}10`,
+        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+        fontSize: (organization.branding as any).fontSize || '16px',
+        color: (organization.branding as any).textColor || '#000000'
+      }}
     >
       {/* Header */}
       <header
@@ -199,8 +210,11 @@ export default function PublicEAIPViewer() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Search Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader style={{
+            borderBottom: `2px solid ${organization.branding.primaryColor}`,
+            backgroundColor: `${organization.branding.primaryColor}05`
+          }}>
+            <CardTitle className="flex items-center gap-2" style={{ color: organization.branding.primaryColor }}>
               <Search className="w-5 h-5" />
               Search eAIP Documents
             </CardTitle>
@@ -216,12 +230,14 @@ export default function PublicEAIPViewer() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  style={{ borderColor: organization.branding.primaryColor + '40' }}
                 />
               </div>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
                 className="px-3 py-2 border rounded-md"
+                style={{ borderColor: organization.branding.primaryColor + '40' }}
               >
                 <option value="">All Types</option>
                 <option value="AIP">AIP</option>
@@ -231,7 +247,10 @@ export default function PublicEAIPViewer() {
               <Button
                 onClick={handleSearch}
                 disabled={searching}
-                style={{ backgroundColor: organization.branding.secondaryColor }}
+                style={{
+                  backgroundColor: organization.branding.secondaryColor,
+                  color: 'white'
+                }}
               >
                 {searching ? 'Searching...' : 'Search'}
               </Button>
@@ -252,20 +271,44 @@ export default function PublicEAIPViewer() {
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
-                          <div>AIRAC Cycle: {doc.airacCycle}</div>
+                          <div>AIRAC Cycle: {formatAiracCycle(doc.airacCycle)}</div>
                           <div>Effective: {new Date(doc.effectiveDate).toLocaleDateString()}</div>
                           <div>Authority: {doc.metadata.authority}</div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          size="sm"
+                          onClick={() => window.location.href = `/public/${domain}/${doc._id}`}
+                          style={{
+                            backgroundColor: organization.branding.primaryColor,
+                            color: 'white'
+                          }}
+                          className="hover:opacity-90"
+                        >
                           <FileText className="w-4 h-4 mr-1" />
                           View
                         </Button>
-                        <Button variant="outline" size="sm">
-                          <Download className="w-4 h-4 mr-1" />
-                          Export
-                        </Button>
+                        {data.organization.settings.enableExport !== false && (
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                window.open(`/api/public/${domain}/documents/${doc._id}/export?format=${e.target.value}`, '_blank');
+                                e.target.value = '';
+                              }
+                            }}
+                            className="px-3 py-1 text-sm border rounded-md cursor-pointer"
+                            style={{
+                              borderColor: organization.branding.primaryColor,
+                              color: organization.branding.primaryColor
+                            }}
+                          >
+                            <option value="">Export...</option>
+                            {(data.organization.settings.allowedExportFormats || ['pdf', 'docx']).map((format: string) => (
+                              <option key={format} value={format}>{format.toUpperCase()}</option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -297,7 +340,7 @@ export default function PublicEAIPViewer() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {data.latestDocuments[0]?.airacCycle || 'N/A'}
+                {data.latestDocuments[0]?.airacCycle ? formatAiracCycle(data.latestDocuments[0].airacCycle) : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
                 Latest cycle
@@ -328,8 +371,13 @@ export default function PublicEAIPViewer() {
 
         {/* Latest Documents */}
         <Card>
-          <CardHeader>
-            <CardTitle>Latest Published Documents</CardTitle>
+          <CardHeader style={{
+            borderBottom: `2px solid ${organization.branding.primaryColor}`,
+            backgroundColor: `${organization.branding.primaryColor}05`
+          }}>
+            <CardTitle style={{ color: organization.branding.primaryColor }}>
+              Latest Published Documents
+            </CardTitle>
             <CardDescription>
               Most recently published aeronautical information
             </CardDescription>
@@ -354,7 +402,7 @@ export default function PublicEAIPViewer() {
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
                         <div>
-                          <span className="font-medium">AIRAC:</span> {doc.airacCycle}
+                          <span className="font-medium">AIRAC:</span> {formatAiracCycle(doc.airacCycle)}
                         </div>
                         <div>
                           <span className="font-medium">Version:</span> {doc.version.versionNumber}
@@ -370,19 +418,37 @@ export default function PublicEAIPViewer() {
 
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
                         size="sm"
+                        onClick={() => window.location.href = `/public/${domain}/${doc._id}`}
+                        style={{
+                          backgroundColor: organization.branding.primaryColor,
+                          color: 'white'
+                        }}
+                        className="hover:opacity-90"
                       >
                         <FileText className="w-4 h-4 mr-1" />
                         View
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Download className="w-4 h-4 mr-1" />
-                        Export
-                      </Button>
+                      {data.organization.settings.enableExport !== false && (
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              window.open(`/api/public/${domain}/documents/${doc._id}/export?format=${e.target.value}`, '_blank');
+                              e.target.value = '';
+                            }
+                          }}
+                          className="px-3 py-1 text-sm border rounded-md cursor-pointer"
+                          style={{
+                            borderColor: organization.branding.primaryColor,
+                            color: organization.branding.primaryColor
+                          }}
+                        >
+                          <option value="">Export...</option>
+                          {(data.organization.settings.allowedExportFormats || ['pdf', 'docx']).map((format: string) => (
+                            <option key={format} value={format}>{format.toUpperCase()}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -398,15 +464,22 @@ export default function PublicEAIPViewer() {
         </Card>
 
         {/* Footer */}
-        <footer className="text-center text-sm text-gray-600 border-t pt-6">
+        <footer
+          className="text-center text-sm border-t pt-6"
+          style={{
+            borderTopColor: organization.branding.primaryColor + '40',
+            color: organization.branding.primaryColor
+          }}
+        >
           <p>
-            This electronic AIP is published by {organization.name} in accordance with ICAO Annex 15.
+            {(organization.branding as any).footerText || `This electronic AIP is published by ${organization.name} in accordance with ICAO Annex 15.`}
           </p>
           <p className="mt-2">
             For technical issues or inquiries, contact{' '}
             <a
               href={`mailto:${organization.contact.email}`}
-              className="text-blue-600 hover:underline"
+              style={{ color: organization.branding.secondaryColor }}
+              className="font-medium hover:underline"
             >
               {organization.contact.email}
             </a>

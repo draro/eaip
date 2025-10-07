@@ -129,15 +129,23 @@ export class AIRACManager {
       cycle: null,
     };
 
-    // Check format (YYMM where MM is cycle number)
-    if (!/^\d{4}$/.test(cycleId)) {
+    // Check format (YYMM or YYYYMM where MM is cycle number)
+    let year: number;
+    let cycleNum: number;
+
+    if (/^\d{6}$/.test(cycleId)) {
+      // YYYYMM format (e.g., 202501)
+      year = parseInt(cycleId.substring(0, 4));
+      cycleNum = parseInt(cycleId.substring(4, 6));
+    } else if (/^\d{4}$/.test(cycleId)) {
+      // YYMM format (e.g., 2501)
+      year = 2000 + parseInt(cycleId.substring(0, 2));
+      cycleNum = parseInt(cycleId.substring(2, 4));
+    } else {
       result.isValid = false;
-      result.errors.push('AIRAC cycle must be in YYMM format (e.g., 2501)');
+      result.errors.push('AIRAC cycle must be in YYMM format (e.g., 2501) or YYYYMM format (e.g., 202501)');
       return result;
     }
-
-    const year = 2000 + parseInt(cycleId.substring(0, 2));
-    const cycleNum = parseInt(cycleId.substring(2, 4));
 
     // Validate year range
     const currentYear = new Date().getFullYear();

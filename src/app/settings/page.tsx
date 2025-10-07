@@ -392,7 +392,9 @@ export default function SettingsPage() {
                     </>
                   ) : (
                     <>
-                      <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                      <option value="gpt-5">GPT-5 (Latest)</option>
+                      <option value="gpt-5-mini">GPT-5 Mini</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
                       <option value="gpt-4">GPT-4</option>
                       <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                     </>
@@ -586,7 +588,7 @@ export default function SettingsPage() {
               <CardTitle>Branding & Colors</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="primary-color">Primary Color</Label>
                   <Input
@@ -616,6 +618,138 @@ export default function SettingsPage() {
                       }
                     }))}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="text-color">Text Color</Label>
+                  <Input
+                    id="text-color"
+                    type="color"
+                    value={(companySettings.branding as any).textColor || '#000000'}
+                    onChange={(e) => setCompanySettings(prev => ({
+                      ...prev,
+                      branding: {
+                        ...prev.branding,
+                        textColor: e.target.value
+                      } as any
+                    }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="font-family">Font Family</Label>
+                  <select
+                    id="font-family"
+                    value={(companySettings.branding as any).fontFamily || 'Inter, system-ui, sans-serif'}
+                    onChange={(e) => setCompanySettings(prev => ({
+                      ...prev,
+                      branding: {
+                        ...prev.branding,
+                        fontFamily: e.target.value
+                      } as any
+                    }))}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="Inter, system-ui, sans-serif">Inter (Default)</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="font-size">Font Size</Label>
+                  <Input
+                    id="font-size"
+                    type="text"
+                    placeholder="16px"
+                    value={(companySettings.branding as any).fontSize || '16px'}
+                    onChange={(e) => setCompanySettings(prev => ({
+                      ...prev,
+                      branding: {
+                        ...prev.branding,
+                        fontSize: e.target.value
+                      } as any
+                    }))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="footer-text">Public Footer Text</Label>
+                <Input
+                  id="footer-text"
+                  type="text"
+                  placeholder="This electronic AIP is published in accordance with ICAO Annex 15."
+                  value={(companySettings.branding as any).footerText || ''}
+                  onChange={(e) => setCompanySettings(prev => ({
+                    ...prev,
+                    branding: {
+                      ...prev.branding,
+                      footerText: e.target.value
+                    } as any
+                  }))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Export Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Enable Public Export</Label>
+                  <p className="text-sm text-gray-600">Allow users to export documents from the public eAIP viewer</p>
+                </div>
+                <Switch
+                  checked={(companySettings.defaultSettings as any).enableExport !== false}
+                  onCheckedChange={(checked) => setCompanySettings(prev => ({
+                    ...prev,
+                    defaultSettings: {
+                      ...prev.defaultSettings,
+                      enableExport: checked
+                    } as any
+                  }))}
+                />
+              </div>
+
+              <div>
+                <Label>Allowed Export Formats</Label>
+                <div className="mt-2 space-y-2">
+                  {['pdf', 'docx', 'xml', 'html'].map((format) => (
+                    <div key={format} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`format-${format}`}
+                        checked={((companySettings.defaultSettings as any).allowedExportFormats || ['pdf', 'docx']).includes(format)}
+                        onChange={(e) => {
+                          const currentFormats = (companySettings.defaultSettings as any).allowedExportFormats || ['pdf', 'docx'];
+                          const newFormats = e.target.checked
+                            ? [...currentFormats, format]
+                            : currentFormats.filter((f: string) => f !== format);
+                          setCompanySettings(prev => ({
+                            ...prev,
+                            defaultSettings: {
+                              ...prev.defaultSettings,
+                              allowedExportFormats: newFormats
+                            } as any
+                          }));
+                        }}
+                        className="rounded"
+                      />
+                      <label htmlFor={`format-${format}`} className="text-sm uppercase cursor-pointer">
+                        {format}
+                      </label>
+                      {(format === 'xml' || format === 'html') && (
+                        <Badge variant="outline" className="text-xs">Requires Authentication</Badge>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>

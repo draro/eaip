@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import AIPVersion from '@/models/AIPVersion';
 import AIPDocument from '@/models/AIPDocument';
+import User from '@/models/User';
 import { generateAiracCycle } from '@/lib/utils';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
+
+    // Ensure AIPDocument model is registered
+    if (!AIPDocument) {
+      throw new Error('AIPDocument model not loaded');
+    }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -23,6 +29,7 @@ export async function GET(request: NextRequest) {
       .populate('createdBy', 'name email')
       .populate({
         path: 'documents',
+        model: 'AIPDocument',
         select: 'title sectionCode subsectionCode status',
         populate: {
           path: 'updatedBy',

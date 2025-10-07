@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,8 +16,11 @@ import {
   User,
   GitBranch,
   Download,
-  Eye
+  Eye,
+  CheckCircle
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatAiracCycle } from '@/lib/utils';
 
 interface Document {
   _id: string;
@@ -47,11 +51,67 @@ interface Document {
 export default function DocumentViewPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>('editor'); // This would come from auth context
+  const userRole = (session?.user as any)?.role || 'viewer';
 
   useEffect(() => {
+    fetchDocument();
+  }, [params.id, searchParams]);
+
+  const fetchDocument = async () => {
+    try {
+      setLoading(true);
+      const documentId = params.id as string;
+      const response = await fetch(`/api/documents/${documentId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setDocument(data.data);
+      } else {
+        console.error('Failed to fetch document:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching document:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!document) return;
+
+    const confirmMessage = `Change document status from "${document.status}" to "${newStatus}"?`;
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      const response = await fetch(`/api/documents/${document._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setDocument({ ...document, status: newStatus as any });
+        alert(`✅ Status changed to ${newStatus}`);
+      } else {
+        alert(`Failed to change status: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error changing status:', error);
+      alert('Failed to change status. Please try again.');
+    }
+  };
+
+  /*useEffect(() => {
     const documentId = params.id as string;
 
     // Mock data - in real app, fetch from API
@@ -129,7 +189,7 @@ export default function DocumentViewPage() {
 
     setDocument(mockDocument);
     setLoading(false);
-  }, [params.id]);
+  }, [params.id]);*/
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -155,9 +215,11 @@ export default function DocumentViewPage() {
            ['draft', 'review'].includes(document.status);
   };
 
+  const user = session?.user as any;
+
   if (loading) {
     return (
-      <Layout>
+      <Layout user={user}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
@@ -167,7 +229,7 @@ export default function DocumentViewPage() {
 
   if (!document) {
     return (
-      <Layout>
+      <Layout user={user}>
         <div className="min-h-screen bg-gray-50 p-6">
           <div className="max-w-4xl mx-auto">
             <Card>
@@ -190,7 +252,7 @@ export default function DocumentViewPage() {
   }
 
   return (
-    <Layout>
+    <Layout user={user}>
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
@@ -228,9 +290,37 @@ export default function DocumentViewPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <CardTitle className="text-2xl">{document.title}</CardTitle>
-                    <Badge className={getStatusColor(document.status)}>
-                      {document.status}
-                    </Badge>
+
+                    {/* Status Selector */}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-gray-500" />
+                      <Select value={document.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-[140px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                              Draft
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="review">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                              Review
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="published">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                              Published
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <Badge className={getTypeColor(document.documentType)}>
                       {document.documentType}
                     </Badge>
@@ -255,7 +345,7 @@ export default function DocumentViewPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">AIRAC:</span>
-                  <span className="font-medium">{document.airacCycle}</span>
+                  <span className="font-medium">{formatAiracCycle(document.airacCycle)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <GitBranch className="w-4 h-4 text-gray-500" />
@@ -291,10 +381,40 @@ export default function DocumentViewPage() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                  />
+                  {/* Section Content */}
+                  {section.content && (
+                    <div
+                      className="prose prose-sm max-w-none mb-6"
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                    />
+                  )}
+
+                  {/* Subsections */}
+                  {section.subsections && section.subsections.length > 0 && (
+                    <div className="space-y-4">
+                      {section.subsections.map((subsection: any) => (
+                        <div key={subsection.id} className="border-l-2 border-blue-200 pl-4">
+                          <h4 className="font-semibold text-sm text-gray-700 mb-2">
+                            {subsection.code} - {subsection.title}
+                          </h4>
+                          {subsection.content && (
+                            <div
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: subsection.content }}
+                            />
+                          )}
+                          {!subsection.content && (
+                            <p className="text-gray-500 italic text-xs">No content available.</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {!section.content && (!section.subsections || section.subsections.length === 0) && (
+                    <p className="text-gray-500 italic">No content or subsections available for this section.</p>
+                  )}
                 </CardContent>
               </Card>
             ))}

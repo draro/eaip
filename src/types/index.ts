@@ -45,6 +45,9 @@ export interface ICompanySettings {
     timezone: string;
     airacStartDate: Date;
   };
+  aiProvider?: 'claude' | 'openai';
+  aiApiKey?: string;
+  aiModel?: string;
 }
 
 export interface IOrganization extends Document {
@@ -58,7 +61,11 @@ export interface IOrganization extends Document {
   branding: {
     primaryColor: string;
     secondaryColor: string;
+    textColor?: string;
     logoUrl?: string;
+    fontFamily?: string;
+    fontSize?: string;
+    footerText?: string;
   };
   contact: {
     email: string;
@@ -71,8 +78,13 @@ export interface IOrganization extends Document {
     timezone: string;
     language: string;
     enablePublicAccess: boolean;
+    enableExport?: boolean;
+    allowedExportFormats?: string[];
     airacStartDate: Date;
   };
+  aiProvider: 'claude' | 'openai';
+  aiApiKey?: string;
+  aiModel: string;
   subscription: {
     plan: 'basic' | 'professional' | 'enterprise';
     maxUsers: number;
@@ -94,6 +106,7 @@ export interface IUser extends Document {
   lastName: string;
   password: string;
   role: 'super_admin' | 'org_admin' | 'editor' | 'viewer';
+  workflowRoles?: ('reviewer' | 'approver')[];
   organization?: Types.ObjectId;
   avatar?: string;
   permissions: string[];
@@ -141,6 +154,7 @@ export interface ISection {
   id: string;
   type: 'GEN' | 'ENR' | 'AD';
   title: string;
+  content?: string;
   subsections: ISubsection[];
   order: number;
 }

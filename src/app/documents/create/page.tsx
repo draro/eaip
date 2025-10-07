@@ -22,10 +22,12 @@ import {
 } from 'lucide-react';
 
 const documentTypes = [
-  { value: 'gen', label: 'GEN - General' },
-  { value: 'enr', label: 'ENR - En Route' },
-  { value: 'ad', label: 'AD - Aerodromes' },
-  { value: 'amdt', label: 'AMDT - Amendment' }
+  { value: 'AIP', label: 'AIP - Complete Aeronautical Information Publication (GEN + ENR + AD)' },
+  { value: 'GEN', label: 'GEN - General (Section only)' },
+  { value: 'ENR', label: 'ENR - En Route (Section only)' },
+  { value: 'AD', label: 'AD - Aerodromes (Section only)' },
+  { value: 'SUPPLEMENT', label: 'Supplement' },
+  { value: 'NOTAM', label: 'NOTAM' }
 ];
 
 const documentSections = {
@@ -63,11 +65,52 @@ export default function CreateDocumentPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    type: '',
-    section: '',
+    documentType: 'AIP',
+    country: '',
+    airport: '',
+    versionId: '',
     effectiveDate: '',
     content: ''
   });
+  const [versions, setVersions] = useState<any[]>([]);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [organizationId, setOrganizationId] = useState('');
+
+  // Fetch versions and organizations on mount
+  React.useEffect(() => {
+    fetchVersions();
+    if (session?.user && (session.user as any).role === 'super_admin') {
+      fetchOrganizations();
+    }
+  }, [session]);
+
+  const fetchVersions = async () => {
+    try {
+      const response = await fetch('/api/versions');
+      const result = await response.json();
+      if (result.success) {
+        setVersions(result.data);
+        if (result.data.length > 0) {
+          setFormData(prev => ({ ...prev, versionId: result.data[0]._id }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching versions:', error);
+    }
+  };
+
+  const fetchOrganizations = async () => {
+    try {
+      const response = await fetch('/api/organizations?limit=1000');
+      const result = await response.json();
+      if (result.success) {
+        const orgs = result.data?.organizations || [];
+        setOrganizations(orgs);
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
 
   // Check authentication
   if (status === 'loading') {
@@ -113,31 +156,56 @@ export default function CreateDocumentPage() {
       ...prev,
       [field]: value
     }));
-
-    // Reset section when type changes
-    if (field === 'type') {
-      setFormData(prev => ({
-        ...prev,
-        section: ''
-      }));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (!formData.title || !formData.documentType || !formData.country || !formData.versionId) {
+      setError('Please fill in all required fields: title, document type, country, and version');
+      return;
+    }
+
+    if (formData.country.length !== 2) {
+      setError('Country code must be a 2-letter ICAO code (e.g., US, GB, IT)');
+      return;
+    }
+
+    if (formData.airport && formData.airport.length !== 4) {
+      setError('Airport code must be a 4-letter ICAO code (e.g., KJFK, EGLL, LIRF)');
+      return;
+    }
+
+    if (user.role === 'super_admin' && !organizationId) {
+      setError('Please select an organization');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      const payload: any = {
+        title: formData.title,
+        documentType: formData.documentType,
+        country: formData.country.toUpperCase(),
+        airport: formData.airport?.toUpperCase() || undefined,
+        sections: [], // Empty sections will trigger template generation
+        versionId: formData.versionId,
+        effectiveDate: formData.effectiveDate || versions.find(v => v._id === formData.versionId)?.effectiveDate,
+      };
+
+      if (user.role === 'super_admin' && organizationId) {
+        payload.organizationId = organizationId;
+      }
+
       const response = await fetch('/api/documents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          effectiveDate: formData.effectiveDate ? new Date(formData.effectiveDate) : null
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
@@ -145,7 +213,16 @@ export default function CreateDocumentPage() {
       if (response.ok && result.success) {
         router.push(`/documents/${result.data._id}/edit`);
       } else {
-        setError(result.error || 'Failed to create document');
+        if (result.details?.existingDocumentId) {
+          const viewExisting = confirm(
+            `${result.details.message}\n\nExisting document: "${result.details.existingDocumentTitle}"\n\nWould you like to view/edit the existing document instead?`
+          );
+          if (viewExisting) {
+            router.push(`/documents/${result.details.existingDocumentId}/edit`);
+          }
+        } else {
+          setError(result.error || 'Failed to create document');
+        }
       }
     } catch (error) {
       console.error('Error creating document:', error);
@@ -199,25 +276,51 @@ export default function CreateDocumentPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Title */}
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Document Title *</Label>
-                    <Input
-                      id="title"
-                      placeholder="Enter document title"
-                      value={formData.title}
-                      onChange={(e) => handleInputChange('title', e.target.value)}
-                      required
-                    />
-                  </div>
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Document Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="e.g., Italy AIP, Rome Fiumicino Airport"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    required
+                  />
+                </div>
 
-                  {/* Type */}
+                {/* Organization (super admin only) */}
+                {user.role === 'super_admin' && (
                   <div className="space-y-2">
-                    <Label htmlFor="type">Document Type *</Label>
+                    <Label htmlFor="organization">Organization *</Label>
                     <Select
-                      value={formData.type}
-                      onValueChange={(value) => handleInputChange('type', value)}
+                      value={organizationId}
+                      onValueChange={setOrganizationId}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Organization" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizations.map((org) => (
+                          <SelectItem key={org._id} value={org._id}>
+                            {org.name} ({org.domain})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      Select which organization this document belongs to
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Document Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="documentType">Document Type *</Label>
+                    <Select
+                      value={formData.documentType}
+                      onValueChange={(value) => handleInputChange('documentType', value)}
                       required
                     >
                       <SelectTrigger>
@@ -231,67 +334,99 @@ export default function CreateDocumentPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500">
+                      Select "AIP" for complete document with all sections
+                    </p>
                   </div>
 
-                  {/* Section */}
-                  {availableSections.length > 0 && (
-                    <div className="space-y-2">
-                      <Label htmlFor="section">Section</Label>
-                      <Select
-                        value={formData.section}
-                        onValueChange={(value) => handleInputChange('section', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableSections.map((section) => (
-                            <SelectItem key={section} value={section}>
-                              {section}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Effective Date */}
+                  {/* Country Code */}
                   <div className="space-y-2">
-                    <Label htmlFor="effectiveDate">Effective Date</Label>
+                    <Label htmlFor="country">Country Code (ICAO) *</Label>
                     <Input
-                      id="effectiveDate"
-                      type="date"
-                      value={formData.effectiveDate}
-                      onChange={(e) => handleInputChange('effectiveDate', e.target.value)}
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => handleInputChange('country', e.target.value.toUpperCase())}
+                      placeholder="e.g., IT, US, GB"
+                      maxLength={2}
+                      className="uppercase"
+                      required
                     />
+                    <p className="text-xs text-gray-500">2-letter ICAO country code</p>
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Enter a brief description of the document"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    rows={3}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Airport Code */}
+                  <div className="space-y-2">
+                    <Label htmlFor="airport">Airport Code (ICAO) - Optional</Label>
+                    <Input
+                      id="airport"
+                      value={formData.airport}
+                      onChange={(e) => handleInputChange('airport', e.target.value.toUpperCase())}
+                      placeholder="e.g., LIRF, KJFK, EGLL"
+                      maxLength={4}
+                      className="uppercase"
+                    />
+                    <p className="text-xs text-gray-500">
+                      4-letter ICAO airport code (for AD-type documents)
+                    </p>
+                  </div>
+
+                  {/* Version */}
+                  <div className="space-y-2">
+                    <Label htmlFor="versionId">AIP Version *</Label>
+                    <Select
+                      value={formData.versionId}
+                      onValueChange={(value) => handleInputChange('versionId', value)}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {versions.map((version) => (
+                          <SelectItem key={version._id} value={version._id}>
+                            {version.versionNumber} - AIRAC {version.airacCycle} - {version.status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {versions.length === 0 && (
+                      <p className="text-sm text-red-600">
+                        No versions found. Please create a version first.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Initial Content */}
+                {/* Effective Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="content">Initial Content</Label>
-                  <Textarea
-                    id="content"
-                    placeholder="Enter initial content for the document (optional)"
-                    value={formData.content}
-                    onChange={(e) => handleInputChange('content', e.target.value)}
-                    rows={6}
+                  <Label htmlFor="effectiveDate">Effective Date (Optional)</Label>
+                  <Input
+                    id="effectiveDate"
+                    type="date"
+                    value={formData.effectiveDate}
+                    onChange={(e) => handleInputChange('effectiveDate', e.target.value)}
                   />
                   <p className="text-xs text-gray-500">
-                    You can also add content later using the rich text editor
+                    Leave blank to use version's effective date
                   </p>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                  <h3 className="font-medium text-yellow-900 mb-2">
+                    ICAO Annex 15 Compliant Templates
+                  </h3>
+                  <p className="text-sm text-yellow-700 mb-2">
+                    <strong>Automatic Template Generation:</strong> New documents are automatically created with all mandatory sections and subsections according to ICAO Annex 15 standards.
+                  </p>
+                  <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+                    <li><strong>Full AIP:</strong> Complete document with all three parts (GEN + ENR + AD) - 86 mandatory subsections</li>
+                    <li><strong>GEN section:</strong> 30 mandatory subsections including preface, amendments, authorities</li>
+                    <li><strong>ENR section:</strong> 28 subsections covering airways, airspace, navigation aids</li>
+                    <li><strong>AD section:</strong> 28 subsections for aerodrome information and facilities</li>
+                  </ul>
                 </div>
 
                 {/* Actions */}
@@ -310,7 +445,7 @@ export default function CreateDocumentPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={loading || !formData.title || !formData.type}
+                      disabled={loading || !formData.title || !formData.documentType || !formData.country || !formData.versionId}
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">

@@ -55,8 +55,25 @@ const OrganizationSchema = new Schema<IOrganization>(
           "Secondary color must be a valid hex color",
         ],
       },
+      textColor: {
+        type: String,
+        default: "#000000",
+        match: [/^#[0-9A-Fa-f]{6}$/, "Text color must be a valid hex color"],
+      },
       logoUrl: {
         type: String,
+      },
+      fontFamily: {
+        type: String,
+        default: "Inter, system-ui, sans-serif",
+      },
+      fontSize: {
+        type: String,
+        default: "16px",
+      },
+      footerText: {
+        type: String,
+        default: "This electronic AIP is published in accordance with ICAO Annex 15.",
       },
     },
     contact: {
@@ -102,10 +119,35 @@ const OrganizationSchema = new Schema<IOrganization>(
         type: Boolean,
         default: true,
       },
+      enableExport: {
+        type: Boolean,
+        default: true,
+      },
+      allowedExportFormats: {
+        type: [String],
+        default: ["pdf", "docx"],
+        enum: {
+          values: ["pdf", "docx", "xml", "html"],
+          message: "Export format must be one of: pdf, docx, xml, html",
+        },
+      },
       airacStartDate: {
         type: Date,
         required: [true, "AIRAC start date is required"],
       },
+    },
+    aiProvider: {
+      type: String,
+      enum: ["claude", "openai"],
+      default: "claude",
+    },
+    aiApiKey: {
+      type: String,
+      select: false,
+    },
+    aiModel: {
+      type: String,
+      default: "claude-sonnet-4-5-20250929",
     },
     subscription: {
       plan: {

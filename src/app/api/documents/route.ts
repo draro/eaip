@@ -5,6 +5,7 @@ import AIPVersion from '@/models/AIPVersion';
 import { generateAiracCycle } from '@/lib/utils';
 import { withAuth, createErrorResponse, paginateQuery } from '@/lib/apiMiddleware';
 import { DataIsolationService } from '@/lib/dataIsolation';
+import { getTemplatesByType, getMandatorySections } from '@/lib/aipTemplates';
 
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
@@ -15,9 +16,18 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     const versionId = searchParams.get('versionId');
     const status = searchParams.get('status');
     const documentType = searchParams.get('documentType');
+    const organizationId = searchParams.get('organizationId');
 
     // Build base filter with organization isolation
-    let filter = DataIsolationService.enforceOrganizationFilter(user);
+    let filter: any = {};
+
+    // If super admin requests specific organization, use that
+    if (user.role === 'super_admin' && organizationId) {
+      filter.organization = organizationId;
+    } else {
+      // Otherwise use standard organization isolation
+      filter = DataIsolationService.enforceOrganizationFilter(user);
+    }
 
     if (versionId) filter.version = versionId;
     if (status) filter.status = status;
@@ -174,13 +184,40 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     const Organization = (await import('@/models/Organization')).default;
     const targetOrg = await Organization.findById(targetOrganizationId);
 
+    // Generate compliant sections if not provided
+    let documentSections = sections || [];
+
+    // If no sections provided, use ICAO Annex 15 compliant templates
+    if (!sections || sections.length === 0) {
+      const templates = getTemplatesByType(documentType);
+
+      documentSections = templates.map((template, sectionIndex) => ({
+        id: `section-${Date.now()}-${sectionIndex}`,
+        type: template.type,
+        title: template.title,
+        description: template.description,
+        content: `<p>${template.description}</p>`,
+        order: sectionIndex,
+        subsections: template.subsections.map((sub, subIndex) => ({
+          id: `subsection-${Date.now()}-${sectionIndex}-${subIndex}`,
+          code: sub.code,
+          title: sub.title,
+          content: sub.content,
+          order: sub.order,
+          isMandatory: sub.isMandatory,
+          lastModified: new Date(),
+          modifiedBy: user._id
+        }))
+      }));
+    }
+
     // Create document with organization isolation
     const documentData: any = {
       title,
       documentType,
       country: country.toUpperCase(),
       airport: airport?.toUpperCase() || undefined,
-      sections: sections || [],
+      sections: documentSections,
       version: versionId,
       organization: targetOrganizationId,
       createdBy: user._id,
@@ -192,7 +229,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         authority: metadata?.authority || targetOrg?.name || 'Authority',
         contact: metadata?.contact || 'contact@authority.gov',
         lastReview: new Date(),
-        nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
+        nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        templateGenerated: !sections || sections.length === 0,
+        complianceStandard: 'ICAO Annex 15 / EUROCONTROL Spec 3.0'
       }
     };
 
@@ -223,7 +262,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         country: document.country,
         airport: document.airport,
         status: document.status,
-        organizationId: user.organization._id
+        organizationId: targetOrganizationId
       },
     };
 

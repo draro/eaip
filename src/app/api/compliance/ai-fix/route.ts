@@ -3,10 +3,7 @@ import connectDB from "@/lib/mongodb";
 import AIPDocument from "@/models/AIPDocument";
 import { withAuth, createErrorResponse } from "@/lib/apiMiddleware";
 import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import OpenAI from "openai";
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
@@ -56,8 +53,50 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
+    // Get organization AI settings
+    const Organization = (await import('@/models/Organization')).default;
+    const org = await Organization.findById(document.organization).select('+aiApiKey');
+
+    const aiProvider = org?.aiProvider || 'claude';
+    const aiModel = org?.aiModel || 'claude-sonnet-4-5-20250929';
+
+    // Determine API key based on provider
+    let aiApiKey = org?.aiApiKey;
+    if (!aiApiKey) {
+      aiApiKey = aiProvider === 'openai'
+        ? process.env.OPENAI_API_KEY
+        : process.env.ANTHROPIC_API_KEY;
+    }
+
+    if (!aiApiKey) {
+      return NextResponse.json(
+        { success: false, error: `AI API key not configured for ${aiProvider}. Please configure in organization settings or environment variables.` },
+        { status: 500 }
+      );
+    }
+
+    // Collect all issues from framework results
+    let allIssues: any[] = [];
+
+    if (auditReport.frameworkResults) {
+      // Extract issues from all framework results
+      Object.values(auditReport.frameworkResults).forEach((result: any) => {
+        if (result.issues && Array.isArray(result.issues)) {
+          allIssues = allIssues.concat(result.issues);
+        }
+      });
+    }
+
+    // Validate we have issues to fix
+    if (allIssues.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No compliance issues found in audit report.' },
+        { status: 400 }
+      );
+    }
+
     // Build AI prompt with compliance issues
-    const criticalIssues = auditReport.issues.filter(
+    const criticalIssues = allIssues.filter(
       (i: any) => i.severity === "critical" || i.severity === "high"
     );
     const issuesList = criticalIssues
@@ -93,53 +132,74 @@ ${issuesList}
 ${JSON.stringify(document.sections, null, 2)}
 
 **Instructions:**
-1. Analyze each compliance issue carefully
-2. Fix the document structure and content to resolve all critical and high priority issues
-3. Ensure compliance with ICAO Annex 15 mandatory sections
-4. Ensure compliance with EUROCONTROL Spec 3.0 metadata and structure requirements
-5. Preserve all valid existing content
-6. Add missing mandatory sections with appropriate content
-7. Return the updated sections array in valid JSON format
+1. Fix ONLY the critical/high priority issues listed above
+2. Add missing mandatory sections with minimal placeholder content
+3. Keep existing valid content unchanged
+4. Return concise, minimal fixes
 
-Please return ONLY a valid JSON object with this structure:
+IMPORTANT: Keep response under 4000 tokens. Use placeholders like [TO BE COMPLETED] for detailed content.
+
+Return ONLY valid JSON:
 {
-  "sections": [...updated sections array...],
-  "fixedIssues": [...array of issue checkIds that were fixed...],
-  "summary": "Brief summary of changes made"
+  "sections": [...updated sections - MINIMAL CHANGES ONLY...],
+  "fixedIssues": [...issue IDs fixed...],
+  "summary": "Brief summary"
 }`;
 
-    // Call Claude API to generate fixes
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 8000,
-      temperature: 0.3,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+    // Call AI API based on provider
+    let responseText = '';
 
-    // Extract the response
-    const responseText =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    if (aiProvider === 'openai') {
+      const openai = new OpenAI({ apiKey: aiApiKey });
+      const completion = await openai.chat.completions.create({
+        model: aiModel,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 4096,
+        temperature: 0.3,
+      });
+      responseText = completion.choices[0]?.message?.content || '';
+    } else {
+      // Claude
+      const anthropic = new Anthropic({ apiKey: aiApiKey });
+      const message = await anthropic.messages.create({
+        model: aiModel,
+        max_tokens: 4096,
+        temperature: 0.3,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    }
 
     // Parse AI response - extract JSON from potential markdown code blocks
     let aiResponse;
     try {
+      console.log('AI Response length:', responseText.length);
+      console.log('AI Response preview:', responseText.substring(0, 500));
+      console.log('AI Response end:', responseText.substring(responseText.length - 200));
+
       // Try to extract JSON from code blocks if present
       const jsonMatch =
         responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) ||
         responseText.match(/(\{[\s\S]*\})/);
       const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
+
+      console.log('Attempting to parse JSON, length:', jsonStr.length);
       aiResponse = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", responseText);
+
+      console.log('Successfully parsed AI response');
+    } catch (parseError: any) {
+      console.error("Failed to parse AI response:", parseError.message);
+      console.error("Response text (first 1000 chars):", responseText.substring(0, 1000));
+      console.error("Response text (last 500 chars):", responseText.substring(responseText.length - 500));
+
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to parse AI response. The AI may need more context.",
+          error: "Failed to parse AI response. The response may be incomplete or invalid JSON.",
+          details: process.env.NODE_ENV === 'development' ? {
+            error: parseError.message,
+            responsePreview: responseText.substring(0, 500)
+          } : undefined
         },
         { status: 500 }
       );

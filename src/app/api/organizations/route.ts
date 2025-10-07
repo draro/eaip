@@ -5,6 +5,7 @@ import User from '@/models/User';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 import { SecurityUtils } from '@/lib/security';
 import { emailService } from '@/lib/email';
+import { gitService } from '@/lib/gitService';
 
 export async function GET(request: NextRequest) {
   try {
@@ -167,6 +168,20 @@ export async function POST(request: NextRequest) {
 
     const savedOrg = await organization.save();
     console.log('Organization created successfully:', savedOrg._id);
+
+    // Initialize Git repository for the organization
+    const gitResult = await gitService.initializeOrgRepository(
+      savedOrg._id.toString(),
+      savedOrg.name,
+      savedOrg.slug
+    );
+
+    if (!gitResult.success) {
+      console.error('Failed to initialize Git repository:', gitResult.error);
+      // Don't fail the entire operation, but log the error
+    } else {
+      console.log('Git repository initialized successfully:', gitResult.repoPath);
+    }
 
     // Create organization admin user with secure temporary password
     const { password: temporaryPassword, hashedPassword } = SecurityUtils.generateSecurePassword(16);

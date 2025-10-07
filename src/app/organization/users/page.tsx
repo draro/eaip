@@ -18,23 +18,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Users,
   Plus,
   Search,
   Filter,
-  MoreHorizontal,
   UserPlus,
   Edit,
   Trash2,
   Mail,
   Calendar,
-  Shield
+  Shield,
+  Send
 } from 'lucide-react';
 
 interface User {
@@ -177,6 +171,53 @@ export default function UserManagement() {
       }
     } catch (error) {
       console.error('Error deleting user:', error);
+    }
+  };
+
+  const handleResendPassword = async (userId: string) => {
+    console.log('handleResendPassword called for user:', userId);
+
+    if (!confirm('Send a new temporary password to this user? They will receive an email with login credentials.')) {
+      console.log('User cancelled password resend');
+      return;
+    }
+
+    console.log('Sending password reset request...');
+
+    try {
+      const response = await fetch(`/api/users/${userId}/resend-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        alert(`Failed to resend password. Server returned: ${response.status} ${response.statusText}`);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        if (data.emailSent) {
+          alert(data.message || 'Password reset successfully. Email sent to user.');
+        } else {
+          // Email failed but password was reset - show the password so admin can share it manually
+          alert(`Password reset successfully, but email delivery failed.\n\nTemporary password: ${data.data.temporaryPassword}\n\nPlease share this password with the user manually.`);
+        }
+      } else {
+        alert('Failed to resend password: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error resending password:', error);
+      alert('Error resending password. Please try again. Check console for details.');
     }
   };
 
@@ -382,31 +423,35 @@ export default function UserManagement() {
                       </div>
                     </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowEditDialog(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit User
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteUser(user._id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowEditDialog(true);
+                        }}
+                        title="Edit User"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleResendPassword(user._id)}
+                        title="Resend Password"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDeleteUser(user._id)}
+                        title="Delete User"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

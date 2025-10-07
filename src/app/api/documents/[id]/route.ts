@@ -5,6 +5,8 @@ import AIPVersion from '@/models/AIPVersion';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 import { webhookService } from '@/lib/webhooks';
 import { remoteStorage } from '@/lib/remoteStorage';
+import { gitService } from '@/lib/gitService';
+import User from '@/models/User';
 
 export async function GET(
   request: NextRequest,
@@ -56,7 +58,7 @@ export async function PUT(
       updatedBy,
     } = body;
 
-    const document = await AIPDocument.findById(params.id);
+    const document = await AIPDocument.findById(params.id).populate('version');
     if (!document) {
       return NextResponse.json(
         { success: false, error: 'Document not found' },
@@ -75,37 +77,73 @@ export async function PUT(
     // Get or create a default user if updatedBy is not provided
     const userId = updatedBy || await getOrCreateDefaultUser();
 
-    const updateData: any = {
-      updatedBy: userId,
-      updatedAt: new Date(),
-    };
+    // Get current active AIRAC cycle
+    const activeVersion = await AIPVersion.findOne({ status: 'active' }).sort({ effectiveDate: -1 });
+    if (activeVersion) {
+      document.airacCycle = activeVersion.airacCycle;
+      document.version = activeVersion._id;
 
-    if (title !== undefined) updateData.title = title;
-    if (country !== undefined) updateData.country = country;
-    if (airport !== undefined) updateData.airport = airport;
+      // Update effective date to match the active version
+      if (activeVersion.effectiveDate) {
+        document.effectiveDate = activeVersion.effectiveDate;
+      }
+    }
+
+    if (title !== undefined) document.title = title;
+    if (country !== undefined) document.country = country;
+    if (airport !== undefined) document.airport = airport;
     if (sections !== undefined) {
-      updateData.sections = sections;
+      console.log('Received sections to save:', JSON.stringify(sections, null, 2));
+      document.sections = sections;
       // Update lastModified for all subsections
-      updateData.sections.forEach((section: any) => {
-        section.subsections.forEach((subsection: any) => {
-          subsection.lastModified = new Date();
-          subsection.modifiedBy = userId;
-        });
+      document.sections.forEach((section: any) => {
+        if (section.subsections && Array.isArray(section.subsections)) {
+          section.subsections.forEach((subsection: any) => {
+            subsection.lastModified = new Date();
+            subsection.modifiedBy = userId;
+          });
+        }
       });
+      document.markModified('sections');
+      console.log('Sections after processing:', JSON.stringify(document.sections, null, 2));
     }
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) document.status = status;
     if (metadata !== undefined) {
-      updateData.metadata = { ...document.metadata, ...metadata };
+      document.metadata = { ...document.metadata, ...metadata };
     }
 
-    const updatedDocument = await AIPDocument.findByIdAndUpdate(
-      params.id,
-      updateData,
-      { new: true, runValidators: true }
-    )
-      .populate('version', 'versionNumber airacCycle')
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email');
+    document.updatedBy = userId;
+    document.updatedAt = new Date();
+
+    const updatedDocument = await document.save();
+
+    await updatedDocument.populate('version', 'versionNumber airacCycle');
+    await updatedDocument.populate('createdBy', 'name email');
+    await updatedDocument.populate('updatedBy', 'name email');
+    await updatedDocument.populate('organization');
+
+    console.log('Updated document sections:', JSON.stringify(updatedDocument?.sections, null, 2));
+
+    // Commit to Git
+    try {
+      const user = await User.findById(userId);
+      const commitResult = await gitService.commitDocument(
+        updatedDocument.organization._id.toString(),
+        updatedDocument,
+        userId.toString(),
+        user?.name || 'System User',
+        user?.email || 'system@eaip.local'
+      );
+
+      if (commitResult.success) {
+        console.log('Document committed to Git:', commitResult.commitHash);
+      } else {
+        console.error('Failed to commit to Git:', commitResult.error);
+      }
+    } catch (gitError) {
+      console.error('Error during Git commit:', gitError);
+      // Don't fail the save operation if Git commit fails
+    }
 
     // Push to remote storage if configured
     if (remoteStorage.isConfigured()) {

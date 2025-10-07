@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Globe, Building2, FileText, Calendar, ChevronRight, Book, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { formatAiracCycle } from '@/lib/utils';
 
 interface Organization {
   _id: string;
@@ -301,7 +302,7 @@ export default function PublicEAIPPage() {
                             <SelectItem key={version._id} value={version._id}>
                               <div className="flex flex-col">
                                 <span>{version.versionNumber}</span>
-                                <span className="text-xs text-gray-500">AIRAC {version.airacCycle}</span>
+                                <span className="text-xs text-gray-500">AIRAC {formatAiracCycle(version.airacCycle)}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -384,7 +385,7 @@ export default function PublicEAIPPage() {
                             )}
                           </div>
                           <CardDescription>
-                            {selectedDoc.country} • AIRAC {selectedDoc.airacCycle} •
+                            {selectedDoc.country} • AIRAC {formatAiracCycle(selectedDoc.airacCycle)} •
                             Effective {new Date(selectedDoc.effectiveDate).toLocaleDateString()}
                           </CardDescription>
                         </div>

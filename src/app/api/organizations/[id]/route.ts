@@ -86,6 +86,15 @@ export async function PUT(
 
     await connectDB();
 
+    // First get the existing organization
+    const existingOrg = await Organization.findById(params.id);
+    if (!existingOrg) {
+      return NextResponse.json(
+        { success: false, error: 'Organization not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const updateData = { ...body };
 
@@ -99,12 +108,12 @@ export async function PUT(
       updateData.domain = updateData.domain.toLowerCase();
 
       // Check if new domain already exists
-      const existingOrg = await Organization.findOne({
+      const domainExists = await Organization.findOne({
         domain: updateData.domain,
         _id: { $ne: params.id }
       });
 
-      if (existingOrg) {
+      if (domainExists) {
         return NextResponse.json(
           { success: false, error: 'Domain already exists' },
           { status: 409 }
@@ -122,9 +131,22 @@ export async function PUT(
       updateData.icaoCode = updateData.icaoCode.toUpperCase();
     }
 
-    // Handle public URL
-    if (updateData.settings?.publicUrl) {
-      updateData.settings.publicUrl = updateData.settings.publicUrl.toLowerCase();
+    // Merge settings properly to preserve required fields
+    if (updateData.settings) {
+      updateData.settings = {
+        ...existingOrg.settings.toObject(),
+        ...updateData.settings,
+      };
+
+      // Handle public URL
+      if (updateData.settings.publicUrl) {
+        updateData.settings.publicUrl = updateData.settings.publicUrl.toLowerCase();
+      }
+
+      // Ensure airacStartDate is preserved if not provided
+      if (!updateData.settings.airacStartDate && existingOrg.settings.airacStartDate) {
+        updateData.settings.airacStartDate = existingOrg.settings.airacStartDate;
+      }
     }
 
     const organization = await Organization.findByIdAndUpdate(

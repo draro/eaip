@@ -40,6 +40,10 @@ const UserSchema = new Schema<IUser>(
       default: 'viewer',
       required: true,
     },
+    workflowRoles: [{
+      type: String,
+      enum: ['reviewer', 'approver'],
+    }],
     organization: {
       type: Schema.Types.ObjectId,
       ref: 'Organization',

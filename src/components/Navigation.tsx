@@ -143,7 +143,7 @@ export default function Navigation({ user }: NavigationProps) {
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/auth/login' });
+    await signOut({ callbackUrl: '/auth/signin' });
   };
 
   const visibleItems = getVisibleItems();
@@ -154,7 +154,10 @@ export default function Navigation({ user }: NavigationProps) {
         <div className="flex justify-between items-center h-14">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center">
+            <Link
+              href={user ? (user.role === 'super_admin' ? '/admin' : '/dashboard') : '/'}
+              className="flex items-center"
+            >
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}

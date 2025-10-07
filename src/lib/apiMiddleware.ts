@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, AuthUser, AuthError } from '@/lib/auth';
+import { AuthUser, AuthError } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 
 export type AuthenticatedHandler = (
   request: NextRequest,
@@ -9,7 +13,49 @@ export type AuthenticatedHandler = (
 export function withAuth(handler: AuthenticatedHandler) {
   return async (request: NextRequest, context: { params?: any }) => {
     try {
-      const user = await authenticateUser(request);
+      const session = await getServerSession(authOptions);
+
+      if (!session || !session.user) {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized - Please sign in' },
+          { status: 401 }
+        );
+      }
+
+      // Get full user data from database
+      await connectDB();
+      const dbUser = await User.findOne({ email: session.user.email })
+        .populate('organization', 'name domain status _id')
+        .lean();
+
+      if (!dbUser) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        );
+      }
+
+      if (!dbUser.isActive) {
+        return NextResponse.json(
+          { success: false, error: 'User account is deactivated' },
+          { status: 403 }
+        );
+      }
+
+      // Format user object
+      const user = {
+        _id: dbUser._id.toString(),
+        email: dbUser.email,
+        name: dbUser.name,
+        role: dbUser.role,
+        organization: dbUser.organization ? {
+          _id: (dbUser.organization as any)._id.toString(),
+          name: (dbUser.organization as any).name,
+          domain: (dbUser.organization as any).domain,
+          status: (dbUser.organization as any).status
+        } : undefined
+      };
+
       return await handler(request, { ...context, user });
     } catch (error) {
       if (error instanceof AuthError) {

@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { authenticateUser, requireOrgAdmin, enforceDataIsolation } from '@/lib/auth';
+import { withAuth, createErrorResponse } from '@/lib/apiMiddleware';
+import { DataIsolationService } from '@/lib/dataIsolation';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }: { user: any }) => {
   try {
     await connectDB();
 
-    // Authenticate user
-    const authUser = await authenticateUser(request);
-    requireOrgAdmin(authUser);
+    // Check permissions - only org_admin and super_admin can fetch users
+    if (!['super_admin', 'org_admin'].includes(user.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Insufficient permissions to fetch users' },
+        { status: 403 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -44,7 +49,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply data isolation (org admins can only see users in their organization)
-    query = await enforceDataIsolation(authUser, query);
+    if (user.role !== 'super_admin') {
+      if (!user.organization?._id) {
+        return NextResponse.json(
+          { success: false, error: 'User not associated with any organization' },
+          { status: 403 }
+        );
+      }
+      query.organization = user.organization._id;
+      console.log('Filtering users for org_admin:', {
+        userRole: user.role,
+        userName: user.name,
+        userOrgId: user.organization._id,
+        userOrgName: user.organization.name,
+        query
+      });
+    } else {
+      console.log('Super admin fetching all users, no organization filter');
+    }
 
     const skip = (page - 1) * limit;
 
@@ -60,6 +82,17 @@ export async function GET(request: NextRequest) {
       User.countDocuments(query)
     ]);
 
+    console.log('Fetched users:', users.map((u: any) => ({
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      orgId: u.organization?._id?.toString(),
+      orgName: u.organization?.name
+    })));
+
+    // Log access
+    DataIsolationService.logAccess(user, 'users', 'read', true);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -73,10 +106,6 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Failed to fetch users');
   }
-}
+});

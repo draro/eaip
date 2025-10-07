@@ -1,28 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongodb';
 import Domain from '@/models/Domain';
 import Organization from '@/models/Organization';
 import { DNSChecker } from '@/lib/domainServer';
+import { withAuth } from '@/lib/apiMiddleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }: any) => {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     await connectDB();
 
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organizationId');
 
     // Super admins can see all domains
-    if (session.user.role === 'super_admin') {
+    if (user.role === 'super_admin') {
       const query = organizationId ? { organizationId } : {};
       const domains = await Domain.find(query)
         .populate('organizationId', 'name domain status')
@@ -35,9 +26,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Organization admins can only see their own domains
-    if (session.user.role === 'org_admin' && session.user.organizationId) {
+    if (user.role === 'org_admin' && user.organization) {
       const domains = await Domain.find({
-        organizationId: session.user.organizationId
+        organizationId: user.organization._id
       }).populate('organizationId', 'name domain status')
         .sort({ createdAt: -1 });
 
@@ -59,21 +50,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }: any) => {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Only org admins and super admins can create domains
-    if (!['org_admin', 'super_admin'].includes(session.user.role)) {
+    if (!['org_admin', 'super_admin'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Insufficient permissions' },
         { status: 403 }
@@ -94,9 +76,9 @@ export async function POST(request: NextRequest) {
 
     // Determine target organization
     let targetOrgId = organizationId;
-    if (session.user.role === 'org_admin') {
+    if (user.role === 'org_admin') {
       // Org admins can only create domains for their own organization
-      targetOrgId = session.user.organizationId;
+      targetOrgId = user.organization?._id;
     }
 
     if (!targetOrgId) {
@@ -159,4 +141,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

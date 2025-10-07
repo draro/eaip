@@ -36,7 +36,11 @@ interface Organization {
   branding: {
     primaryColor: string;
     secondaryColor: string;
+    textColor?: string;
     logoUrl?: string;
+    fontFamily?: string;
+    fontSize?: string;
+    footerText?: string;
   };
   contact: {
     email: string;
@@ -49,6 +53,8 @@ interface Organization {
     timezone: string;
     language: string;
     enablePublicAccess: boolean;
+    enableExport?: boolean;
+    allowedExportFormats?: string[];
     airacStartDate: Date;
   };
   subscription: {
@@ -85,13 +91,19 @@ export default function OrganizationSetup() {
     branding: {
       primaryColor: '#1f2937',
       secondaryColor: '#3b82f6',
-      logoUrl: ''
+      textColor: '#000000',
+      logoUrl: '',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: '16px',
+      footerText: 'This electronic AIP is published in accordance with ICAO Annex 15.'
     },
     settings: {
       publicUrl: '',
       timezone: 'UTC',
       language: 'en',
       enablePublicAccess: true,
+      enableExport: true,
+      allowedExportFormats: ['pdf', 'docx'],
       airacStartDate: ''
     }
   });
@@ -599,6 +611,68 @@ export default function OrganizationSetup() {
                   </div>
                 </div>
 
+                {/* Text Color */}
+                <div>
+                  <Label htmlFor="textColor">Text Color</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      value={formData.branding.textColor || '#000000'}
+                      onChange={(e) => handleInputChange('branding', 'textColor', e.target.value)}
+                      className="w-12 h-10 border rounded"
+                    />
+                    <Input
+                      value={formData.branding.textColor || '#000000'}
+                      onChange={(e) => handleInputChange('branding', 'textColor', e.target.value)}
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+
+                {/* Font Settings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="fontFamily">Font Family</Label>
+                    <Select
+                      value={formData.branding.fontFamily || 'Inter, system-ui, sans-serif'}
+                      onValueChange={(value) => handleInputChange('branding', 'fontFamily', value)}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select font" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Inter, system-ui, sans-serif">Inter (Default)</SelectItem>
+                        <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                        <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                        <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                        <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                        <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="fontSize">Font Size</Label>
+                    <Input
+                      className="mt-2"
+                      value={formData.branding.fontSize || '16px'}
+                      onChange={(e) => handleInputChange('branding', 'fontSize', e.target.value)}
+                      placeholder="16px"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Text */}
+                <div>
+                  <Label htmlFor="footerText">Public Footer Text</Label>
+                  <Textarea
+                    className="mt-2"
+                    value={formData.branding.footerText || ''}
+                    onChange={(e) => handleInputChange('branding', 'footerText', e.target.value)}
+                    placeholder="This electronic AIP is published in accordance with ICAO Annex 15."
+                    rows={2}
+                  />
+                </div>
+
                 {/* Preview */}
                 <div>
                   <Label>Brand Preview</Label>
@@ -740,6 +814,66 @@ export default function OrganizationSetup() {
                     <p className="text-sm text-gray-600 mt-1">
                       Set the base date for AIRAC cycle calculations
                     </p>
+                  </div>
+                </div>
+
+                {/* Export Settings */}
+                <div className="pt-4 border-t space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-4">Export Settings</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label>Enable Public Export</Label>
+                        <p className="text-sm text-gray-600">Allow users to export documents from the public eAIP viewer</p>
+                      </div>
+                      <Switch
+                        checked={formData.settings.enableExport !== false}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            settings: {
+                              ...prev.settings,
+                              enableExport: checked
+                            }
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Allowed Export Formats</Label>
+                      <div className="mt-2 space-y-2">
+                        {['pdf', 'docx', 'xml', 'html'].map((format) => (
+                          <div key={format} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`export-format-${format}`}
+                              checked={(formData.settings.allowedExportFormats || ['pdf', 'docx']).includes(format)}
+                              onChange={(e) => {
+                                const currentFormats = formData.settings.allowedExportFormats || ['pdf', 'docx'];
+                                const newFormats = e.target.checked
+                                  ? [...currentFormats, format]
+                                  : currentFormats.filter((f: string) => f !== format);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  settings: {
+                                    ...prev.settings,
+                                    allowedExportFormats: newFormats
+                                  }
+                                }));
+                              }}
+                              className="rounded"
+                            />
+                            <label htmlFor={`export-format-${format}`} className="text-sm uppercase cursor-pointer">
+                              {format}
+                            </label>
+                            {(format === 'xml' || format === 'html') && (
+                              <Badge variant="outline" className="text-xs">Requires Authentication</Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
