@@ -318,22 +318,21 @@ export default function PublicDocumentViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}/${documentId}`;
 
   return (
-    <React.Fragment>
+    <div
+      className="h-screen flex flex-col bg-gray-50"
+      style={{
+        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+        fontSize: (organization.branding as any).fontSize || '16px',
+        color: (organization.branding as any).textColor || '#000000'
+      }}
+    >
       <StructuredData
         type="document"
         organization={organization}
         document={document}
         url={canonicalUrl}
       />
-      <div
-        className="h-screen flex flex-col bg-gray-50"
-        style={{
-          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-          fontSize: (organization.branding as any).fontSize || '16px',
-          color: (organization.branding as any).textColor || '#000000'
-        }}
-      >
-        {/* Header */}
+      {/* Header */}
       <header
         className="shadow-sm z-10"
         style={{ backgroundColor: organization.branding.primaryColor }}
@@ -558,7 +557,6 @@ export default function PublicDocumentViewer() {
             </div>
           </div>
         </main>
-      </div>
-    </React.Fragment>
+    </div>
   );
 }

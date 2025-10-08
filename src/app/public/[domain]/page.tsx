@@ -204,22 +204,21 @@ export default function PublicEAIPViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}`;
 
   return (
-    <React.Fragment>
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: `${organization.branding.primaryColor}10`,
+        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+        fontSize: (organization.branding as any).fontSize || '16px',
+        color: (organization.branding as any).textColor || '#000000'
+      }}
+    >
       <StructuredData
         type="dataset"
         organization={organization}
         url={baseUrl}
       />
-      <div
-        className="min-h-screen"
-        style={{
-          backgroundColor: `${organization.branding.primaryColor}10`,
-          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-          fontSize: (organization.branding as any).fontSize || '16px',
-          color: (organization.branding as any).textColor || '#000000'
-        }}
-      >
-        {/* Header */}
+      {/* Header */}
       <header
         className="shadow-sm"
         style={{ backgroundColor: organization.branding.primaryColor }}
@@ -611,7 +610,6 @@ export default function PublicEAIPViewer() {
             </a>
           </p>
         </footer>
-      </div>
-    </React.Fragment>
+    </div>
   );
 }
