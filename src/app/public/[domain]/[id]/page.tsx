@@ -18,9 +18,6 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
-import SEOStructuredData from '@/components/SEOStructuredData';
-import CanonicalLink from '@/components/CanonicalLink';
-import FaviconLoader from '@/components/FaviconLoader';
 
 interface Subsection {
   id: string;
@@ -103,7 +100,9 @@ export default function PublicDocumentViewer() {
   const isCustomDomain = typeof window !== 'undefined' &&
     window.location.hostname !== 'localhost' &&
     !window.location.hostname.includes('localhost') &&
-    window.location.hostname !== domain;
+    window.location.hostname !== 'eaip.flyclim.com' &&
+    !window.location.hostname.includes('vercel.app') &&
+    !window.location.hostname.includes('netlify.app');
 
   // Get the home URL based on domain type
   const getHomeUrl = () => isCustomDomain ? '/' : `/public/${domain}`;
@@ -318,27 +317,14 @@ export default function PublicDocumentViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}/${documentId}`;
 
   return (
-    <>
-      {/* SEO Components */}
-      <CanonicalLink url={canonicalUrl} />
-      <FaviconLoader
-        logoUrl={organization?.branding?.logoUrl}
-        organizationName={organization?.name}
-      />
-      <SEOStructuredData
-        organization={organization}
-        document={document}
-        domain={domain}
-      />
-
-      <div
-        className="h-screen flex flex-col bg-gray-50"
-        style={{
-          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-          fontSize: (organization.branding as any).fontSize || '16px',
-          color: (organization.branding as any).textColor || '#000000'
-        }}
-      >
+    <div
+      className="h-screen flex flex-col bg-gray-50"
+      style={{
+        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+        fontSize: (organization.branding as any).fontSize || '16px',
+        color: (organization.branding as any).textColor || '#000000'
+      }}
+    >
         {/* Header */}
       <header
         className="shadow-sm z-10"
@@ -565,7 +551,6 @@ export default function PublicDocumentViewer() {
           </div>
         </main>
       </div>
-      </div>
-    </>
+    </div>
   );
 }

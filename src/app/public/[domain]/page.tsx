@@ -8,9 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
-import SEOStructuredData from '@/components/SEOStructuredData';
-import CanonicalLink from '@/components/CanonicalLink';
-import FaviconLoader from '@/components/FaviconLoader';
 
 interface Organization {
   name: string;
@@ -74,7 +71,9 @@ export default function PublicEAIPViewer() {
   const isCustomDomain = typeof window !== 'undefined' &&
     window.location.hostname !== 'localhost' &&
     !window.location.hostname.includes('localhost') &&
-    window.location.hostname !== domain;
+    window.location.hostname !== 'eaip.flyclim.com' &&
+    !window.location.hostname.includes('vercel.app') &&
+    !window.location.hostname.includes('netlify.app');
 
   useEffect(() => {
     fetchPublicData();
@@ -162,27 +161,15 @@ export default function PublicEAIPViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}`;
 
   return (
-    <>
-      {/* SEO Components */}
-      <CanonicalLink url={canonicalUrl} />
-      <FaviconLoader
-        logoUrl={organization.branding?.logoUrl}
-        organizationName={organization.name}
-      />
-      <SEOStructuredData
-        organization={organization}
-        domain={domain}
-      />
-
-      <div
-        className="min-h-screen"
-        style={{
-          backgroundColor: `${organization.branding.primaryColor}10`,
-          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-          fontSize: (organization.branding as any).fontSize || '16px',
-          color: (organization.branding as any).textColor || '#000000'
-        }}
-      >
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: `${organization.branding.primaryColor}10`,
+        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+        fontSize: (organization.branding as any).fontSize || '16px',
+        color: (organization.branding as any).textColor || '#000000'
+      }}
+    >
         {/* Header */}
       <header
         className="shadow-sm"
@@ -517,7 +504,6 @@ export default function PublicEAIPViewer() {
           </p>
         </footer>
       </div>
-      </div>
-    </>
+    </div>
   );
 }
