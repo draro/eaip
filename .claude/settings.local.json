@@ -45,7 +45,9 @@
       "Bash(ssh root@72.60.213.232 \"cd /eaip && docker-compose logs eaip-app --tail=100 | grep -i -E ''(error|mongo|auth|credential|login)''\")",
       "Bash(ssh:*)",
       "Bash(git push:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []
