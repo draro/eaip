@@ -42,7 +42,8 @@
       "Bash(python3:*)",
       "Bash(cat:*)",
       "Bash(docker build:*)",
-      "Bash(ssh root@72.60.213.232 \"cd /eaip && docker-compose logs eaip-app --tail=100 | grep -i -E ''(error|mongo|auth|credential|login)''\")"
+      "Bash(ssh root@72.60.213.232 \"cd /eaip && docker-compose logs eaip-app --tail=100 | grep -i -E ''(error|mongo|auth|credential|login)''\")",
+      "Bash(ssh:*)"
     ],
     "deny": [],
     "ask": []
