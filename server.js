@@ -8,7 +8,6 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
-const { generateUserColor } = require('./src/lib/collaboration');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -20,6 +19,26 @@ const handle = app.getRequestHandler();
 // Store active editor presences per document
 const documentPresences = new Map();
 const recentEdits = new Map();
+
+// Generate a unique color for each user
+function generateUserColor(userId) {
+  const colors = [
+    '#3B82F6', // blue
+    '#10B981', // green
+    '#F59E0B', // amber
+    '#EF4444', // red
+    '#8B5CF6', // violet
+    '#EC4899', // pink
+    '#14B8A6', // teal
+    '#F97316', // orange
+  ];
+
+  const hash = userId.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+
+  return colors[Math.abs(hash) % colors.length];
+}
 
 function cleanupInactiveUsers(presences) {
   const now = Date.now();
