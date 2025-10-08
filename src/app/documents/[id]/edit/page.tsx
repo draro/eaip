@@ -312,8 +312,6 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
     }
   };
 
-  const user = session?.user as any;
-
   if (loading) {
     return (
       <Layout user={user}>
