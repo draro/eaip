@@ -95,7 +95,12 @@ export const authOptions: AuthOptions = {
           const hashedInput = hashPassword(credentials.password);
           const isPasswordValid = hashedInput === user.password;
 
-          console.log("Password valid:", isPasswordValid);
+          console.log("Password comparison:", {
+            inputPassword: credentials.password,
+            hashedInput,
+            storedHash: user.password,
+            match: isPasswordValid
+          });
 
           if (!isPasswordValid) return null;
 
