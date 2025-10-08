@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download, Phone } from 'lucide-react';
+import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download, Phone, MapPin } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { formatAiracCycle } from '@/lib/utils';
 
@@ -21,6 +21,8 @@ interface Organization {
   };
   contact: {
     email: string;
+    phone?: string;
+    address?: string;
     website?: string;
   };
 }
@@ -403,81 +405,54 @@ export default function PublicEAIPViewer() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Contact Us</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Contact Information</CardTitle>
+              <Mail className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 mb-4">
-                <div className="flex items-start gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
                   <div>
-                    <a href="mailto:info@flyclim.com" className="text-blue-600 hover:underline">
-                      info@flyclim.com
+                    <p className="text-xs text-muted-foreground mb-1">Email us:</p>
+                    <a
+                      href={`mailto:${organization.contact.email}`}
+                      className="text-sm font-medium hover:underline"
+                      style={{ color: organization.branding.secondaryColor }}
+                    >
+                      {organization.contact.email}
                     </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div className="space-y-1">
+
+                {organization.contact.phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
                     <div>
-                      <a href="tel:+19894472494" className="text-blue-600 hover:underline">
-                        +1 989 447 2494
-                      </a>
-                    </div>
-                    <div>
-                      <a href="tel:+972538344355" className="text-blue-600 hover:underline">
-                        +972 53 834 4355
+                      <p className="text-xs text-muted-foreground mb-1">Phone:</p>
+                      <a
+                        href={`tel:${organization.contact.phone}`}
+                        className="text-sm font-medium hover:underline"
+                        style={{ color: organization.branding.secondaryColor }}
+                      >
+                        {organization.contact.phone}
                       </a>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
 
-              <form onSubmit={handleContactSubmit} className="space-y-3">
-                <div>
-                  <Input
-                    type="text"
-                    placeholder="Your Name"
-                    value={contactForm.name}
-                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                    required
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="Your Email"
-                    value={contactForm.email}
-                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    required
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <Textarea
-                    placeholder="Your Message"
-                    value={contactForm.message}
-                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                    required
-                    className="w-full min-h-[100px]"
-                  />
-                </div>
-                {submitSuccess && (
-                  <p className="text-sm text-green-600">Message sent successfully!</p>
+                {organization.contact.address && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Address:</p>
+                      <p className="text-sm font-medium text-gray-700 whitespace-pre-line">
+                        {organization.contact.address}
+                      </p>
+                    </div>
+                  </div>
                 )}
-                {submitError && (
-                  <p className="text-sm text-red-600">{submitError}</p>
-                )}
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full"
-                  style={{ backgroundColor: organization.branding.primaryColor }}
-                >
-                  {submitting ? 'Sending...' : 'Send Message'}
-                </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -580,27 +555,133 @@ export default function PublicEAIPViewer() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <footer
-          className="text-center text-sm border-t pt-6"
-          style={{
-            borderTopColor: organization.branding.primaryColor + '40',
-            color: organization.branding.primaryColor
-          }}
-        >
-          <p>
-            {(organization.branding as any).footerText || `This electronic AIP is published by ${organization.name} in accordance with ICAO Annex 15.`}
-          </p>
-          <p className="mt-2">
-            For technical issues or inquiries, contact{' '}
-            <a
-              href={`mailto:${organization.contact.email}`}
-              style={{ color: organization.branding.secondaryColor }}
-              className="font-medium hover:underline"
-            >
-              {organization.contact.email}
-            </a>
-          </p>
+        {/* Footer with Contact Form */}
+        <footer className="border-t mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
+            {/* Contact Information */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: organization.branding.primaryColor }}>
+                Contact Information
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Email us:</p>
+                    <a
+                      href={`mailto:${organization.contact.email}`}
+                      className="font-medium hover:underline"
+                      style={{ color: organization.branding.secondaryColor }}
+                    >
+                      {organization.contact.email}
+                    </a>
+                  </div>
+                </div>
+
+                {organization.contact.phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Phone:</p>
+                      <a
+                        href={`tel:${organization.contact.phone}`}
+                        className="font-medium hover:underline"
+                        style={{ color: organization.branding.secondaryColor }}
+                      >
+                        {organization.contact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {organization.contact.address && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 mt-0.5" style={{ color: organization.branding.primaryColor }} />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Address:</p>
+                      <p className="font-medium text-gray-700 whitespace-pre-line">
+                        {organization.contact.address}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-6 border-t">
+                <p className="text-xs text-gray-600">
+                  {(organization.branding as any).footerText || `This electronic AIP is published by ${organization.name} in accordance with ICAO Annex 15.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: organization.branding.primaryColor }}>
+                Send us a Message
+              </h3>
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div>
+                  <Input
+                    type="text"
+                    placeholder="Your Name"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    required
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Your Email"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    required
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Textarea
+                    placeholder="Your Message"
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    required
+                    className="w-full min-h-[120px]"
+                  />
+                </div>
+                {submitSuccess && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-md">
+                    <Mail className="h-4 w-4" />
+                    <span>Message sent successfully!</span>
+                  </div>
+                )}
+                {submitError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                    {submitError}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full hover:opacity-90 transition-opacity"
+                  style={{
+                    backgroundColor: organization.branding.primaryColor,
+                    color: 'white'
+                  }}
+                >
+                  {submitting ? 'Sending...' : 'Send Message'}
+                </Button>
+              </form>
+            </div>
+          </div>
+
+          {/* Bottom Footer Bar */}
+          <div
+            className="border-t py-4 text-center text-xs text-gray-600"
+            style={{ borderTopColor: organization.branding.primaryColor + '20' }}
+          >
+            <p>© {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
+          </div>
         </footer>
       </div>
     </div>
