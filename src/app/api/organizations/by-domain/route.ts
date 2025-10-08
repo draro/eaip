@@ -26,18 +26,18 @@ export async function GET(request: NextRequest) {
         { "settings.publicUrl": domain.toLowerCase() },
       ],
     }).select("_id name domain status settings branding");
-
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       foundOrg: organization
         ? {
             id: organization._id,
             name: organization.name,
-            domain: organization.domain || null,
-            publicUrl: organization.settings.publicUrl || null,
+            domain: organization.domain,
+            publicUrl: organization.settings?.publicUrl,
           }
         : null,
     });
+    console.log("ORGANIZATION", organization);
 
     if (!organization) {
       return NextResponse.json(
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
         name: organization.name,
         domain: organization.domain,
         status: organization.status,
-        settings: organization?.settings,
-        branding: organization?.branding || {},
+        settings: organization.settings,
+        branding: organization.branding || {},
       },
     });
   } catch (error) {
