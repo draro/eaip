@@ -29,6 +29,7 @@ export default withAuth(
     // Check if this is a custom domain (not our main application domains)
     const mainAppDomain = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0] || 'eaip.flyclim.com';
     const isMainDomain = hostname === mainAppDomain ||
+                        hostname === 'eaip.flyclim.com' || // Always treat eaip.flyclim.com as main domain
                         hostname === 'localhost' ||
                         hostname.includes('localhost') ||
                         hostname.includes('vercel.app') ||
