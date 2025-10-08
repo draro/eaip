@@ -199,7 +199,7 @@ export default function PublicEAIPViewer() {
   }
 
   const { organization } = data;
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com');
 
   return (
     <div
