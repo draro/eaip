@@ -317,12 +317,12 @@ export default function PublicDocumentViewer() {
     <div
       className="h-screen flex flex-col bg-gray-50"
       style={{
-        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-        fontSize: (organization.branding as any).fontSize || '16px',
-        color: (organization.branding as any).textColor || '#000000'
-      }}
-    >
-      {/* Header */}
+          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: (organization.branding as any).fontSize || '16px',
+          color: (organization.branding as any).textColor || '#000000'
+        }}
+      >
+        {/* Header */}
       <header
         className="shadow-sm z-10"
         style={{ backgroundColor: organization.branding.primaryColor }}
