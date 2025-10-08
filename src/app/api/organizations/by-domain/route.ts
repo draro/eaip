@@ -16,10 +16,26 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    // Look up organization by domain (case-insensitive)
+    // Look up organization by domain OR publicUrl (case-insensitive)
+    // This allows matching both:
+    // 1. Primary domain (e.g., "flyclim.com")
+    // 2. Public URL / custom domain (e.g., "demoaip.flyclim.com")
     const organization = await Organization.findOne({
-      domain: domain.toLowerCase()
+      $or: [
+        { domain: domain.toLowerCase() },
+        { 'settings.publicUrl': domain.toLowerCase() }
+      ]
     }).select('_id name domain status settings branding');
+
+    console.log('Organization lookup by domain:', {
+      requestedDomain: domain.toLowerCase(),
+      foundOrg: organization ? {
+        id: organization._id,
+        name: organization.name,
+        domain: organization.domain,
+        publicUrl: organization.settings?.publicUrl
+      } : null
+    });
 
     if (!organization) {
       return NextResponse.json(

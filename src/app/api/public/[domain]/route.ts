@@ -19,18 +19,22 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
-    // Find organization by domain
+    // Find organization by domain OR publicUrl
     console.log('Public API - Looking for organization with domain:', params.domain.toLowerCase());
 
     const organization = await Organization.findOne({
-      domain: params.domain.toLowerCase(),
+      $or: [
+        { domain: params.domain.toLowerCase() },
+        { 'settings.publicUrl': params.domain.toLowerCase() }
+      ],
       status: 'active'
     });
 
     console.log('Public API - Organization found:', organization ? {
       id: organization._id,
       name: organization.name,
-      domain: organization.domain
+      domain: organization.domain,
+      publicUrl: organization.settings?.publicUrl
     } : null);
 
     if (!organization) {

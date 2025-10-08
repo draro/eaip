@@ -77,9 +77,11 @@ export default withAuth(
             const url = req.nextUrl.clone();
 
             // Map root to public organization page
+            // Use the organization's primary domain for the public URL path
             if (pathname === '/') {
-              url.pathname = `/public/${cleanDomain}`;
-              console.log(`Custom domain rewrite: ${hostname}${pathname} → ${url.pathname}`);
+              const orgDomain = domainData.organization.domain;
+              url.pathname = `/public/${orgDomain}`;
+              console.log(`Custom domain rewrite: ${hostname}${pathname} → ${url.pathname} (org domain: ${orgDomain})`);
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }
               });
