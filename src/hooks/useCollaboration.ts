@@ -26,13 +26,14 @@ interface ContentChangeData {
   timestamp: number;
 }
 
-interface CursorPosition {
+export interface CursorPosition {
   userId: string;
   userName: string;
   userColor: string;
   sectionId?: string;
   subsectionId?: string;
   cursorPosition?: number;
+  socketId?: string;
 }
 
 export function useCollaboration({

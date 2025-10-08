@@ -18,6 +18,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
+import StructuredData from '@/components/StructuredData';
 
 interface Subsection {
   id: string;
@@ -317,14 +318,21 @@ export default function PublicDocumentViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}/${documentId}`;
 
   return (
-    <div
-      className="h-screen flex flex-col bg-gray-50"
-      style={{
-        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-        fontSize: (organization.branding as any).fontSize || '16px',
-        color: (organization.branding as any).textColor || '#000000'
-      }}
-    >
+    <>
+      <StructuredData
+        type="document"
+        organization={organization}
+        document={document}
+        url={canonicalUrl}
+      />
+      <div
+        className="h-screen flex flex-col bg-gray-50"
+        style={{
+          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: (organization.branding as any).fontSize || '16px',
+          color: (organization.branding as any).textColor || '#000000'
+        }}
+      >
         {/* Header */}
       <header
         className="shadow-sm z-10"
@@ -551,6 +559,6 @@ export default function PublicDocumentViewer() {
           </div>
         </main>
       </div>
-    </div>
+    </>
   );
 }

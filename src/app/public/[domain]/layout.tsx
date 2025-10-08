@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 type Props = {
@@ -6,11 +7,20 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Generate dynamic metadata for SEO
+// Generate dynamic metadata for SEO and AEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { domain } = params;
 
   try {
+    // Get the host header to check for custom domain
+    const headersList = headers();
+    const host = headersList.get('host') || '';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
+    // Determine if this is a custom domain or subdomain access
+    const isCustomDomain = !host.includes('flyclim.com') && !host.includes('localhost');
+    const canonicalUrl = isCustomDomain ? `${protocol}://${host}` : `${protocol}://${host}/public/${domain}`;
+
     // Fetch organization data for metadata
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/organizations/by-domain?domain=${domain}`, {
@@ -60,7 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: `${org.name} - Electronic AIP`,
         description: `Official electronic Aeronautical Information Publication (eAIP) for ${org.name}. ICAO compliant aviation information.`,
-        url: `${baseUrl}/public/${domain}`,
+        url: canonicalUrl,
         siteName: `${org.name} eAIP`,
         locale: org.settings?.language || 'en_US',
         type: 'website',
@@ -91,7 +101,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
       },
       alternates: {
-        canonical: `${baseUrl}/public/${domain}`,
+        canonical: canonicalUrl,
+      },
+      verification: {
+        google: process.env.GOOGLE_SITE_VERIFICATION,
+        yandex: process.env.YANDEX_VERIFICATION,
+        other: {
+          'msvalidate.01': process.env.BING_SITE_VERIFICATION || '',
+        },
       },
       icons: org.branding?.logoUrl ? {
         icon: [

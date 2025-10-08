@@ -61,6 +61,8 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
   const {
     connected,
     activeEditors,
+    cursors,
+    updateCursor,
     updateContent,
     focusSection,
   } = useCollaboration({
@@ -448,6 +450,24 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                         onChange={(value) => updateSectionContent(section.id, value)}
                         placeholder="Enter section content..."
                         minHeight="150px"
+                        onCursorChange={(position) => {
+                          if (connected) {
+                            updateCursor(section.id, undefined, position);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (connected) {
+                            focusSection(section.id);
+                          }
+                        }}
+                        remoteCursors={cursors
+                          .filter(c => c.sectionId === section.id && !c.subsectionId)
+                          .map(c => ({
+                            userId: c.userId,
+                            userName: c.userName,
+                            userColor: c.userColor,
+                            position: c.cursorPosition || 0,
+                          }))}
                       />
                     </div>
 
@@ -522,6 +542,24 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                                   onChange={(value) => updateSubsectionContent(section.id, subsection.id, value)}
                                   placeholder="Enter subsection content..."
                                   minHeight="200px"
+                                  onCursorChange={(position) => {
+                                    if (connected) {
+                                      updateCursor(section.id, subsection.id, position);
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    if (connected) {
+                                      focusSection(section.id, subsection.id);
+                                    }
+                                  }}
+                                  remoteCursors={cursors
+                                    .filter(c => c.sectionId === section.id && c.subsectionId === subsection.id)
+                                    .map(c => ({
+                                      userId: c.userId,
+                                      userName: c.userName,
+                                      userColor: c.userColor,
+                                      position: c.cursorPosition || 0,
+                                    }))}
                                 />
                               </div>
                             </div>

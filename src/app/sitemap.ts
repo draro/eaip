@@ -7,69 +7,86 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-
   try {
     await connectDB();
 
-    // Get all organizations with public domains
+    const sitemapEntries: MetadataRoute.Sitemap = [];
+
+    // Get all organizations with custom domains
     const organizations = await Organization.find({
+      customDomain: { $exists: true, $ne: null, $ne: '' },
+      isActive: true
+    }).select('customDomain domain updatedAt').lean();
+
+    for (const org of organizations) {
+      const orgDomain = org.customDomain as string;
+
+      // Add organization homepage with custom domain
+      sitemapEntries.push({
+        url: `https://${orgDomain}`,
+        lastModified: org.updatedAt || new Date(),
+        changeFrequency: 'weekly',
+        priority: 1.0,
+      });
+
+      // Get all published documents for this organization
+      const documents = await AIPDocument.find({
+        organizationId: org._id,
+        status: 'published',
+      })
+        .select('_id title updatedAt')
+        .lean();
+
+      // Add each document page with custom domain
+      for (const doc of documents) {
+        sitemapEntries.push({
+          url: `https://${orgDomain}/${doc._id}`,
+          lastModified: doc.updatedAt || new Date(),
+          changeFrequency: 'monthly',
+          priority: 0.8,
+        });
+      }
+    }
+
+    // Also add organizations accessible via subdomain/path
+    const orgsByDomain = await Organization.find({
+      domain: { $exists: true, $ne: null, $ne: '' },
       'settings.enablePublicAccess': true,
-      domain: { $exists: true, $ne: '' }
     }).select('domain updatedAt').lean();
 
-    // Get all published documents
-    const documents = await AIPDocument.find({
-      status: 'published'
-    })
-      .populate('organization', 'domain')
-      .select('_id updatedAt organization')
-      .lean();
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
 
-    const sitemapEntries: MetadataRoute.Sitemap = [
-      // Root
-      {
-        url: baseUrl,
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 1,
-      },
-    ];
-
-    // Add organization pages
-    organizations.forEach((org: any) => {
+    for (const org of orgsByDomain) {
       sitemapEntries.push({
         url: `${baseUrl}/public/${org.domain}`,
         lastModified: org.updatedAt || new Date(),
         changeFrequency: 'weekly',
         priority: 0.9,
       });
-    });
 
-    // Add document pages
-    documents.forEach((doc: any) => {
-      if (doc.organization?.domain) {
+      // Get documents for this organization
+      const documents = await AIPDocument.find({
+        organizationId: org._id,
+        status: 'published',
+      })
+        .select('_id updatedAt')
+        .lean();
+
+      for (const doc of documents) {
         sitemapEntries.push({
-          url: `${baseUrl}/public/${doc.organization.domain}/${doc._id}`,
+          url: `${baseUrl}/public/${org.domain}/${doc._id}`,
           lastModified: doc.updatedAt || new Date(),
           changeFrequency: 'monthly',
-          priority: 0.8,
+          priority: 0.7,
         });
       }
-    });
+    }
 
     return sitemapEntries;
   } catch (error) {
     console.error('Error generating sitemap:', error);
 
-    // Return minimal sitemap on error
-    return [
-      {
-        url: baseUrl,
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 1,
-      },
-    ];
+    // Return empty array on error
+    return [];
   }
 }
