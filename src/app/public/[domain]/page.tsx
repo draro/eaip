@@ -204,7 +204,7 @@ export default function PublicEAIPViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}`;
 
   return (
-    <div>
+    <React.Fragment>
       <StructuredData
         type="dataset"
         organization={organization}
@@ -612,6 +612,6 @@ export default function PublicEAIPViewer() {
           </p>
         </footer>
       </div>
-    </div>
+    </React.Fragment>
   );
 }
