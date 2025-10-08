@@ -20,10 +20,18 @@ export async function GET(
     const action = searchParams.get('action');
 
     // Find organization by domain
+    console.log('Public API - Looking for organization with domain:', params.domain.toLowerCase());
+
     const organization = await Organization.findOne({
       domain: params.domain.toLowerCase(),
       status: 'active'
     });
+
+    console.log('Public API - Organization found:', organization ? {
+      id: organization._id,
+      name: organization.name,
+      domain: organization.domain
+    } : null);
 
     if (!organization) {
       return NextResponse.json(
@@ -117,6 +125,8 @@ export async function GET(
           status: 'published'
         });
 
+        console.log('Public API - Total published documents:', totalDocuments);
+
         const latestDocuments = await AIPDocument.find({
           organization: organization._id,
           status: 'published'
@@ -125,6 +135,8 @@ export async function GET(
           .select('title documentType country airport airacCycle effectiveDate metadata version')
           .sort({ effectiveDate: -1 })
           .limit(10);
+
+        console.log('Public API - Latest documents count:', latestDocuments.length);
 
         return NextResponse.json({
           success: true,
