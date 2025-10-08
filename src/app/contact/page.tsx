@@ -29,25 +29,45 @@ export default function ContactPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Contact form submitted:', formData);
-    setSubmitted(true);
-    setSubmitting(false);
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        organization: '',
-        phone: '',
-        subject: '',
-        message: '',
+    try {
+      const response = await fetch('https://automation.flyclim.com/webhook/contact-us', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          source: 'contact-page',
+          timestamp: new Date().toISOString(),
+        }),
       });
-    }, 3000);
+
+      if (response.ok) {
+        console.log('Contact form submitted successfully');
+        setSubmitted(true);
+
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setSubmitted(false);
+          setFormData({
+            name: '',
+            email: '',
+            organization: '',
+            phone: '',
+            subject: '',
+            message: '',
+          });
+        }, 3000);
+      } else {
+        console.error('Failed to submit contact form');
+        alert('Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -212,8 +232,8 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-1">Email</h4>
-                        <a href="mailto:info@eaip-platform.com" className="text-blue-600 hover:underline">
-                          info@eaip-platform.com
+                        <a href="mailto:info@flyclim.com" className="text-blue-600 hover:underline">
+                          info@flyclim.com
                         </a>
                         <p className="text-sm text-gray-600 mt-1">We'll respond within 24 hours</p>
                       </div>
@@ -225,25 +245,19 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-1">Phone</h4>
-                        <a href="tel:+1234567890" className="text-blue-600 hover:underline">
-                          +1 (234) 567-8900
-                        </a>
+                        <div className="space-y-1">
+                          <div>
+                            <a href="tel:+19894472494" className="text-blue-600 hover:underline">
+                              +1 989 447 2494
+                            </a>
+                          </div>
+                          <div>
+                            <a href="tel:+972538344355" className="text-blue-600 hover:underline">
+                              +972 53 834 4355
+                            </a>
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600 mt-1">Monday - Friday, 9AM - 6PM EST</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start">
-                      <div className="bg-purple-100 w-10 h-10 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                        <MapPin className="h-5 w-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-1">Address</h4>
-                        <p className="text-gray-700">
-                          123 Aviation Drive<br />
-                          Suite 100<br />
-                          Washington, DC 20001<br />
-                          United States
-                        </p>
                       </div>
                     </div>
 
