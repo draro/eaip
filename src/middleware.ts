@@ -87,20 +87,31 @@ export default withAuth(
             // Custom domains ONLY serve public pages
             // Redirect all custom domain traffic to public eAIP pages
             const url = req.nextUrl.clone();
+            const orgDomain = domainData.organization.domain;
 
             // Map root to public organization page
-            // Use the organization's primary domain for the public URL path
             if (pathname === '/') {
-              const orgDomain = domainData.organization.domain;
               url.pathname = `/public/${orgDomain}`;
-              console.log(`Custom domain rewrite: ${hostname}${pathname} → ${url.pathname} (org domain: ${orgDomain})`);
+              console.log(`[Custom Domain] Root rewrite: ${hostname}/ → ${url.pathname}`);
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }
               });
             }
 
-            // Allow direct access to public routes
+            // Map document IDs directly to public document pages
+            // Pattern: /{documentId} → /public/{domain}/{documentId}
+            const documentIdPattern = /^\/([a-f0-9]{24})$/i; // MongoDB ObjectId pattern
+            if (documentIdPattern.test(pathname)) {
+              url.pathname = `/public/${orgDomain}${pathname}`;
+              console.log(`[Custom Domain] Document rewrite: ${hostname}${pathname} → ${url.pathname}`);
+              return NextResponse.rewrite(url, {
+                request: { headers: requestHeaders }
+              });
+            }
+
+            // Allow direct access to /public routes (for links that already have /public)
             if (pathname.startsWith('/public')) {
+              console.log(`[Custom Domain] Public route passthrough: ${pathname}`);
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }
               });
@@ -108,6 +119,7 @@ export default withAuth(
 
             // Allow API calls for public data
             if (pathname.startsWith('/api/public')) {
+              console.log(`[Custom Domain] API passthrough: ${pathname}`);
               return NextResponse.next({
                 request: { headers: requestHeaders }
               });

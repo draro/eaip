@@ -70,6 +70,12 @@ export default function PublicEAIPViewer() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
 
+  // Detect if we're on a custom domain (not the main app domain)
+  const isCustomDomain = typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.includes('localhost') &&
+    window.location.hostname !== domain;
+
   useEffect(() => {
     fetchPublicData();
   }, [domain]);
@@ -296,7 +302,11 @@ export default function PublicEAIPViewer() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() => window.location.href = `/public/${domain}/${doc._id}`}
+                          onClick={() => {
+                            // Use clean URLs on custom domains
+                            const url = isCustomDomain ? `/${doc._id}` : `/public/${domain}/${doc._id}`;
+                            window.location.href = url;
+                          }}
                           style={{
                             backgroundColor: organization.branding.primaryColor,
                             color: 'white'
@@ -436,7 +446,11 @@ export default function PublicEAIPViewer() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => window.location.href = `/public/${domain}/${doc._id}`}
+                        onClick={() => {
+                          // Use clean URLs on custom domains
+                          const url = isCustomDomain ? `/${doc._id}` : `/public/${domain}/${doc._id}`;
+                          window.location.href = url;
+                        }}
                         style={{
                           backgroundColor: organization.branding.primaryColor,
                           color: 'white'
