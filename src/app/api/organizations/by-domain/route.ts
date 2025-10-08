@@ -25,29 +25,19 @@ export async function GET(request: NextRequest) {
         { domain: domain.toLowerCase() },
         { "settings.publicUrl": domain.toLowerCase() },
       ],
-    });
-    const plainOrg = organization.toObject();
+    }).select("_id name domain status settings branding");
+
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
-      foundOrg: {
-        id: plainOrg._id,
-        name: plainOrg.name,
-        domain: plainOrg.domain,
-        publicUrl: plainOrg.settings?.publicUrl,
-      },
+      foundOrg: organization
+        ? {
+            id: organization._id,
+            name: organization.name,
+            domain: organization.domain,
+            publicUrl: organization.settings?.publicUrl,
+          }
+        : null,
     });
-    // console.log("Organization lookup by domain:", {
-    //   requestedDomain: domain.toLowerCase(),
-    //   foundOrg: organization
-    //     ? {
-    //         id: organization._id,
-    //         name: organization.name,
-    //         domain: organization.domain,
-    //         publicUrl: organization.settings?.publicUrl,
-    //       }
-    //     : null,
-    // });
-    // console.log("ORGANIZATION", organization);
 
     if (!organization) {
       return NextResponse.json(
@@ -67,12 +57,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       organization: {
-        _id: plainOrg._id,
-        name: plainOrg.name,
-        domain: plainOrg.domain,
-        status: plainOrg.status,
-        settings: plainOrg.settings,
-        branding: plainOrg.branding || {},
+        _id: organization._id,
+        name: organization.name,
+        domain: organization.domain,
+        status: organization.status,
+        settings: organization.settings,
+        branding: organization.branding || {},
       },
     });
   } catch (error) {
