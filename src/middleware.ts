@@ -16,11 +16,12 @@ export default withAuth(
     const cleanDomain = hostname.toLowerCase().replace(/^www\./, '');
 
     // Check if this is a custom domain (not our main application domains)
-    const isMainDomain = hostname.includes('eaip-system.com') ||
-                        hostname.includes('vercel.app') ||
-                        hostname.includes('netlify.app') ||
+    const mainAppDomain = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0] || 'eaip.flyclim.com';
+    const isMainDomain = hostname === mainAppDomain ||
                         hostname === 'localhost' ||
-                        hostname.includes('localhost');
+                        hostname.includes('localhost') ||
+                        hostname.includes('vercel.app') ||
+                        hostname.includes('netlify.app');
 
     // Handle tenant-specific domain routing
     if (!isMainDomain && cleanDomain !== 'localhost') {
@@ -62,21 +63,46 @@ export default withAuth(
               }
             }
 
-            // Handle different route types for custom domains
-            if (pathname === '/' || pathname.startsWith('/public')) {
-              // Serve public eAIP content
-              const url = req.nextUrl.clone();
-              url.pathname = pathname === '/' ? `/public` : pathname;
+            // Custom domains ONLY serve public pages
+            // Redirect all custom domain traffic to public eAIP pages
+            const url = req.nextUrl.clone();
 
+            // Map root to public organization page
+            if (pathname === '/') {
+              url.pathname = `/public/${cleanDomain}`;
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }
               });
             }
 
-            // For all other routes, continue with tenant context
-            return NextResponse.next({
-              request: { headers: requestHeaders }
-            });
+            // Allow direct access to public routes
+            if (pathname.startsWith('/public')) {
+              return NextResponse.rewrite(url, {
+                request: { headers: requestHeaders }
+              });
+            }
+
+            // Allow API calls for public data
+            if (pathname.startsWith('/api/public')) {
+              return NextResponse.next({
+                request: { headers: requestHeaders }
+              });
+            }
+
+            // Block all other routes on custom domains (admin, dashboard, auth, etc.)
+            // Users must access the main app domain (eaip.flyclim.com) for these features
+            console.log(`Custom domain ${cleanDomain} blocked access to: ${pathname}`);
+            return new NextResponse(
+              JSON.stringify({
+                error: 'Access Denied',
+                message: `This custom domain only provides public eAIP access. For administration, please visit the main application at ${process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com'}`,
+                code: 'CUSTOM_DOMAIN_PUBLIC_ONLY'
+              }),
+              {
+                status: 403,
+                headers: { 'content-type': 'application/json' }
+              }
+            );
           }
         }
 
