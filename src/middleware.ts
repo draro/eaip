@@ -109,8 +109,23 @@ export default withAuth(
               });
             }
 
-            // Allow direct access to /public routes (for links that already have /public)
+            // Handle /public routes on custom domains
             if (pathname.startsWith('/public')) {
+              // If accessing /public/{orgDomain} on custom domain, redirect to root
+              if (pathname === `/public/${orgDomain}`) {
+                console.log(`[Custom Domain] Redirect /public/${orgDomain} → /`);
+                return NextResponse.redirect(new URL('/', req.url));
+              }
+
+              // If accessing /public/{orgDomain}/{documentId}, redirect to /{documentId}
+              const publicDocPattern = new RegExp(`^/public/${orgDomain.replace('.', '\\.')}/([a-f0-9]{24})$`, 'i');
+              const match = pathname.match(publicDocPattern);
+              if (match) {
+                const docId = match[1];
+                console.log(`[Custom Domain] Redirect /public/${orgDomain}/${docId} → /${docId}`);
+                return NextResponse.redirect(new URL(`/${docId}`, req.url));
+              }
+
               console.log(`[Custom Domain] Public route passthrough: ${pathname}`);
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }

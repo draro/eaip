@@ -99,6 +99,15 @@ export default function PublicDocumentViewer() {
 
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Detect if we're on a custom domain (not the main app domain)
+  const isCustomDomain = typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.includes('localhost') &&
+    window.location.hostname !== domain;
+
+  // Get the home URL based on domain type
+  const getHomeUrl = () => isCustomDomain ? '/' : `/public/${domain}`;
+
   useEffect(() => {
     fetchDocument();
   }, [documentId]);
@@ -291,7 +300,7 @@ export default function PublicDocumentViewer() {
             <p className="text-gray-600 mb-4">
               This document is not available or has been removed.
             </p>
-            <Button onClick={() => router.push(`/public/${domain}`)}>
+            <Button onClick={() => router.push(getHomeUrl())}>
               <Home className="w-4 h-4 mr-2" />
               Back to Home
             </Button>
@@ -341,7 +350,7 @@ export default function PublicDocumentViewer() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push(`/public/${domain}`)}
+                onClick={() => router.push(getHomeUrl())}
                 className="text-white hover:bg-white/20"
               >
                 <Home className="w-4 h-4 mr-2" />
