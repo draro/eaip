@@ -65,13 +65,14 @@ COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/server.js ./server.js
+COPY --from=builder /app/scripts ./scripts
 
 # Copy the built application
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 
-# Create git-repos directory
-RUN mkdir -p /app/git-repos && chown nextjs:nodejs /app/git-repos
+# Create git-repos directory with proper permissions
+RUN mkdir -p /app/git-repos && chown -R nextjs:nodejs /app/git-repos
 
 USER nextjs
 

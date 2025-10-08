@@ -9,7 +9,8 @@
     "start": "NODE_ENV=production node server.js",
     "start:next": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "init-git-repos": "node scripts/init-git-repos.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
