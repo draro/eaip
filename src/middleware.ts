@@ -4,13 +4,22 @@ import { DomainService } from '@/lib/domain';
 
 export default withAuth(
   async function middleware(req) {
-    const { hostname, pathname } = req.nextUrl;
+    const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
-    console.log(`[Middleware] Request: ${hostname}${pathname}`);
+    // Get hostname from X-Forwarded-Host (Nginx proxy) or fall back to req.nextUrl.hostname
+    const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const hostname = forwardedHost || req.nextUrl.hostname;
+
+    console.log(`[Middleware] Request: ${hostname}${pathname}`, {
+      'x-forwarded-host': req.headers.get('x-forwarded-host'),
+      'host': req.headers.get('host'),
+      'nextUrl.hostname': req.nextUrl.hostname
+    });
 
     // Skip processing for localhost and development
     if (hostname === 'localhost' || hostname.includes('localhost')) {
+      console.log('[Middleware] Skipping localhost');
       return NextResponse.next();
     }
 
