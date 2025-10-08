@@ -45,9 +45,12 @@ export default withAuth(
     if (!isMainDomain && cleanDomain !== 'localhost') {
       try {
         // For custom domains, use an API call to lookup organization
-        // Note: In production, you might want to cache this or use a faster lookup method
-        const domainLookupUrl = new URL('/api/organizations/by-domain', req.nextUrl.origin);
+        // Use localhost for internal API calls to avoid SSL issues
+        const internalOrigin = 'http://localhost:3000';
+        const domainLookupUrl = new URL('/api/organizations/by-domain', internalOrigin);
         domainLookupUrl.searchParams.set('domain', cleanDomain);
+
+        console.log('[Middleware] Fetching org data from:', domainLookupUrl.toString());
 
         const domainResponse = await fetch(domainLookupUrl.toString(), {
           headers: { 'x-middleware-request': 'true' }
