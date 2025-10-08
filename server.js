@@ -10,7 +10,7 @@ const next = require('next');
 const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });
@@ -63,13 +63,35 @@ app.prepare().then(() => {
     }
   });
 
-  // Initialize Socket.IO
+  // Initialize Socket.IO with production-ready CORS
   const io = new Server(server, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || `http://localhost:${port}`,
+      origin: (origin, callback) => {
+        // In development, allow all origins
+        if (dev) {
+          callback(null, true);
+          return;
+        }
+
+        // In production, allow specific domains
+        const allowedOrigins = [
+          process.env.NEXTAUTH_URL,
+          'https://eaip.flyclim.com',
+          'https://demoaip.flyclim.com',
+        ].filter(Boolean);
+
+        // Allow custom domains (they don't contain flyclim.com in production)
+        if (!origin || allowedOrigins.includes(origin) || !origin.includes('flyclim.com')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     path: '/socket.io/',
+    transports: ['websocket', 'polling'],
   });
 
   io.on('connection', (socket) => {
