@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Get all organizations with custom domains
     const organizations = await Organization.find({
-      customDomain: { $exists: true, $ne: null, $ne: '' },
+      customDomain: { $exists: true, $ne: null },
       isActive: true
     }).select('customDomain domain updatedAt').lean();
 
@@ -75,7 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Also add organizations accessible via subdomain/path
     const orgsByDomain = await Organization.find({
-      domain: { $exists: true, $ne: null, $ne: '' },
+      domain: { $exists: true, $ne: null },
       'settings.enablePublicAccess': true,
     }).select('domain updatedAt').lean();
 

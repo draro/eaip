@@ -166,7 +166,7 @@ export function initializeWebSocketServer(httpServer: HTTPServer) {
       console.log('Client disconnected:', socket.id);
 
       // Remove user from all documents
-      for (const [documentId, presences] of documentPresences.entries()) {
+      Array.from(documentPresences.entries()).forEach(([documentId, presences]) => {
         if (presences.has(socket.id)) {
           const presence = presences.get(socket.id)!;
           presences.delete(socket.id);
@@ -179,7 +179,7 @@ export function initializeWebSocketServer(httpServer: HTTPServer) {
 
           console.log(`User ${presence.userName} left document ${documentId}`);
         }
-      }
+      });
     });
 
     // Heartbeat to keep connection alive
@@ -196,7 +196,7 @@ export function initializeWebSocketServer(httpServer: HTTPServer) {
 
   // Cleanup inactive users every 10 seconds
   setInterval(() => {
-    for (const [documentId, presences] of documentPresences.entries()) {
+    Array.from(documentPresences.entries()).forEach(([documentId, presences]) => {
       cleanupInactiveUsers(presences);
 
       // Remove empty document maps
@@ -204,7 +204,7 @@ export function initializeWebSocketServer(httpServer: HTTPServer) {
         documentPresences.delete(documentId);
         recentEdits.delete(documentId);
       }
-    }
+    });
   }, 10000);
 
   console.log('WebSocket server initialized');

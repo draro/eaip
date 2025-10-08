@@ -602,6 +602,7 @@ export default function PublicEAIPViewer() {
             </a>
           </p>
         </footer>
+      </div>
     </div>
   );
 }

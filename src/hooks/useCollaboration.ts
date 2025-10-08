@@ -103,11 +103,11 @@ export function useCollaboration({
       setActiveEditors((prev) => prev.filter((p) => p.userId !== data.userId));
       setCursors((prev) => {
         const newCursors = new Map(prev);
-        for (const [key, cursor] of newCursors.entries()) {
+        Array.from(newCursors.entries()).forEach(([key, cursor]) => {
           if (cursor.userId === data.userId) {
             newCursors.delete(key);
           }
-        }
+        });
         return newCursors;
       });
     });

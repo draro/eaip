@@ -49,9 +49,9 @@ export function cleanupInactiveUsers(presences: Map<string, EditorPresence>): vo
   const now = Date.now();
   const timeout = 30000; // 30 seconds
 
-  for (const [key, presence] of presences.entries()) {
+  Array.from(presences.entries()).forEach(([key, presence]) => {
     if (now - presence.lastActivity > timeout) {
       presences.delete(key);
     }
-  }
+  });
 }

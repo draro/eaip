@@ -150,9 +150,11 @@ export default function RichTextEditor({
     }
   }, [remoteCursors, value]);
 
+  const QuillComponent = ReactQuill as any;
+
   return (
     <div className="rich-text-editor" style={{ minHeight, position: 'relative' }}>
-      <ReactQuill
+      <QuillComponent
         ref={quillRef}
         theme="snow"
         value={value}

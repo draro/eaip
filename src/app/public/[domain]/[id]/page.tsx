@@ -547,6 +547,7 @@ export default function PublicDocumentViewer() {
             </div>
           </div>
         </main>
+      </div>
     </div>
   );
 }
