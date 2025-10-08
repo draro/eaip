@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, Plus, Trash2, ChevronDown, ChevronRight, GitBranch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCollaboration } from '@/hooks/useCollaboration';
+import CollaborativePresence, { SectionPresenceIndicator } from '@/components/CollaborativePresence';
 
 interface Subsection {
   id: string;
@@ -47,11 +49,49 @@ interface Document {
 export default function EditDocumentPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const user = session?.user as any;
+
   const [document, setDocument] = useState<Document | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Real-time collaboration
+  const {
+    connected,
+    activeEditors,
+    updateContent,
+    focusSection,
+  } = useCollaboration({
+    documentId: params.id,
+    userId: user?.id || user?._id || 'anonymous',
+    userName: user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Guest',
+    onContentChange: (data) => {
+      // Handle incoming content changes from other editors
+      if (data.sectionId) {
+        setSections(prev => prev.map(section => {
+          if (section.id === data.sectionId) {
+            if (data.subsectionId) {
+              // Update subsection content
+              return {
+                ...section,
+                subsections: section.subsections?.map(sub =>
+                  sub.id === data.subsectionId
+                    ? { ...sub, content: data.content }
+                    : sub
+                ) || []
+              };
+            } else {
+              // Update section content
+              return { ...section, content: data.content };
+            }
+          }
+          return section;
+        }));
+      }
+    },
+  });
 
   useEffect(() => {
     fetchDocument();
@@ -120,6 +160,11 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
       }
       return section;
     }));
+
+    // Broadcast change to other editors
+    if (connected) {
+      updateContent(sectionId, undefined, content);
+    }
   };
 
   const updateSubsectionContent = (sectionId: string, subsectionId: string, content: string) => {
@@ -134,6 +179,11 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
       }
       return section;
     }));
+
+    // Broadcast change to other editors
+    if (connected) {
+      updateContent(sectionId, subsectionId, content);
+    }
   };
 
   const updateSubsectionTitle = (sectionId: string, subsectionId: string, title: string) => {
@@ -294,10 +344,20 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
           {/* Header */}
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <Button onClick={() => router.push(`/documents/${params.id}`)} variant="outline" className="w-full sm:w-auto">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to View
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button onClick={() => router.push(`/documents/${params.id}`)} variant="outline" className="w-full sm:w-auto">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to View
+                </Button>
+
+                {/* Collaborative Presence Indicator */}
+                {connected && activeEditors.length > 0 && (
+                  <CollaborativePresence
+                    activeEditors={activeEditors}
+                    currentUserId={user?.id || user?._id || 'anonymous'}
+                  />
+                )}
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button onClick={addSection} variant="outline">
@@ -342,6 +402,15 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                           {section.title}
                         </h3>
                         <Badge variant="outline" className="self-start sm:self-auto">{section.type}</Badge>
+
+                        {/* Show who's editing this section */}
+                        {connected && (
+                          <SectionPresenceIndicator
+                            sectionId={section.id}
+                            activeEditors={activeEditors}
+                            currentUserId={user?.id || user?._id || 'anonymous'}
+                          />
+                        )}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteSection(section.id); }} className="flex-shrink-0">
