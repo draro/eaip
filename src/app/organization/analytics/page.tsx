@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,19 +77,29 @@ interface AnalyticsData {
 }
 
 export default function OrganizationAnalytics() {
+  const { data: session } = useSession();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30'); // days
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
+    if (session) {
+      fetchAnalytics();
+    }
+  }, [timeRange, session]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      // In a real implementation, get the current organization ID from auth context
-      const orgId = 'current-org-id'; // This would come from auth context
+      const user = session?.user as any;
+      const orgId = user?.organizationId || user?.organization?._id;
+
+      if (!orgId) {
+        console.error('No organization ID found in session');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`/api/statistics?period=${timeRange}&organizationId=${orgId}`);
 
       if (response.ok) {

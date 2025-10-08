@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ interface CreateUserForm {
 }
 
 export default function UserManagement() {
+  const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,14 +89,23 @@ export default function UserManagement() {
   });
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (session) {
+      fetchUsers();
+    }
+  }, [session]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // In a real implementation, get the current organization ID from auth context
-      const orgId = 'current-org-id'; // This would come from auth context
+      const user = session?.user as any;
+      const orgId = user?.organizationId || user?.organization?._id;
+
+      if (!orgId) {
+        console.error('No organization ID found in session');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`/api/organizations/${orgId}/users`);
 
       if (response.ok) {
@@ -111,7 +122,14 @@ export default function UserManagement() {
   const handleCreateUser = async () => {
     try {
       setSaving(true);
-      const orgId = 'current-org-id'; // This would come from auth context
+      const user = session?.user as any;
+      const orgId = user?.organizationId || user?.organization?._id;
+
+      if (!orgId) {
+        console.error('No organization ID found in session');
+        setSaving(false);
+        return;
+      }
 
       const response = await fetch(`/api/organizations/${orgId}/users`, {
         method: 'POST',
