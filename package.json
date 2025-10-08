@@ -10,7 +10,11 @@
     "start:next": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "init-git-repos": "node scripts/init-git-repos.js"
+    "init-git-repos": "node scripts/init-git-repos.js",
+    "backup": "node scripts/backup-git-repos.js",
+    "backup:list": "node scripts/backup-git-repos.js list",
+    "restore": "node scripts/restore-git-repos.js",
+    "restore:verify": "node scripts/restore-git-repos.js verify"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

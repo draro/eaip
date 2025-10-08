@@ -19,6 +19,10 @@ services:
     volumes:
       # Persist git repositories for version control
       - git-repos:/app/git-repos
+      # Persist backups
+      - backups:/app/backups
+      # Optional: Mount local backup directory for easy access
+      # - ./backups:/app/backups
     networks:
       - eaip-network
     healthcheck:
@@ -30,6 +34,8 @@ services:
 
 volumes:
   git-repos:
+    driver: local
+  backups:
     driver: local
 
 networks:
