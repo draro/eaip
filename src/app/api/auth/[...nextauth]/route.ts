@@ -61,8 +61,19 @@ export const authOptions: AuthOptions = {
             }
           }
 
-          // Domain-specific login validation
-          if (domain && domain !== 'localhost') {
+          // Domain-specific login validation (only for tenant-specific domains)
+          // Skip validation for main app domain (eaip.flyclim.com) and localhost
+          const mainAppDomain = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0];
+          const isMainAppDomain = domain === mainAppDomain || domain === 'localhost' || !domain;
+
+          console.log('Domain validation:', {
+            requestDomain: domain,
+            mainAppDomain,
+            isMainAppDomain,
+            willValidate: !isMainAppDomain
+          });
+
+          if (domain && !isMainAppDomain) {
             const domainInfo = await domainService.getOrganizationByDomain(domain);
 
             if (domainInfo) {
@@ -75,6 +86,8 @@ export const authOptions: AuthOptions = {
                 throw new Error('CROSS_TENANT_LOGIN_DENIED');
               }
             }
+          } else {
+            console.log('Skipping domain validation - logging in to main app domain');
           }
 
           console.log("User found:", user);
