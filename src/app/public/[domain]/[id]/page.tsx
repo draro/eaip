@@ -18,7 +18,6 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { formatAiracCycle } from '@/lib/utils';
-import StructuredData from '@/components/StructuredData';
 
 interface Subsection {
   id: string;
@@ -326,12 +325,6 @@ export default function PublicDocumentViewer() {
         color: (organization.branding as any).textColor || '#000000'
       }}
     >
-      <StructuredData
-        type="document"
-        organization={organization}
-        document={document}
-        url={canonicalUrl}
-      />
       {/* Header */}
       <header
         className="shadow-sm z-10"

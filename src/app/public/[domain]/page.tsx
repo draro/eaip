@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Calendar, Globe, Mail, ExternalLink, Download, Phone } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { formatAiracCycle } from '@/lib/utils';
-import StructuredData from '@/components/StructuredData';
 
 interface Organization {
   name: string;
@@ -213,11 +212,6 @@ export default function PublicEAIPViewer() {
         color: (organization.branding as any).textColor || '#000000'
       }}
     >
-      <StructuredData
-        type="dataset"
-        organization={organization}
-        url={baseUrl}
-      />
       {/* Header */}
       <header
         className="shadow-sm"
