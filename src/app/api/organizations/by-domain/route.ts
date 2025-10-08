@@ -67,12 +67,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       organization: {
-        _id: organization._id,
-        name: organization.name,
-        domain: organization.domain,
-        status: organization.status,
-        settings: organization.settings,
-        branding: organization.branding || {},
+        _id: plainOrg._id,
+        name: plainOrg.name,
+        domain: plainOrg.domain,
+        status: plainOrg.status,
+        settings: plainOrg.settings,
+        branding: plainOrg.branding || {},
       },
     });
   } catch (error) {
