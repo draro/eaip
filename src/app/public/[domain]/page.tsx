@@ -202,15 +202,16 @@ export default function PublicEAIPViewer() {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com');
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundColor: `${organization.branding.primaryColor}10`,
-        fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
-        fontSize: (organization.branding as any).fontSize || '16px',
-        color: (organization.branding as any).textColor || '#000000'
-      }}
-    >
+    <>
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: `${organization.branding.primaryColor}10`,
+          fontFamily: (organization.branding as any).fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: (organization.branding as any).fontSize || '16px',
+          color: (organization.branding as any).textColor || '#000000'
+        }}
+      >
       {/* Header */}
       <header
         className="shadow-sm"
@@ -603,6 +604,7 @@ export default function PublicEAIPViewer() {
             </a>
           </p>
         </footer>
-    </div>
+      </div>
+    </>
   );
 }
