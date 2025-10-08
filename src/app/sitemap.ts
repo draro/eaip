@@ -10,7 +10,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     await connectDB();
 
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
+
     const sitemapEntries: MetadataRoute.Sitemap = [];
+
+    // Add main website pages (public, no authentication required)
+    const mainPages = [
+      { url: baseUrl, priority: 1.0, changeFrequency: 'daily' as const },
+      { url: `${baseUrl}/about`, priority: 0.8, changeFrequency: 'monthly' as const },
+      { url: `${baseUrl}/contact`, priority: 0.7, changeFrequency: 'monthly' as const },
+      { url: `${baseUrl}/features/overview`, priority: 0.9, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/document-management`, priority: 0.8, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/notam-management`, priority: 0.8, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/compliance`, priority: 0.8, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/workflow`, priority: 0.8, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/export`, priority: 0.8, changeFrequency: 'weekly' as const },
+      { url: `${baseUrl}/features/version-control`, priority: 0.8, changeFrequency: 'weekly' as const },
+    ];
+
+    mainPages.forEach(page => {
+      sitemapEntries.push({
+        url: page.url,
+        lastModified: new Date(),
+        changeFrequency: page.changeFrequency,
+        priority: page.priority,
+      });
+    });
 
     // Get all organizations with custom domains
     const organizations = await Organization.find({
@@ -53,8 +78,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       domain: { $exists: true, $ne: null, $ne: '' },
       'settings.enablePublicAccess': true,
     }).select('domain updatedAt').lean();
-
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://eaip.flyclim.com';
 
     for (const org of orgsByDomain) {
       sitemapEntries.push({
