@@ -32,16 +32,18 @@ export const authOptions: AuthOptions = {
           // Get domain from request headers for tenant validation
           // Try multiple header sources (HTTP/1.1 and HTTP/2)
           const host =
-            req?.headers?.host ||
-            req?.headers?.['x-forwarded-host'] ||
-            req?.headers?.[':authority'] ||
-            process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0];
+            (req?.headers?.host !== "eaip.flyclim.com"
+              ? req?.headers?.host
+              : null) ||
+            req?.headers?.["x-forwarded-host"] ||
+            req?.headers?.[":authority"] ||
+            process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, "").split("/")[0];
 
-          console.log('Auth headers:', {
+          console.log("Auth headers:", {
             host: req?.headers?.host,
-            xForwardedHost: req?.headers?.['x-forwarded-host'],
-            authority: req?.headers?.[':authority'],
-            allHeaders: Object.keys(req?.headers || {})
+            xForwardedHost: req?.headers?.["x-forwarded-host"],
+            authority: req?.headers?.[":authority"],
+            allHeaders: Object.keys(req?.headers || {}),
           });
 
           const domain = DomainService.extractDomain(host as string);
@@ -56,38 +58,52 @@ export const authOptions: AuthOptions = {
             try {
               organization = await Organization.findById(user.organization);
             } catch (orgError) {
-              console.log('Could not fetch organization:', orgError instanceof Error ? orgError.message : 'Unknown error');
+              console.log(
+                "Could not fetch organization:",
+                orgError instanceof Error ? orgError.message : "Unknown error"
+              );
               // Continue without organization - it's not critical for authentication
             }
           }
 
           // Domain-specific login validation (only for tenant-specific domains)
           // Skip validation for main app domain (eaip.flyclim.com) and localhost
-          const mainAppDomain = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0];
-          const isMainAppDomain = domain === mainAppDomain || domain === 'localhost' || !domain;
+          const mainAppDomain = process.env.NEXTAUTH_URL?.replace(
+            /^https?:\/\//,
+            ""
+          ).split("/")[0];
+          const isMainAppDomain =
+            domain === mainAppDomain || domain === "localhost" || !domain;
 
-          console.log('Domain validation:', {
+          console.log("Domain validation:", {
             requestDomain: domain,
             mainAppDomain,
             isMainAppDomain,
-            willValidate: !isMainAppDomain
+            willValidate: !isMainAppDomain,
           });
 
           if (domain && !isMainAppDomain) {
-            const domainInfo = await domainService.getOrganizationByDomain(domain);
+            const domainInfo = await domainService.getOrganizationByDomain(
+              domain
+            );
 
             if (domainInfo) {
               // Ensure user belongs to the organization associated with this domain
-              const userOrgId = organization?._id?.toString() || user.organization?.toString();
+              const userOrgId =
+                organization?._id?.toString() || user.organization?.toString();
               const domainOrgId = domainInfo.organizationId;
 
               if (!DomainService.validateUserAccess(userOrgId, domainOrgId)) {
-                console.log(`Domain login blocked: User org ${userOrgId} trying to login on domain org ${domainOrgId}`);
-                throw new Error('CROSS_TENANT_LOGIN_DENIED');
+                console.log(
+                  `Domain login blocked: User org ${userOrgId} trying to login on domain org ${domainOrgId}`
+                );
+                throw new Error("CROSS_TENANT_LOGIN_DENIED");
               }
             }
           } else {
-            console.log('Skipping domain validation - logging in to main app domain');
+            console.log(
+              "Skipping domain validation - logging in to main app domain"
+            );
           }
 
           console.log("User found:", user);
@@ -99,7 +115,7 @@ export const authOptions: AuthOptions = {
             inputPassword: credentials.password,
             hashedInput,
             storedHash: user.password,
-            match: isPasswordValid
+            match: isPasswordValid,
           });
 
           if (!isPasswordValid) return null;
@@ -109,21 +125,27 @@ export const authOptions: AuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
-            organizationId: organization?._id?.toString() || user.organization?.toString(),
-            organization: organization ? {
-              id: organization._id.toString(),
-              _id: organization._id.toString(),
-              name: organization.name,
-              domain: organization.domain,
-              status: organization.status
-            } : null,
+            organizationId:
+              organization?._id?.toString() || user.organization?.toString(),
+            organization: organization
+              ? {
+                  id: organization._id.toString(),
+                  _id: organization._id.toString(),
+                  name: organization.name,
+                  domain: organization.domain,
+                  status: organization.status,
+                }
+              : null,
             tenantDomain: domain, // Store the domain the user logged in from
           };
         } catch (error) {
           console.error("Auth error:", error);
 
           // Return specific error for cross-tenant login attempts
-          if (error instanceof Error && error.message === 'CROSS_TENANT_LOGIN_DENIED') {
+          if (
+            error instanceof Error &&
+            error.message === "CROSS_TENANT_LOGIN_DENIED"
+          ) {
             return null;
           }
 
