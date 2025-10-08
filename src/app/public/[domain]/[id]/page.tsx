@@ -318,7 +318,7 @@ export default function PublicDocumentViewer() {
   const canonicalUrl = `${baseUrl}/public/${domain}/${documentId}`;
 
   return (
-    <>
+    <div>
       <StructuredData
         type="document"
         organization={organization}
@@ -559,6 +559,6 @@ export default function PublicDocumentViewer() {
           </div>
         </main>
       </div>
-    </>
+    </div>
   );
 }
