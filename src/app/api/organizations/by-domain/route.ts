@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         { domain: domain.toLowerCase() },
         { "settings.publicUrl": domain.toLowerCase() },
       ],
-    }).select("_id name domain status settings branding");
+    });
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       foundOrg: organization
