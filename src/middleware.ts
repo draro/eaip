@@ -7,6 +7,8 @@ export default withAuth(
     const { hostname, pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
+    console.log(`[Middleware] Request: ${hostname}${pathname}`);
+
     // Skip processing for localhost and development
     if (hostname === 'localhost' || hostname.includes('localhost')) {
       return NextResponse.next();
@@ -22,6 +24,13 @@ export default withAuth(
                         hostname.includes('localhost') ||
                         hostname.includes('vercel.app') ||
                         hostname.includes('netlify.app');
+
+    console.log(`[Middleware] Domain check:`, {
+      hostname,
+      cleanDomain,
+      mainAppDomain,
+      isMainDomain
+    });
 
     // Handle tenant-specific domain routing
     if (!isMainDomain && cleanDomain !== 'localhost') {
@@ -70,6 +79,7 @@ export default withAuth(
             // Map root to public organization page
             if (pathname === '/') {
               url.pathname = `/public/${cleanDomain}`;
+              console.log(`Custom domain rewrite: ${hostname}${pathname} → ${url.pathname}`);
               return NextResponse.rewrite(url, {
                 request: { headers: requestHeaders }
               });
