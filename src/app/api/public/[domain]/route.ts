@@ -41,12 +41,21 @@ export async function GET(
     }
 
     // Check if public access is enabled
-    if (!organization.settings.enablePublicAccess) {
+    console.log('Public API - Public access check:', {
+      hasSettings: !!organization.settings,
+      enablePublicAccess: organization.settings?.enablePublicAccess,
+      settingsObject: organization.settings
+    });
+
+    if (!organization.settings?.enablePublicAccess) {
+      console.log('Public API - Access denied: Public access is disabled');
       return NextResponse.json(
         { success: false, error: 'Public access is disabled for this organization' },
         { status: 403 }
       );
     }
+
+    console.log('Public API - Access granted, proceeding...');
 
     switch (action) {
       case 'info':
