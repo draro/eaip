@@ -40,6 +40,7 @@ export default function SEOStructuredData({ organization, document, domain }: Pr
     if (typeof window === 'undefined') return;
 
     const baseUrl = window.location.origin;
+    const addedScripts: HTMLScriptElement[] = [];
 
     // Organization Schema
     const organizationSchema = {
@@ -194,7 +195,9 @@ export default function SEOStructuredData({ organization, document, domain }: Pr
         const faqScript = window.document.createElement('script');
         faqScript.type = 'application/ld+json';
         faqScript.text = JSON.stringify(faqSchema);
+        faqScript.setAttribute('data-component', 'seo-structured-data');
         window.document.head.appendChild(faqScript);
+        addedScripts.push(faqScript);
       }
     }
 
@@ -205,13 +208,22 @@ export default function SEOStructuredData({ organization, document, domain }: Pr
       const script = window.document.createElement('script');
       script.type = 'application/ld+json';
       script.text = JSON.stringify(schema);
+      script.setAttribute('data-component', 'seo-structured-data');
       window.document.head.appendChild(script);
+      addedScripts.push(script);
     });
 
     // Cleanup function
     return () => {
-      const scripts = window.document.head.querySelectorAll('script[type="application/ld+json"]');
-      scripts.forEach((script: Element) => script.remove());
+      try {
+        addedScripts.forEach((script) => {
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        });
+      } catch (error) {
+        console.debug('SEOStructuredData cleanup error (safe to ignore):', error);
+      }
     };
   }, [organization, document, domain]);
 

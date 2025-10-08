@@ -16,21 +16,27 @@ export default function CanonicalLink({ url }: Props) {
 
     // Remove any existing canonical links
     const existingCanonical = window.document.querySelector('link[rel="canonical"]');
-    if (existingCanonical) {
-      existingCanonical.remove();
+    if (existingCanonical && existingCanonical.parentNode) {
+      existingCanonical.parentNode.removeChild(existingCanonical);
     }
 
     // Create and inject new canonical link
     const link = window.document.createElement('link');
     link.rel = 'canonical';
     link.href = url;
+    link.setAttribute('data-component', 'canonical-link'); // Mark for safe cleanup
     window.document.head.appendChild(link);
 
     // Cleanup on unmount
     return () => {
-      const canonical = window.document.querySelector(`link[rel="canonical"][href="${url}"]`);
-      if (canonical) {
-        canonical.remove();
+      try {
+        const canonical = window.document.querySelector(`link[rel="canonical"][href="${url}"]`);
+        if (canonical && canonical.parentNode) {
+          canonical.parentNode.removeChild(canonical);
+        }
+      } catch (error) {
+        // Ignore errors during cleanup - element may already be removed
+        console.debug('CanonicalLink cleanup error (safe to ignore):', error);
       }
     };
   }, [url]);
