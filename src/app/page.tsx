@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PublicNav from '@/components/PublicNav';
+import Image from "next/image";
 import {
   FileText,
   Download,
@@ -36,7 +37,14 @@ export default function HomePage() {
           <div className="text-center">
             <div className="flex justify-center mb-8">
               <div className="flex items-center space-x-2">
-                <Plane className="h-12 w-12 text-blue-300" />
+                <Image
+                src="/icon-192.png"
+                alt="FlyClim Logo"
+                width={120}
+                height={60}
+                className="h-8 w-auto"
+                priority
+              />
                 <span className="text-4xl font-bold">eAIP</span>
               </div>
             </div>

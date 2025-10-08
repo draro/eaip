@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plane, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import Image from "next/image";
 
 export default function PublicNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,7 +26,14 @@ export default function PublicNav() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <Plane className="h-8 w-8 text-blue-600" />
+            <Image
+                src="/icon-192.png"
+                alt="FlyClim Logo"
+                width={120}
+                height={60}
+                className="h-8 w-auto"
+                priority
+              />
             <span className="text-2xl font-bold text-gray-900">eAIP</span>
           </Link>
 
