@@ -30,7 +30,20 @@ export const authOptions: AuthOptions = {
           await connectDB();
 
           // Get domain from request headers for tenant validation
-          const host = req?.headers?.host || req?.headers?.['x-forwarded-host'];
+          // Try multiple header sources (HTTP/1.1 and HTTP/2)
+          const host =
+            req?.headers?.host ||
+            req?.headers?.['x-forwarded-host'] ||
+            req?.headers?.[':authority'] ||
+            process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '').split('/')[0];
+
+          console.log('Auth headers:', {
+            host: req?.headers?.host,
+            xForwardedHost: req?.headers?.['x-forwarded-host'],
+            authority: req?.headers?.[':authority'],
+            allHeaders: Object.keys(req?.headers || {})
+          });
+
           const domain = DomainService.extractDomain(host as string);
 
           // First find user without populate to avoid model registration issues
