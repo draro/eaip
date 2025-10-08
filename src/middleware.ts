@@ -19,8 +19,11 @@ export default withAuth(
     });
 
     // Skip processing for localhost and development
-    if (hostname === "localhost" || hostname.includes("localhost")) {
-      console.log("[Middleware] Skipping localhost");
+    if (
+      !req.headers.get("x-middleware-request") &&
+      (hostname === "localhost" || hostname.includes("localhost"))
+    ) {
+      console.log("[Middleware] Skipping external localhost");
       return NextResponse.next();
     }
 
