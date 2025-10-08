@@ -26,18 +26,28 @@ export async function GET(request: NextRequest) {
         { "settings.publicUrl": domain.toLowerCase() },
       ],
     });
+    const plainOrg = organization.toObject();
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
-      foundOrg: organization
-        ? {
-            id: organization._id,
-            name: organization.name,
-            domain: organization.domain,
-            publicUrl: organization.settings?.publicUrl,
-          }
-        : null,
+      foundOrg: {
+        id: plainOrg._id,
+        name: plainOrg.name,
+        domain: plainOrg.domain,
+        publicUrl: plainOrg.settings?.publicUrl,
+      },
     });
-    console.log("ORGANIZATION", organization);
+    // console.log("Organization lookup by domain:", {
+    //   requestedDomain: domain.toLowerCase(),
+    //   foundOrg: organization
+    //     ? {
+    //         id: organization._id,
+    //         name: organization.name,
+    //         domain: organization.domain,
+    //         publicUrl: organization.settings?.publicUrl,
+    //       }
+    //     : null,
+    // });
+    // console.log("ORGANIZATION", organization);
 
     if (!organization) {
       return NextResponse.json(
