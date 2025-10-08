@@ -47,7 +47,7 @@ export const authOptions: AuthOptions = {
           });
 
           const domain = DomainService.extractDomain(host as string);
-
+          console.log("Extracted domain for auth:", domain);
           // First find user without populate to avoid model registration issues
           const user = await User.findOne({ email: credentials.email });
           if (!user || !user.password) return null;

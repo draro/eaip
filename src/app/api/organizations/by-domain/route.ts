@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Organization from '@/models/Organization';
+import { NextRequest, NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import Organization from "@/models/Organization";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const domain = searchParams.get('domain');
+    const domain = searchParams.get("domain");
 
     if (!domain) {
       return NextResponse.json(
-        { success: false, error: 'Domain parameter is required' },
+        { success: false, error: "Domain parameter is required" },
         { status: 400 }
       );
     }
@@ -23,31 +23,33 @@ export async function GET(request: NextRequest) {
     const organization = await Organization.findOne({
       $or: [
         { domain: domain.toLowerCase() },
-        { 'settings.publicUrl': domain.toLowerCase() }
-      ]
-    }).select('_id name domain status settings branding');
-
-    console.log('Organization lookup by domain:', {
+        { "settings.publicUrl": domain.toLowerCase() },
+      ],
+    }).select("_id name domain status settings branding");
+    console.log("ORGANIZATION", organization);
+    console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
-      foundOrg: organization ? {
-        id: organization._id,
-        name: organization.name,
-        domain: organization.domain,
-        publicUrl: organization.settings?.publicUrl
-      } : null
+      foundOrg: organization
+        ? {
+            id: organization._id,
+            name: organization.name,
+            domain: organization.domain,
+            publicUrl: organization.settings?.publicUrl,
+          }
+        : null,
     });
 
     if (!organization) {
       return NextResponse.json(
-        { success: false, error: 'Organization not found for this domain' },
+        { success: false, error: "Organization not found for this domain" },
         { status: 404 }
       );
     }
 
     // Check if organization is active
-    if (organization.status !== 'active') {
+    if (organization.status !== "active") {
       return NextResponse.json(
-        { success: false, error: 'Organization is not active' },
+        { success: false, error: "Organization is not active" },
         { status: 403 }
       );
     }
@@ -60,13 +62,13 @@ export async function GET(request: NextRequest) {
         domain: organization.domain,
         status: organization.status,
         settings: organization.settings,
-        branding: organization.branding || {}
-      }
+        branding: organization.branding || {},
+      },
     });
   } catch (error) {
-    console.error('Error looking up organization by domain:', error);
+    console.error("Error looking up organization by domain:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to lookup organization' },
+      { success: false, error: "Failed to lookup organization" },
       { status: 500 }
     );
   }
