@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { getSession } from 'next-auth/react';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size (max 2MB)
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { success: false, error: 'File size too large. Maximum size is 2MB.' },
@@ -33,32 +30,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'logos');
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const filename = `logo-${timestamp}.${extension}`;
-    const filepath = join(uploadsDir, filename);
-
-    // Convert file to buffer and save
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    const base64 = buffer.toString('base64');
 
-    // Return the public URL
-    const publicUrl = `/uploads/logos/${filename}`;
+    // Create data URL with proper MIME type
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
-      filename,
+      url: dataUrl,
       size: file.size,
       type: file.type
     });

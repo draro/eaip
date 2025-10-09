@@ -202,29 +202,44 @@ async function exportDOCX(document: any, organization: any) {
   let logoImage: ImageRun | null = null;
   if (organization.branding.logoUrl) {
     try {
-      // Handle both absolute and relative URLs
-      let logoUrl = organization.branding.logoUrl;
-      if (!logoUrl.startsWith('http')) {
-        // If relative URL, construct absolute URL
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        logoUrl = new URL(logoUrl, baseUrl).toString();
+      let logoBuffer: Buffer;
+
+      // Check if it's a base64 data URL
+      if (organization.branding.logoUrl.startsWith('data:')) {
+        // Extract base64 data from data URL
+        const base64Data = organization.branding.logoUrl.split(',')[1];
+        logoBuffer = Buffer.from(base64Data, 'base64');
+        console.log('Logo loaded from base64 data URL');
+      } else {
+        // Handle HTTP/HTTPS URLs or relative paths
+        let logoUrl = organization.branding.logoUrl;
+        if (!logoUrl.startsWith('http')) {
+          // If relative URL, construct absolute URL
+          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+          logoUrl = new URL(logoUrl, baseUrl).toString();
+        }
+
+        console.log('Fetching logo from:', logoUrl);
+        const logoResponse = await fetch(logoUrl);
+
+        if (!logoResponse.ok) {
+          console.error('Failed to fetch logo, status:', logoResponse.status);
+          logoBuffer = Buffer.alloc(0);
+        } else {
+          const arrayBuffer = await logoResponse.arrayBuffer();
+          logoBuffer = Buffer.from(arrayBuffer);
+          console.log('Logo loaded successfully from URL');
+        }
       }
 
-      console.log('Fetching logo from:', logoUrl);
-      const logoResponse = await fetch(logoUrl);
-
-      if (!logoResponse.ok) {
-        console.error('Failed to fetch logo, status:', logoResponse.status);
-      } else {
-        const logoBuffer = await logoResponse.arrayBuffer();
+      if (logoBuffer.length > 0) {
         logoImage = new ImageRun({
-          data: Buffer.from(logoBuffer),
+          data: logoBuffer,
           transformation: {
             width: 150,
             height: 150,
           },
         });
-        console.log('Logo loaded successfully');
       }
     } catch (error) {
       console.error('Failed to fetch logo:', error);
