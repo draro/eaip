@@ -27,8 +27,7 @@ export async function GET(
 
     await connectDB();
 
-    const organization = await Organization.findById(params?.id)
-      .populate('createdBy', 'name email');
+    const organization = await Organization.findById(params?.id);
 
     if (!organization) {
       return NextResponse.json(
@@ -161,7 +160,7 @@ export async function PUT(
       params?.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
+    );
 
     if (!organization) {
       return NextResponse.json(

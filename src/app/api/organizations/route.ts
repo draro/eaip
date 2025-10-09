@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
     // Get organizations with pagination
     const [organizations, total] = await Promise.all([
       Organization.find(query)
-        .populate('createdBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
