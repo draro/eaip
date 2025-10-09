@@ -18,9 +18,20 @@ export default withAuth(
       "nextUrl.hostname": req.nextUrl.hostname,
     });
 
+    // Skip internal middleware requests to prevent infinite loops
+    if (req.headers.get("x-middleware-request") === "true") {
+      console.log("[Middleware] Skipping internal middleware request");
+      return NextResponse.next();
+    }
+
     // Skip processing for localhost and development
-    if (hostname === "localhost" || hostname.includes("localhost")) {
-      console.log("[Middleware] Skipping localhost");
+    if (
+      hostname === "localhost" ||
+      hostname.includes("localhost") ||
+      hostname.includes("0.0.0.0") ||
+      hostname.includes("127.0.0.1")
+    ) {
+      console.log("[Middleware] Skipping localhost/internal IP");
       return NextResponse.next();
     }
 
