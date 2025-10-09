@@ -140,8 +140,9 @@ export async function PUT(
 
     // Merge settings properly to preserve required fields
     if (updateData.settings) {
+      const existingSettings = existingOrg.settings?.toObject ? existingOrg.settings.toObject() : (existingOrg.settings || {});
       updateData.settings = {
-        ...existingOrg.settings.toObject(),
+        ...existingSettings,
         ...updateData.settings,
       };
 
@@ -151,8 +152,8 @@ export async function PUT(
       }
 
       // Ensure airacStartDate is preserved if not provided
-      if (!updateData.settings.airacStartDate && existingOrg.settings.airacStartDate) {
-        updateData.settings.airacStartDate = existingOrg.settings.airacStartDate;
+      if (!updateData.settings.airacStartDate && existingSettings.airacStartDate) {
+        updateData.settings.airacStartDate = existingSettings.airacStartDate;
       }
     }
 
