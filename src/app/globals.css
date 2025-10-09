@@ -149,3 +149,24 @@
   display: block;
   margin: 1rem auto;
 }
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.remote-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.remote-cursor-label {
+  position: absolute;
+  white-space: nowrap;
+  user-select: none;
+}

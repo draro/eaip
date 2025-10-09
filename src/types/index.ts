@@ -95,7 +95,7 @@ export interface IOrganization extends Document {
   status: 'active' | 'suspended' | 'trial';
   createdAt: Date;
   updatedAt: Date;
-  createdBy: Types.ObjectId;
+  createdBy?: Types.ObjectId;
 }
 
 export interface IUser extends Document {

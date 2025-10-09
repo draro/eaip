@@ -52,20 +52,8 @@ function cleanupInactiveUsers(presences) {
 }
 
 app.prepare().then(() => {
-  // const server = createServer(async (req, res) => {
-  //   try {
-  //     const parsedUrl = parse(req.url, true);
-  //     await handle(req, res, parsedUrl);
-  //   } catch (err) {
-  //     console.error('Error occurred handling', req.url, err);
-  //     res.statusCode = 500;
-  //     res.end('internal server error');
-  //   }
-  // });
-
-  // Initialize Socket.IO with production-ready CORS
-
-  createServer(async (req, res) => {
+  // Create HTTP server
+  const server = createServer(async (req, res) => {
     try {
       // Normalize host header
       if (req.headers['x-forwarded-host'] === undefined && req.headers['host']) {
@@ -79,10 +67,9 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('Internal server error');
     }
-  }).listen(port, () => {
-    console.log(`> Ready on http://localhost:${port}`);
   });
 
+  // Initialize Socket.IO with production-ready CORS
   const io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
@@ -277,25 +264,26 @@ app.prepare().then(() => {
     }
   }, 10000);
 
-  server
-    .once('error', (err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .listen(port, async () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-      console.log(`> WebSocket server ready for collaborative editing`);
+  // Start server
+  server.once('error', (err) => {
+    console.error(err);
+    process.exit(1);
+  });
 
-      // Initialize git repositories for active organizations in production
-      if (!dev) {
-        try {
-          console.log('\n> Initializing git repositories...');
-          const { main: initGitRepos } = require('./scripts/init-git-repos.js');
-          await initGitRepos();
-        } catch (error) {
-          console.error('> Warning: Git repository initialization failed:', error.message);
-          console.error('> Application will continue, but version control may not work properly');
-        }
+  server.listen(port, async () => {
+    console.log(`> Ready on http://${hostname}:${port}`);
+    console.log(`> WebSocket server ready for collaborative editing`);
+
+    // Initialize git repositories for active organizations in production
+    if (!dev) {
+      try {
+        console.log('\n> Initializing git repositories...');
+        const { main: initGitRepos } = require('./scripts/init-git-repos.js');
+        await initGitRepos();
+      } catch (error) {
+        console.error('> Warning: Git repository initialization failed:', error.message);
+        console.error('> Application will continue, but version control may not work properly');
       }
-    });
+    }
+  });
 });

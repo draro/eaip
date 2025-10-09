@@ -16,19 +16,24 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
+    // Clean domain for comparison (remove protocol if present)
+    const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, "").split('/')[0];
+
     // Look up organization by domain OR publicUrl (case-insensitive)
     // This allows matching both:
     // 1. Primary domain (e.g., "flyclim.com")
     // 2. Public URL / custom domain (e.g., "demoaip.flyclim.com")
     const organization = await Organization.findOne({
       $or: [
+        { domain: cleanDomain },
         { domain: domain.toLowerCase() },
-        { "settings.publicUrl": domain.toLowerCase() },
+        { "settings.publicUrl": { $regex: new RegExp(cleanDomain, 'i') } },
       ],
     }).select("_id name domain status settings branding");
 
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
+      cleanDomain: cleanDomain,
       foundOrg: organization
         ? {
             id: organization._id,

@@ -182,7 +182,6 @@ const OrganizationSchema = new Schema<IOrganization>(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
   },
   {

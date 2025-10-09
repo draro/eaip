@@ -27,8 +27,7 @@ export async function GET(
 
     await connectDB();
 
-    const organization = await Organization.findById(params?.id)
-      .populate('createdBy', 'name email');
+    const organization = await Organization.findById(params?.id);
 
     if (!organization) {
       return NextResponse.json(
@@ -140,8 +139,9 @@ export async function PUT(
 
     // Merge settings properly to preserve required fields
     if (updateData.settings) {
+      const existingSettings = existingOrg.settings?.toObject ? existingOrg.settings.toObject() : (existingOrg.settings || {});
       updateData.settings = {
-        ...existingOrg.settings.toObject(),
+        ...existingSettings,
         ...updateData.settings,
       };
 
@@ -151,8 +151,8 @@ export async function PUT(
       }
 
       // Ensure airacStartDate is preserved if not provided
-      if (!updateData.settings.airacStartDate && existingOrg.settings.airacStartDate) {
-        updateData.settings.airacStartDate = existingOrg.settings.airacStartDate;
+      if (!updateData.settings.airacStartDate && existingSettings.airacStartDate) {
+        updateData.settings.airacStartDate = existingSettings.airacStartDate;
       }
     }
 
@@ -160,7 +160,7 @@ export async function PUT(
       params?.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
+    );
 
     if (!organization) {
       return NextResponse.json(

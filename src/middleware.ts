@@ -18,9 +18,20 @@ export default withAuth(
       "nextUrl.hostname": req.nextUrl.hostname,
     });
 
+    // Skip internal middleware requests to prevent infinite loops
+    if (req.headers.get("x-middleware-request") === "true") {
+      console.log("[Middleware] Skipping internal middleware request");
+      return NextResponse.next();
+    }
+
     // Skip processing for localhost and development
-    if (hostname === "localhost" || hostname.includes("localhost")) {
-      console.log("[Middleware] Skipping localhost");
+    if (
+      hostname === "localhost" ||
+      hostname.includes("localhost") ||
+      hostname.includes("0.0.0.0") ||
+      hostname.includes("127.0.0.1")
+    ) {
+      console.log("[Middleware] Skipping localhost/internal IP");
       return NextResponse.next();
     }
 
@@ -49,8 +60,8 @@ export default withAuth(
     // Handle tenant-specific domain routing
     if (!isMainDomain && cleanDomain !== "localhost") {
       try {
-        // For custom domains, use an API call to lookup organization
-        // Use localhost for internal API calls to avoid SSL issues
+        // For internal API calls, always use HTTP to localhost to avoid SSL issues
+        // Use localhost for Docker compatibility (works both locally and in containers)
         const internalOrigin = "http://localhost:3000";
         const domainLookupUrl = new URL(
           "/api/organizations/by-domain",
