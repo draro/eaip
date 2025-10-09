@@ -22,19 +22,23 @@ export async function GET(
     // Find organization by domain OR publicUrl
     console.log('Public API - Looking for organization with domain:', params.domain.toLowerCase());
 
+    // Clean the domain - remove protocol if present
+    const cleanDomain = params.domain.toLowerCase().replace(/^https?:\/\//, '');
+
     const organization = await Organization.findOne({
       $or: [
-        { domain: params.domain.toLowerCase() },
-        { 'settings.publicUrl': params.domain.toLowerCase() }
+        { domain: cleanDomain },
+        { 'settings.publicUrl': { $regex: new RegExp(cleanDomain, 'i') } }
       ],
       status: 'active'
-    });
+    }).lean() as any;
 
     console.log('Public API - Organization found:', organization ? {
       id: organization._id,
       name: organization.name,
       domain: organization.domain,
-      publicUrl: organization.settings?.publicUrl
+      publicUrl: organization.settings?.publicUrl,
+      fullOrg: organization
     } : null);
 
     if (!organization) {
