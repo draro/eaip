@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
           }
         : null,
     });
-
+    console.log("Full organization data:", organization);
     if (!organization) {
       return NextResponse.json(
         { success: false, error: "Organization not found for this domain" },
@@ -53,7 +53,17 @@ export async function GET(request: NextRequest) {
         { status: 403 }
       );
     }
-
+    console.log("Returning organization data:", {
+      success: true,
+      organization: {
+        _id: organization._id,
+        name: organization.name,
+        domain: organization.domain,
+        status: organization.status,
+        settings: organization.settings,
+        branding: organization.branding || {},
+      },
+    });
     return NextResponse.json({
       success: true,
       organization: {
