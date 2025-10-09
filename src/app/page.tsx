@@ -417,6 +417,119 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* FAQ Section for AEO */}
+      <div className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about our eAIP platform
+            </p>
+          </div>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">What is an eAIP system?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                An electronic Aeronautical Information Publication (eAIP) system is a digital platform that enables Civil Aviation Authorities to create, manage, and publish aeronautical information in compliance with ICAO Annex 15 and EUROCONTROL Specification 3.0. It replaces traditional paper-based AIP with a dynamic, searchable, and regularly updated electronic format.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Is the platform ICAO compliant?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Yes, our eAIP platform is fully compliant with ICAO Annex 15 standards and EUROCONTROL Specification 3.0. It includes automated validation for coordinate formats, frequency bands, ICAO identifiers, and AIRAC cycle management. All exports maintain the required formatting and metadata standards.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">How does the multi-tenant architecture work?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Our platform provides complete organizational isolation with encrypted data storage. Each Civil Aviation Authority operates in its own secure environment with custom domains, independent user management, and role-based access control. Data is never shared between organizations.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">What export formats are supported?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                The platform supports multiple export formats including PDF, DOCX, HTML, XML, and JSON. All exports are ICAO and EUROCONTROL compliant with proper formatting, metadata, and professional styling suitable for official publication.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">How is version control managed?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                We use Git-based version control with AIRAC cycle management. Every document change is tracked with complete audit trails, visual diff comparison, and the ability to restore any previous version. The system automatically manages 28-day AIRAC cycles and effective dates.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Can we integrate with existing systems?</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Yes, our platform provides REST APIs and webhook support for integration with n8n, other workflow automation tools, and existing aviation systems. We support data import/export in multiple formats for seamless integration with your current infrastructure.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Structured Data for FAQ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'What is an eAIP system?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'An electronic Aeronautical Information Publication (eAIP) system is a digital platform that enables Civil Aviation Authorities to create, manage, and publish aeronautical information in compliance with ICAO Annex 15 and EUROCONTROL Specification 3.0.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Is the platform ICAO compliant?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Yes, our eAIP platform is fully compliant with ICAO Annex 15 standards and EUROCONTROL Specification 3.0. It includes automated validation for coordinate formats, frequency bands, ICAO identifiers, and AIRAC cycle management.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'How does the multi-tenant architecture work?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Our platform provides complete organizational isolation with encrypted data storage. Each Civil Aviation Authority operates in its own secure environment with custom domains, independent user management, and role-based access control.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'What export formats are supported?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'The platform supports multiple export formats including PDF, DOCX, HTML, XML, and JSON. All exports are ICAO and EUROCONTROL compliant with proper formatting and metadata.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'How is version control managed?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'We use Git-based version control with AIRAC cycle management. Every document change is tracked with complete audit trails, visual diff comparison, and the ability to restore any previous version.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Can we integrate with existing systems?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Yes, our platform provides REST APIs and webhook support for integration with n8n and other workflow automation tools. We support data import/export in multiple formats.',
+                },
+              },
+            ],
+          }),
+        }}
+      />
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
