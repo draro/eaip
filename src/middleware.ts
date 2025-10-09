@@ -9,8 +9,8 @@ export default withAuth(
 
     // Get hostname from X-Forwarded-Host (Nginx proxy) or fall back to req.nextUrl.hostname
     const forwardedHost =
-      req.headers.get("x-forwarded-host") || req.headers.get("host");
-    const hostname = forwardedHost || req.nextUrl.hostname;
+      req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+    const hostname = forwardedHost;
 
     console.log(`[Middleware] Request: ${hostname}${pathname}`, {
       "x-forwarded-host": req.headers.get("x-forwarded-host"),
@@ -21,14 +21,14 @@ export default withAuth(
     // Skip processing for localhost and development
     if (
       !req.headers.get("x-middleware-request") &&
-      (hostname === "localhost" || hostname.includes("localhost"))
+      (hostname === "localhost" || forwardedHost.includes("localhost"))
     ) {
       console.log("[Middleware] Skipping external localhost");
       return NextResponse.next();
     }
 
     // Simple domain extraction
-    const cleanDomain = hostname.toLowerCase().replace(/^www\./, "");
+    const cleanDomain = forwardedHost.toLowerCase().replace(/^www\./, "");
 
     // Check if this is a custom domain (not our main application domains)
     const mainAppDomain =
