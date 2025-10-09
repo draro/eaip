@@ -162,7 +162,9 @@ export default function OrganizationSetup() {
             airacStartDate: new Date(data.data.settings.airacStartDate).toISOString().split('T')[0]
           }
         });
-        setLogoPreview(data.data.branding.logoUrl || '');
+        const existingLogoUrl = data.data.branding?.logoUrl || '';
+        console.log('Existing logo URL loaded:', existingLogoUrl ? `${existingLogoUrl.substring(0, 50)}...` : 'none');
+        setLogoPreview(existingLogoUrl);
       }
     } catch (error) {
       console.error('Error fetching organization:', error);
@@ -201,6 +203,7 @@ export default function OrganizationSetup() {
       // Upload logo if a new file was selected
       let logoUrl = formData.branding.logoUrl;
       if (logoFile) {
+        console.log('Uploading logo file:', logoFile.name, logoFile.size, logoFile.type);
         const logoFormData = new FormData();
         logoFormData.append('logo', logoFile);
 
@@ -212,7 +215,16 @@ export default function OrganizationSetup() {
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
           logoUrl = uploadData.url;
+          console.log('Logo uploaded successfully, URL length:', logoUrl?.length);
+        } else {
+          const errorData = await uploadResponse.json();
+          console.error('Logo upload failed:', errorData);
+          alert(`Failed to upload logo: ${errorData.error || 'Unknown error'}`);
+          setSaving(false);
+          return;
         }
+      } else {
+        console.log('No new logo file selected, keeping existing:', logoUrl?.substring(0, 50));
       }
 
       // Update organization
