@@ -9,35 +9,23 @@ export default withAuth(
 
     // Get hostname from X-Forwarded-Host (Nginx proxy) or fall back to req.nextUrl.hostname
     const forwardedHost =
-      req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-    const hostname =
-      req.headers.get("x-forwarded-host") ||
-      req.headers.get("host") ||
-      new URL(req.url).hostname;
-    const protocol = req.headers.get("x-forwarded-proto") || "https";
+      req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const hostname = forwardedHost || req.nextUrl.hostname;
 
-    const nextUrl = new URL(
-      req.nextUrl.pathname,
-      `${protocol}://${forwardedHost}`
-    );
-
-    console.log(`[Middleware] Request: ${hostname}${req.nextUrl.pathname}`, {
+    console.log(`[Middleware] Request: ${hostname}${pathname}`, {
       "x-forwarded-host": req.headers.get("x-forwarded-host"),
       host: req.headers.get("host"),
-      "nextUrl.hostname": nextUrl.hostname,
+      "nextUrl.hostname": req.nextUrl.hostname,
     });
 
     // Skip processing for localhost and development
-    if (
-      !req.headers.get("x-middleware-request") &&
-      (hostname === "localhost" || forwardedHost.includes("localhost"))
-    ) {
-      console.log("[Middleware] Skipping external localhost");
+    if (hostname === "localhost" || hostname.includes("localhost")) {
+      console.log("[Middleware] Skipping localhost");
       return NextResponse.next();
     }
 
     // Simple domain extraction
-    const cleanDomain = forwardedHost.toLowerCase().replace(/^www\./, "");
+    const cleanDomain = hostname.toLowerCase().replace(/^www\./, "");
 
     // Check if this is a custom domain (not our main application domains)
     const mainAppDomain =
@@ -47,7 +35,6 @@ export default withAuth(
       hostname === mainAppDomain ||
       hostname === "eaip.flyclim.com" || // Always treat eaip.flyclim.com as main domain
       hostname === "localhost" ||
-      hostname === "0.0.0.0" ||
       hostname.includes("localhost") ||
       hostname.includes("vercel.app") ||
       hostname.includes("netlify.app");
