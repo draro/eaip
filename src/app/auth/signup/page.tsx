@@ -10,6 +10,68 @@ import { Label } from '@/components/ui/label';
 import { Book, Eye, EyeOff } from 'lucide-react';
 
 export default function SignUpPage() {
+  const router = useRouter();
+
+  // Self-signup is disabled - redirect to signin with message
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <Link href="/" className="flex items-center justify-center mb-6">
+            <Book className="h-12 w-12 text-blue-600 mr-3" />
+            <h1 className="text-3xl font-bold text-gray-900">eAIP Editor</h1>
+          </Link>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Self-Registration Disabled</CardTitle>
+            <CardDescription>
+              User accounts must be created by administrators
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                For security reasons, self-registration is not available. User accounts can only be created by:
+              </p>
+              <ul className="mt-2 text-sm text-blue-800 list-disc list-inside space-y-1">
+                <li>System Administrators (Super Admin)</li>
+                <li>Organization Administrators</li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <p className="text-sm text-gray-700 font-medium mb-2">
+                Need an account?
+              </p>
+              <p className="text-sm text-gray-600">
+                Please contact your organization administrator or system administrator to request access to the eAIP Editor system.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-4">
+              <Button
+                onClick={() => router.push('/auth/signin')}
+                className="w-full"
+              >
+                Go to Sign In
+              </Button>
+              <Button
+                onClick={() => router.push('/')}
+                variant="outline"
+                className="w-full"
+              >
+                Return to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  /* DISABLED SIGNUP FORM
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -261,4 +323,5 @@ export default function SignUpPage() {
       </div>
     </div>
   );
+  */
 }

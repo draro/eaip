@@ -4,6 +4,17 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
 export async function POST(request: NextRequest) {
+  // Self-signup is disabled - users can only be created by admins
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Self-registration is disabled',
+      message: 'User accounts can only be created by system administrators. Please contact your organization administrator for access.'
+    },
+    { status: 403 }
+  );
+
+  /* DISABLED - Users can only be created via admin panel
   try {
     await connectDB();
 
@@ -65,4 +76,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  */
 }

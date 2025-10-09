@@ -11,6 +11,12 @@ const nextConfig = {
       },
     ],
   },
+  // Skip static generation during build - all pages are dynamic
+  // exportPathMap: async function () {
+  //   return {
+  //     '/': { page: '/' },
+  //   };
+  // },
   async headers() {
     return [
       {

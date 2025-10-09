@@ -1,0 +1,70 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy eAIP to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            echo "🚀 Starting deployment..."
+
+            # Navigate to application directory
+            cd /root/eaip || cd ~/eaip || cd ~/apps/eAIP
+
+            echo "📥 Pulling latest changes..."
+            git pull origin main
+
+            echo "🛑 Stopping containers..."
+            docker-compose -f docker-compose.prod.yml down
+
+            echo "🏗️  Building new image..."
+            docker-compose -f docker-compose.prod.yml build --no-cache
+
+            echo "🚀 Starting containers..."
+            docker-compose -f docker-compose.prod.yml up -d
+
+            echo "⏳ Waiting for application to start..."
+            sleep 10
+
+            echo "✅ Checking container status..."
+            docker-compose -f docker-compose.prod.yml ps
+
+            echo "📋 Checking application health..."
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Application is running successfully!"
+            else
+              echo "⚠️  Warning: Application might not be ready yet"
+              echo "Showing logs:"
+              docker-compose -f docker-compose.prod.yml logs --tail=30 eaip-app
+            fi
+
+            echo "🎉 Deployment complete!"
+
+      - name: Notify on Success
+        if: success()
+        run: |
+          echo "✅ Deployment to VPS successful!"
+          echo "Application URL: https://eaip.flyclim.com"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Check the logs above for details"

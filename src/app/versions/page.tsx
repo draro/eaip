@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Calendar, FileText, User, Edit, Trash2, Book } from 'lucide-react';
-import { formatDate, generateAiracCycle } from '@/lib/utils';
+import { formatDate, generateAiracCycle, formatAiracCycle } from '@/lib/utils';
 
 interface Version {
   _id: string;
@@ -26,6 +29,8 @@ interface Version {
 }
 
 export default function VersionsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -146,38 +151,53 @@ export default function VersionsPage() {
     }
   };
 
-  if (loading) {
+  // Check authentication
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading versions...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  if (!session) {
+    router.push('/auth/signin?callbackUrl=/versions');
+    return null;
+  }
+
+  const user = session.user as any;
+
+  if (loading) {
+    return (
+      <Layout user={{
+        name: user.name || 'User',
+        email: user.email || '',
+        role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+        organization: user.organization
+      }}>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading versions...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center mr-8">
-                <Book className="h-8 w-8 text-blue-600 mr-3" />
-                <h1 className="text-3xl font-bold text-gray-900">eAIP Editor</h1>
-              </Link>
-              <nav className="flex space-x-4">
-                <Link href="/documents">
-                  <Button variant="ghost">Documents</Button>
-                </Link>
-                <Link href="/versions">
-                  <Button variant="default">Versions</Button>
-                </Link>
-                <Link href="/exports">
-                  <Button variant="ghost">Exports</Button>
-                </Link>
-              </nav>
+    <Layout user={{
+      name: user.name || 'User',
+      email: user.email || '',
+      role: user.role as 'super_admin' | 'org_admin' | 'editor' | 'viewer',
+      organization: user.organization
+    }}>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Document Versions</h1>
+              <p className="text-gray-600">Manage AIRAC cycles and document versions</p>
             </div>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
@@ -247,10 +267,8 @@ export default function VersionsPage() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">AIP Versions & AIRAC Cycles</h2>
           <p className="text-gray-600">
@@ -267,7 +285,7 @@ export default function VersionsPage() {
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{version.versionNumber}</CardTitle>
                     <CardDescription>
-                      AIRAC Cycle: {version.airacCycle}
+                      AIRAC Cycle: {formatAiracCycle(version.airacCycle)}
                     </CardDescription>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(version.status)}`}>
@@ -338,7 +356,9 @@ export default function VersionsPage() {
             </Button>
           </div>
         )}
-      </main>
-    </div>
+        </div>
+        </div>
+      </div>
+    </Layout>
   );
 }

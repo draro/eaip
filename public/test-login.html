@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eAIP Login Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .quick-select {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .quick-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            width: auto;
+        }
+        .quick-btn:hover {
+            background: #5a6268;
+        }
+        h1 {
+            color: #1f2937;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 eAIP Login Test</h1>
+
+        <div class="info">
+            <strong>Available Test Users:</strong><br>
+            All users have the password: <strong>eAIP2025</strong>
+            <ul>
+                <li><strong>Super Admin:</strong> admin@eaip.system</li>
+                <li><strong>Org Admin:</strong> orgadmin@default.local</li>
+                <li><strong>Editor:</strong> editor@default.local</li>
+                <li><strong>Viewer:</strong> viewer@default.local</li>
+            </ul>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="admin@eaip.system" required>
+                <div class="quick-select">
+                    <button type="button" class="quick-btn" onclick="setUser('admin@eaip.system')">Super Admin</button>
+                    <button type="button" class="quick-btn" onclick="setUser('orgadmin@default.local')">Org Admin</button>
+                    <button type="button" class="quick-btn" onclick="setUser('editor@default.local')">Editor</button>
+                    <button type="button" class="quick-btn" onclick="setUser('viewer@default.local')">Viewer</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="eAIP2025" required>
+            </div>
+
+            <button type="submit">🚀 Test Login</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function setUser(email) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = 'eAIP2025';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<div class="result">Testing login...</div>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ LOGIN SUCCESSFUL!
+
+User Details:
+- Name: ${data.data.name}
+- Email: ${data.data.email}
+- Role: ${data.data.role}
+- Active: ${data.data.isActive}
+- Organization: ${data.data.organization ? data.data.organization.name : 'None'}
+- Last Login: ${new Date(data.data.lastLoginAt).toLocaleString()}
+- Permissions: ${data.data.permissions.join(', ')}
+
+You can now use this authentication in your application!
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ LOGIN FAILED
+
+Error: ${data.error}
+
+Please check your credentials and try again.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ CONNECTION ERROR
+
+Error: ${error.message}
+
+Make sure your development server is running on http://localhost:3000
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

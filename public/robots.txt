@@ -1,0 +1,107 @@
+# robots.txt for eAIP Platform
+# Optimized for SEO and AEO (Answer Engine Optimization)
+
+# Default rules for all crawlers
+User-agent: *
+# Allow public organization pages (no authentication required)
+Allow: /public/
+Allow: /api/public/
+
+# Disallow all authenticated areas
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin/
+Disallow: /organization/
+Disallow: /documents/*/edit
+Disallow: /features/
+Disallow: /workflow/
+Disallow: /compliance/
+Disallow: /notam/
+
+# Disallow Next.js internal routes
+Disallow: /_next/
+Disallow: /api/auth/
+
+# Sitemap locations
+Sitemap: https://eaip.flyclim.com/sitemap.xml
+Sitemap: https://demoaip.flyclim.com/sitemap.xml
+
+# Google-specific rules
+User-agent: Googlebot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /dashboard
+Disallow: /organization/
+
+# Google Image crawler
+User-agent: Googlebot-Image
+Allow: /public/
+Disallow: /
+
+# Bing specific rules
+User-agent: Bingbot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard
+
+# Yahoo
+User-agent: Slurp
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+
+# Yandex
+User-agent: YandexBot
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+
+# Baidu
+User-agent: Baiduspider
+Allow: /public/
+Allow: /api/public/
+Disallow: /api/
+Disallow: /auth/
+
+# ChatGPT crawler (for AEO)
+User-agent: GPTBot
+Allow: /public/
+Disallow: /
+
+# Claude crawler (for AEO)
+User-agent: ClaudeBot
+Allow: /public/
+Disallow: /
+
+# Common AI crawlers for Answer Engine Optimization
+User-agent: CCBot
+Allow: /public/
+Disallow: /
+
+User-agent: anthropic-ai
+Allow: /public/
+Disallow: /
+
+User-agent: Claude-Web
+Allow: /public/
+Disallow: /
+
+# Crawl delay (in seconds)
+Crawl-delay: 1

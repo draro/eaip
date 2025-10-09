@@ -22,6 +22,9 @@ export class WebhookService {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(this.webhookUrl, {
         method: 'POST',
         headers: {
@@ -29,8 +32,10 @@ export class WebhookService {
           'User-Agent': 'eAIP-Editor/1.0',
         },
         body: JSON.stringify(payload),
-        timeout: 10000, // 10 second timeout
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error(`Webhook failed with status: ${response.status}`);

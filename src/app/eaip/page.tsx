@@ -1,6 +1,6 @@
-import EAIPViewer from '@/components/eaip/EAIPViewer';
-import Header from '@/components/Header';
-import '../../../styles/eaip.css';
+import EAIPViewer from "@/components/eaip/EAIPViewer";
+import Header from "@/components/Header";
+import "../../styles/eaip.css";
 
 export default function EAIPPage() {
   return (

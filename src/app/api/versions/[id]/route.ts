@@ -5,11 +5,18 @@ import AIPDocument from '@/models/AIPDocument';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const version = await AIPVersion.findById(params.id)
       .populate('createdBy', 'name email')
       .populate({
@@ -43,11 +50,18 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const body = await request.json();
     const {
       versionNumber,
@@ -126,11 +140,18 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params?: { id: string } }
 ) {
   try {
     await connectDB();
 
+
+    if (!params?.id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
     const version = await AIPVersion.findById(params.id);
     if (!version) {
       return NextResponse.json(

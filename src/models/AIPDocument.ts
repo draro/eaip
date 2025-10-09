@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IAIPDocument, IImage } from '@/types';
+import { IAIPDocument, IImage, ISection, ISubsection } from '@/types';
 
 const ImageSchema = new Schema<IImage>({
   id: { type: String, required: true },
@@ -12,6 +12,39 @@ const ImageSchema = new Schema<IImage>({
   uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
+const SubsectionSchema = new Schema<ISubsection>({
+  id: { type: String, required: true },
+  code: { type: String, required: true, trim: true },
+  title: { type: String, required: true, trim: true },
+  content: {
+    type: Schema.Types.Mixed,
+    default: {
+      type: 'doc',
+      content: [],
+    },
+  },
+  images: [ImageSchema],
+  order: { type: Number, required: true },
+  lastModified: { type: Date, default: Date.now },
+  modifiedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+});
+
+const SectionSchema = new Schema<ISection>({
+  id: { type: String, required: true },
+  type: {
+    type: String,
+    required: true,
+    enum: ['GEN', 'ENR', 'AD'],
+  },
+  title: { type: String, required: true, trim: true },
+  content: {
+    type: String,
+    default: '',
+  },
+  subsections: [SubsectionSchema],
+  order: { type: Number, required: true },
+});
+
 const AIPDocumentSchema = new Schema<IAIPDocument>(
   {
     title: {
@@ -19,25 +52,24 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
       required: [true, 'Title is required'],
       trim: true,
     },
-    sectionCode: {
+    documentType: {
       type: String,
-      required: [true, 'Section code is required'],
-      uppercase: true,
-      enum: ['GEN', 'ENR', 'AD'],
+      required: true,
+      enum: ['AIP', 'SUPPLEMENT', 'NOTAM'],
+      default: 'AIP',
     },
-    subsectionCode: {
+    country: {
       type: String,
-      required: [true, 'Subsection code is required'],
+      required: [true, 'Country code is required'],
+      uppercase: true,
       trim: true,
     },
-    content: {
-      type: Schema.Types.Mixed,
-      default: {
-        type: 'doc',
-        content: [],
-      },
+    airport: {
+      type: String,
+      uppercase: true,
+      trim: true,
     },
-    images: [ImageSchema],
+    sections: [SectionSchema],
     version: {
       type: Schema.Types.ObjectId,
       ref: 'AIPVersion',
@@ -47,6 +79,11 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
       type: String,
       enum: ['draft', 'review', 'published'],
       default: 'draft',
+    },
+    organization: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -66,10 +103,12 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
       type: Date,
       required: true,
     },
-    autoNumbering: {
-      enabled: { type: Boolean, default: true },
-      prefix: { type: String, required: true },
-      currentNumber: { type: Number, default: 1 },
+    metadata: {
+      language: { type: String, default: 'en' },
+      authority: { type: String, required: true },
+      contact: { type: String, required: true },
+      lastReview: { type: Date, default: Date.now },
+      nextReview: { type: Date, required: true },
     },
   },
   {
@@ -77,9 +116,12 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
   }
 );
 
-AIPDocumentSchema.index({ sectionCode: 1, subsectionCode: 1, version: 1 }, { unique: true });
+// Indexes
+AIPDocumentSchema.index({ organization: 1, country: 1, airport: 1, version: 1, documentType: 1 }, { unique: true });
+AIPDocumentSchema.index({ organization: 1 });
 AIPDocumentSchema.index({ version: 1 });
 AIPDocumentSchema.index({ status: 1 });
 AIPDocumentSchema.index({ airacCycle: 1 });
+AIPDocumentSchema.index({ organization: 1, status: 1 });
 
 export default mongoose.models.AIPDocument || mongoose.model<IAIPDocument>('AIPDocument', AIPDocumentSchema);
