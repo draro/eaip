@@ -26,25 +26,18 @@ export async function GET(request: NextRequest) {
     // This allows matching both:
     // 1. Primary domain (e.g., "flyclim.com")
     // 2. Public URL / custom domain (e.g., "demoaip.flyclim.com")
-    const organization = await Organization.findOne({
+    const organization = (await Organization.findOne({
       $or: [
         { domain: cleanDomain },
         { domain: domain.toLowerCase() },
         { "settings.publicUrl": { $regex: new RegExp(cleanDomain, "i") } },
       ],
-    }).select("_id name domain status settings branding");
-    console.log("organization found:", organization);
+    }).lean()) as any;
+
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       cleanDomain: cleanDomain,
-      foundOrg: organization
-        ? {
-            id: organization._id,
-            name: organization.name,
-            domain: organization.domain,
-            publicUrl: organization.settings?.publicUrl,
-          }
-        : null,
+      foundOrg: organization,
     });
 
     if (!organization) {
@@ -64,14 +57,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      organization: {
-        _id: organization._id,
-        name: organization.name,
-        domain: organization.domain,
-        status: organization.status,
-        settings: organization.settings,
-        branding: organization.branding || {},
-      },
+      organization: organization,
     });
   } catch (error) {
     console.error("Error looking up organization by domain:", error);
