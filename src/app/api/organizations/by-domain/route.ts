@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     // Clean domain for comparison (remove protocol if present)
-    const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, "").split('/')[0];
+    const cleanDomain = domain
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .split("/")[0];
 
     // Look up organization by domain OR publicUrl (case-insensitive)
     // This allows matching both:
@@ -27,14 +30,21 @@ export async function GET(request: NextRequest) {
       $or: [
         { domain: cleanDomain },
         { domain: domain.toLowerCase() },
-        { "settings.publicUrl": { $regex: new RegExp(cleanDomain, 'i') } },
+        { "settings.publicUrl": { $regex: new RegExp(cleanDomain, "i") } },
       ],
-    });
+    }).select("_id name domain status settings branding");
 
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       cleanDomain: cleanDomain,
-      foundOrg: organization ? organization.toObject() : null,
+      foundOrg: organization
+        ? {
+            id: organization._id,
+            name: organization.name,
+            domain: organization.domain,
+            publicUrl: organization.settings?.publicUrl,
+          }
+        : null,
     });
 
     if (!organization) {
