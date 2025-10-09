@@ -52,18 +52,37 @@ function cleanupInactiveUsers(presences) {
 }
 
 app.prepare().then(() => {
-  const server = createServer(async (req, res) => {
+  // const server = createServer(async (req, res) => {
+  //   try {
+  //     const parsedUrl = parse(req.url, true);
+  //     await handle(req, res, parsedUrl);
+  //   } catch (err) {
+  //     console.error('Error occurred handling', req.url, err);
+  //     res.statusCode = 500;
+  //     res.end('internal server error');
+  //   }
+  // });
+
+  // Initialize Socket.IO with production-ready CORS
+
+  createServer(async (req, res) => {
     try {
+      // Normalize host header
+      if (req.headers['x-forwarded-host'] === undefined && req.headers['host']) {
+        req.headers['x-forwarded-host'] = req.headers['host'];
+      }
+
       const parsedUrl = parse(req.url, true);
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
       res.statusCode = 500;
-      res.end('internal server error');
+      res.end('Internal server error');
     }
+  }).listen(port, () => {
+    console.log(`> Ready on http://localhost:${port}`);
   });
 
-  // Initialize Socket.IO with production-ready CORS
   const io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
