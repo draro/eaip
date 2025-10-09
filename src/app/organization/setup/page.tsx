@@ -409,7 +409,7 @@ export default function OrganizationSetup() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Features</Label>
-                  <p className="text-sm text-gray-600">{organization.subscription.features.length} included</p>
+                  <p className="text-sm text-gray-600">{organization.subscription.features?.length || 0} included</p>
                 </div>
               </div>
             </CardContent>
