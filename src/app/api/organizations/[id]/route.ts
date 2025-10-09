@@ -104,6 +104,13 @@ export async function PUT(
     const body = await request.json();
     const updateData = { ...body };
 
+    console.log('Organization update request:', {
+      orgId: params?.id,
+      hasBranding: !!updateData.branding,
+      hasLogoUrl: !!updateData.branding?.logoUrl,
+      logoUrlLength: updateData.branding?.logoUrl?.length || 0
+    });
+
     // Remove fields that shouldn't be updated directly
     delete updateData._id;
     delete updateData.createdAt;
@@ -137,6 +144,15 @@ export async function PUT(
       updateData.icaoCode = updateData.icaoCode.toUpperCase();
     }
 
+    // Merge branding properly to preserve existing fields
+    if (updateData.branding) {
+      const existingBranding = existingOrg.branding?.toObject ? existingOrg.branding.toObject() : (existingOrg.branding || {});
+      updateData.branding = {
+        ...existingBranding,
+        ...updateData.branding,
+      };
+    }
+
     // Merge settings properly to preserve required fields
     if (updateData.settings) {
       const existingSettings = existingOrg.settings?.toObject ? existingOrg.settings.toObject() : (existingOrg.settings || {});
@@ -168,6 +184,12 @@ export async function PUT(
         { status: 404 }
       );
     }
+
+    console.log('Organization updated successfully:', {
+      orgId: params?.id,
+      hasLogoUrl: !!organization.branding?.logoUrl,
+      logoUrlLength: organization.branding?.logoUrl?.length || 0
+    });
 
     return NextResponse.json({
       success: true,
