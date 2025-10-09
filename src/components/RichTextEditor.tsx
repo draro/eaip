@@ -130,7 +130,7 @@ export default function RichTextEditor({
   const QuillComponent = ReactQuill as any;
 
   return (
-    <div className="rich-text-editor" style={{ minHeight, position: 'relative' }}>
+    <div className="rich-text-editor" style={{ minHeight, position: 'relative', resize: 'vertical', overflow: 'hidden' }}>
       <QuillComponent
         ref={quillRef}
         theme="snow"
@@ -140,7 +140,7 @@ export default function RichTextEditor({
         modules={modules}
         formats={formats}
         placeholder={placeholder}
-        style={{ height: minHeight }}
+        style={{ height: '100%' }}
       />
       <style jsx global>{`
         .rich-text-editor .quill {
@@ -151,10 +151,12 @@ export default function RichTextEditor({
           min-height: ${minHeight};
           font-size: 14px;
           position: relative;
+          height: calc(100% - 42px);
         }
         .rich-text-editor .ql-editor {
-          min-height: ${minHeight};
+          min-height: calc(${minHeight} - 42px);
           position: relative;
+          max-height: none;
         }
         .rich-text-editor .ql-editor.ql-blank::before {
           color: #9ca3af;

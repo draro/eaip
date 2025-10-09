@@ -443,31 +443,13 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                     </div>
 
                     {/* Section Content */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-gray-700">Section Content</label>
-                        {connected && cursors.filter(c => c.sectionId === section.id && !c.subsectionId).length > 0 && (
-                          <div className="flex items-center gap-2">
-                            {cursors
-                              .filter(c => c.sectionId === section.id && !c.subsectionId)
-                              .map((cursor, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
-                                  style={{ backgroundColor: cursor.userColor }}
-                                >
-                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                                  {cursor.userName}
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Section Content</label>
                       <RichTextEditor
                         value={section.content || ''}
                         onChange={(value) => updateSectionContent(section.id, value)}
                         placeholder="Enter section content..."
-                        minHeight="150px"
+                        minHeight="200px"
                         onCursorChange={(position) => {
                           if (connected) {
                             updateCursor(section.id, undefined, position);
@@ -490,8 +472,8 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                     </div>
 
                     {/* Subsections */}
-                    <div className="border-t pt-6 mt-6">
-                      <div className="flex items-center justify-between mb-4">
+                    <div className="border-t pt-8 mt-8">
+                      <div className="flex items-center justify-between mb-6">
                         <h4 className="text-lg font-semibold text-gray-800">Subsections</h4>
                         <Button
                           type="button"
@@ -515,13 +497,31 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                       </div>
 
                       {section.subsections && section.subsections.length > 0 ? (
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                           {section.subsections.map((subsection, idx) => (
-                            <div key={subsection.id} className="bg-white border-l-4 border-blue-400 rounded-r-lg p-4 shadow-sm">
-                              <div className="flex items-start justify-between mb-3">
-                                <h5 className="font-semibold text-gray-800">
-                                  {subsection.code} - {subsection.title}
-                                </h5>
+                            <div key={subsection.id} className="bg-white border-l-4 border-blue-400 rounded-r-lg p-5 shadow-sm">
+                              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <h5 className="font-semibold text-gray-800 text-base">
+                                    {subsection.code} - {subsection.title}
+                                  </h5>
+                                  {connected && cursors.filter(c => c.sectionId === section.id && c.subsectionId === subsection.id).length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                      {cursors
+                                        .filter(c => c.sectionId === section.id && c.subsectionId === subsection.id)
+                                        .map((cursor, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
+                                            style={{ backgroundColor: cursor.userColor }}
+                                          >
+                                            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                            {cursor.userName}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  )}
+                                </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -535,7 +535,7 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                                 </Button>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                                   <Input
@@ -554,30 +554,12 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                               </div>
 
                               <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <label className="block text-sm font-medium text-gray-700">Content</label>
-                                  {connected && cursors.filter(c => c.sectionId === section.id && c.subsectionId === subsection.id).length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                      {cursors
-                                        .filter(c => c.sectionId === section.id && c.subsectionId === subsection.id)
-                                        .map((cursor, idx) => (
-                                          <div
-                                            key={idx}
-                                            className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
-                                            style={{ backgroundColor: cursor.userColor }}
-                                          >
-                                            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                                            {cursor.userName}
-                                          </div>
-                                        ))}
-                                    </div>
-                                  )}
-                                </div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
                                 <RichTextEditor
                                   value={subsection.content || ''}
                                   onChange={(value) => updateSubsectionContent(section.id, subsection.id, value)}
                                   placeholder="Enter subsection content..."
-                                  minHeight="200px"
+                                  minHeight="250px"
                                   onCursorChange={(position) => {
                                     if (connected) {
                                       updateCursor(section.id, subsection.id, position);
