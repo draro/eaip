@@ -14,10 +14,17 @@ export default withAuth(
       req.headers.get("x-forwarded-host") ||
       req.headers.get("host") ||
       new URL(req.url).hostname;
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+
+    const nextUrl = new URL(
+      req.nextUrl.pathname,
+      `${protocol}://${forwardedHost}`
+    );
+
     console.log(`[Middleware] Request: ${hostname}${req.nextUrl.pathname}`, {
       "x-forwarded-host": req.headers.get("x-forwarded-host"),
       host: req.headers.get("host"),
-      "nextUrl.hostname": req.nextUrl.hostname,
+      "nextUrl.hostname": nextUrl.hostname,
     });
 
     // Skip processing for localhost and development
