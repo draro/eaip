@@ -116,11 +116,12 @@ export default function RichTextEditor({
               left: ${bounds.left}px;
               top: ${bounds.top}px;
               height: ${bounds.height}px;
-              width: 3px;
+              width: 2px;
               background-color: ${cursor.userColor};
               z-index: 9999;
               pointer-events: none;
               transition: all 0.1s ease;
+              animation: blink 1s ease-in-out infinite;
             `;
 
             const label = document.createElement('div');
@@ -128,20 +129,21 @@ export default function RichTextEditor({
             label.textContent = cursor.userName;
             label.style.cssText = `
               position: absolute;
-              top: -22px;
-              left: -2px;
+              top: -24px;
+              left: -4px;
               background-color: ${cursor.userColor};
               color: white;
-              padding: 2px 6px;
-              border-radius: 3px;
+              padding: 3px 8px;
+              border-radius: 4px;
               font-size: 11px;
               white-space: nowrap;
-              font-weight: 500;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+              font-weight: 600;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+              letter-spacing: 0.3px;
             `;
 
             cursorElement.appendChild(label);
-            editorRoot.appendChild(cursorElement);
+            editorRoot.parentElement?.appendChild(cursorElement);
           }
         } catch (error) {
           console.error('Error rendering cursor:', error);
