@@ -67,7 +67,6 @@ app.prepare().then(() => {
 
   createServer(async (req, res) => {
     try {
-      console.log(`Header:`, req.headers);
       // Normalize host header
       if (req.headers['x-forwarded-host'] === undefined && req.headers['host']) {
         req.headers['x-forwarded-host'] = req.headers['host'];
