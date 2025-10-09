@@ -49,9 +49,11 @@ export default withAuth(
     // Handle tenant-specific domain routing
     if (!isMainDomain && cleanDomain !== "localhost") {
       try {
-        // For custom domains, use an API call to lookup organization
-        // Use localhost for internal API calls to avoid SSL issues
-        const internalOrigin = "http://localhost:3000";
+        // Use req.url origin for internal API calls to work in Docker
+        // In Docker: req.url will be something like http://0.0.0.0:3000
+        // This ensures the internal call goes to the same container
+        const requestUrl = new URL(req.url);
+        const internalOrigin = `${requestUrl.protocol}//${requestUrl.host}`;
         const domainLookupUrl = new URL(
           "/api/organizations/by-domain",
           internalOrigin

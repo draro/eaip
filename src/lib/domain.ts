@@ -1,6 +1,3 @@
-// Edge runtime compatible domain utilities (used in middleware)
-// No Mongoose imports to avoid Edge Runtime compatibility issues
-
 export interface DomainInfo {
   domain: string;
   organizationId: string;
@@ -58,6 +55,7 @@ export class DomainService {
 
     return userOrgStr === domainOrgStr;
   }
+
 }
 
 // DNS record checking utilities (Edge Runtime compatible)
