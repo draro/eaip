@@ -562,12 +562,12 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="text-lg font-semibold mb-4">Get Started</h4>
+              <h4 className="text-lg font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link></li>
-                <li><Link href="/features/overview" className="hover:text-white transition-colors">Overview</Link></li>
+                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-                <li><Link href="/support" className="hover:text-white transition-colors">Support</Link></li>
+                <li><Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link></li>
               </ul>
             </div>
           </div>

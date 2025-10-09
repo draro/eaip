@@ -1,0 +1,214 @@
+{
+  "name": "Daily Blog Post Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "name": "Schedule Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "content": "Write a professional blog article about {{$json.topic}} for an aviation eAIP platform. Include an introduction, 3-4 main sections with detailed explanations, and a conclusion. Format the output as clean HTML using h2, h3, p, ul, and li tags. Keep it informative and professional.",
+        "model": "gpt-4",
+        "options": {}
+      },
+      "name": "Generate Blog Content",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Topics to write about\nconst topics = [\n  'ICAO Annex 15 Compliance Best Practices',\n  'NOTAM Management in Modern Aviation',\n  'AIRAC Cycle Management Explained',\n  'Version Control for Aviation Documents',\n  'Multi-Tenant Architecture for CAAs',\n  'Automating AIP Publication Workflows',\n  'Data Quality in Aeronautical Information',\n  'Digital Transformation in Civil Aviation'\n];\n\n// Select a random topic\nconst randomTopic = topics[Math.floor(Math.random() * topics.length)];\n\nreturn [\n  {\n    json: {\n      topic: randomTopic,\n      date: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "name": "Select Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.first().json.choices[0].message.content;\nconst topic = $('Select Topic').first().json.topic;\n\n// Generate slug from topic\nconst slug = topic\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, '-')\n  .replace(/^-+|-+$/g, '');\n\n// Extract first paragraph as excerpt\nconst excerptMatch = content.match(/<p>(.+?)<\\/p>/);\nconst excerpt = excerptMatch ? excerptMatch[1].substring(0, 200) + '...' : '';\n\n// Determine category based on keywords\nlet category = 'General';\nif (topic.includes('ICAO') || topic.includes('Compliance')) category = 'Compliance';\nelse if (topic.includes('NOTAM')) category = 'NOTAM Management';\nelse if (topic.includes('Technology') || topic.includes('Automation')) category = 'Technology';\nelse if (topic.includes('Workflow')) category = 'Best Practices';\n\n// Extract tags\nconst tags = [];\nif (topic.includes('ICAO')) tags.push('ICAO');\nif (topic.includes('NOTAM')) tags.push('NOTAM');\nif (topic.includes('AIRAC')) tags.push('AIRAC');\nif (topic.includes('AIP')) tags.push('AIP');\nif (topic.includes('Version Control')) tags.push('Version Control');\nif (topic.includes('Compliance')) tags.push('Compliance');\nif (topic.includes('Aviation')) tags.push('Aviation');\ntags.push('eAIP', 'Civil Aviation');\n\nreturn [\n  {\n    json: {\n      title: topic,\n      slug: slug,\n      excerpt: excerpt,\n      content: content,\n      category: category,\n      tags: tags,\n      author: {\n        name: 'eAIP Editorial Team',\n        email: 'editorial@flyclim.com'\n      },\n      publishedAt: new Date().toISOString(),\n      status: 'published',\n      seo: {\n        metaTitle: `${topic} | eAIP Blog`,\n        metaDescription: excerpt,\n        keywords: tags\n      }\n    }\n  }\n];"
+      },
+      "name": "Format Blog Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-domain.com/api/blog",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{$env.BLOG_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {},
+        "bodyParametersJson": "={{ JSON.stringify($json) }}"
+      },
+      "name": "Publish to Blog",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.success }}",
+              "operation": "equals",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "text": "✅ Blog post published successfully!\n\nTitle: {{ $('Format Blog Post').first().json.title }}\nSlug: {{ $('Format Blog Post').first().json.slug }}\nCategory: {{ $('Format Blog Post').first().json.category }}\nURL: https://your-domain.com/blog/{{ $('Format Blog Post').first().json.slug }}",
+        "options": {}
+      },
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "❌ Blog post publishing failed!\n\nError: {{ $json.error }}\nTopic: {{ $('Select Topic').first().json.topic }}",
+        "options": {}
+      },
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 400],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "SMTP Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Daily": {
+      "main": [
+        [
+          {
+            "node": "Select Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Topic": {
+      "main": [
+        [
+          {
+            "node": "Generate Blog Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Blog Content": {
+      "main": [
+        [
+          {
+            "node": "Format Blog Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Blog Post": {
+      "main": [
+        [
+          {
+            "node": "Publish to Blog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Blog": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

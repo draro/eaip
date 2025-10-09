@@ -76,6 +76,12 @@ export default function PublicNav() {
               </div>
             </div>
 
+            <Link href="/blog">
+              <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
+                Blog
+              </Button>
+            </Link>
+
             <Link href="/about">
               <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
                 About
@@ -147,6 +153,9 @@ export default function PublicNav() {
             </Link>
             <Link href="/features/version-control" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
               Version Control
+            </Link>
+            <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
+              Blog
             </Link>
             <Link href="/about" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
               About
