@@ -12,7 +12,7 @@ import { ArrowLeft, Save, Plus, Trash2, ChevronDown, ChevronRight, GitBranch } f
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollaboration } from '@/hooks/useCollaboration';
-import CollaborativePresence, { SectionPresenceIndicator } from '@/components/CollaborativePresence';
+import CollaborativePresence from '@/components/CollaborativePresence';
 
 interface Subsection {
   id: string;
@@ -402,15 +402,6 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                           {section.title}
                         </h3>
                         <Badge variant="outline" className="self-start sm:self-auto">{section.type}</Badge>
-
-                        {/* Show who's editing this section */}
-                        {connected && (
-                          <SectionPresenceIndicator
-                            sectionId={section.id}
-                            activeEditors={activeEditors}
-                            currentUserId={user?.id || user?._id || 'anonymous'}
-                          />
-                        )}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteSection(section.id); }} className="flex-shrink-0">
