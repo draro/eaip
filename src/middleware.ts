@@ -60,11 +60,9 @@ export default withAuth(
     // Handle tenant-specific domain routing
     if (!isMainDomain && cleanDomain !== "localhost") {
       try {
-        // For internal API calls, always use HTTP (not HTTPS) to avoid SSL issues
-        // Use the container's internal port (3000) for Docker compatibility
-        const requestUrl = new URL(req.url);
-        // Force http:// protocol for internal container-to-container communication
-        const internalOrigin = `http://${requestUrl.hostname}:3000`;
+        // For internal API calls, always use HTTP to localhost to avoid SSL issues
+        // Use localhost for Docker compatibility (works both locally and in containers)
+        const internalOrigin = "http://localhost:3000";
         const domainLookupUrl = new URL(
           "/api/organizations/by-domain",
           internalOrigin
