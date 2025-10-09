@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         { "settings.publicUrl": { $regex: new RegExp(cleanDomain, "i") } },
       ],
     }).select("_id name domain status settings branding");
-
+    console.log("organization found:", organization);
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       cleanDomain: cleanDomain,
