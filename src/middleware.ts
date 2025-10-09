@@ -10,9 +10,11 @@ export default withAuth(
     // Get hostname from X-Forwarded-Host (Nginx proxy) or fall back to req.nextUrl.hostname
     const forwardedHost =
       req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-    const hostname = forwardedHost;
-
-    console.log(`[Middleware] Request: ${hostname}${pathname}`, {
+    const hostname =
+      req.headers.get("x-forwarded-host") ||
+      req.headers.get("host") ||
+      new URL(req.url).hostname;
+    console.log(`[Middleware] Request: ${hostname}${req.nextUrl.pathname}`, {
       "x-forwarded-host": req.headers.get("x-forwarded-host"),
       host: req.headers.get("host"),
       "nextUrl.hostname": req.nextUrl.hostname,
