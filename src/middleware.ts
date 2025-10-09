@@ -117,7 +117,9 @@ export default withAuth(
             // Custom domains ONLY serve public pages
             // Redirect all custom domain traffic to public eAIP pages
             const url = req.nextUrl.clone();
-            const orgDomain = domainData.organization.domain;
+            // Use the actual requested domain (cleanDomain) instead of organization.domain
+            // This ensures the API gets the correct domain for lookup
+            const orgDomain = cleanDomain;
 
             // Map root to public organization page
             if (pathname === "/") {
