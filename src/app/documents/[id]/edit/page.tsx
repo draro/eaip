@@ -496,18 +496,26 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                                   <h5 className="font-semibold text-gray-800 text-base">
                                     {subsection.code} - {subsection.title}
                                   </h5>
-                                  {connected && cursors.filter(c => c.sectionId === section.id && c.subsectionId === subsection.id).length > 0 && (
+                                  {connected && activeEditors.filter(editor =>
+                                    editor.sectionId === section.id &&
+                                    editor.subsectionId === subsection.id &&
+                                    editor.userId !== (user?.id || user?._id || 'anonymous')
+                                  ).length > 0 && (
                                     <div className="flex items-center gap-2">
-                                      {cursors
-                                        .filter(c => c.sectionId === section.id && c.subsectionId === subsection.id)
-                                        .map((cursor, idx) => (
+                                      {activeEditors
+                                        .filter(editor =>
+                                          editor.sectionId === section.id &&
+                                          editor.subsectionId === subsection.id &&
+                                          editor.userId !== (user?.id || user?._id || 'anonymous')
+                                        )
+                                        .map((editor, idx) => (
                                           <div
                                             key={idx}
                                             className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
-                                            style={{ backgroundColor: cursor.userColor }}
+                                            style={{ backgroundColor: editor.userColor }}
                                           >
                                             <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                                            {cursor.userName}
+                                            {editor.userName}
                                           </div>
                                         ))}
                                     </div>
