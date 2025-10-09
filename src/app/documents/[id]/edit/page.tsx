@@ -444,7 +444,25 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
                     {/* Section Content */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Section Content</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">Section Content</label>
+                        {connected && cursors.filter(c => c.sectionId === section.id && !c.subsectionId).length > 0 && (
+                          <div className="flex items-center gap-2">
+                            {cursors
+                              .filter(c => c.sectionId === section.id && !c.subsectionId)
+                              .map((cursor, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
+                                  style={{ backgroundColor: cursor.userColor }}
+                                >
+                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                  {cursor.userName}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
                       <RichTextEditor
                         value={section.content || ''}
                         onChange={(value) => updateSectionContent(section.id, value)}
@@ -536,7 +554,25 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
                               </div>
 
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="block text-sm font-medium text-gray-700">Content</label>
+                                  {connected && cursors.filter(c => c.sectionId === section.id && c.subsectionId === subsection.id).length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                      {cursors
+                                        .filter(c => c.sectionId === section.id && c.subsectionId === subsection.id)
+                                        .map((cursor, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
+                                            style={{ backgroundColor: cursor.userColor }}
+                                          >
+                                            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                            {cursor.userName}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  )}
+                                </div>
                                 <RichTextEditor
                                   value={subsection.content || ''}
                                   onChange={(value) => updateSubsectionContent(section.id, subsection.id, value)}
