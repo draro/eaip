@@ -34,14 +34,7 @@ export async function GET(request: NextRequest) {
     console.log("Organization lookup by domain:", {
       requestedDomain: domain.toLowerCase(),
       cleanDomain: cleanDomain,
-      foundOrg: organization
-        ? {
-            id: organization._id,
-            name: organization.name,
-            domain: organization.domain,
-            publicUrl: organization.settings?.publicUrl,
-          }
-        : null,
+      foundOrg: organization ? organization.toObject() : null,
     });
 
     if (!organization) {
