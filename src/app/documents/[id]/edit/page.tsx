@@ -435,7 +435,33 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
                     {/* Section Content */}
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Section Content</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">Section Content</label>
+                        {connected && activeEditors.filter(editor =>
+                          editor.sectionId === section.id &&
+                          !editor.subsectionId &&
+                          editor.userId !== (user?.id || user?._id || 'anonymous')
+                        ).length > 0 && (
+                          <div className="flex items-center gap-2">
+                            {activeEditors
+                              .filter(editor =>
+                                editor.sectionId === section.id &&
+                                !editor.subsectionId &&
+                                editor.userId !== (user?.id || user?._id || 'anonymous')
+                              )
+                              .map((editor, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-medium"
+                                  style={{ backgroundColor: editor.userColor }}
+                                >
+                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                  {editor.userName}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
                       <RichTextEditor
                         value={section.content || ''}
                         onChange={(value) => updateSectionContent(section.id, value)}
