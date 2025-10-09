@@ -60,11 +60,16 @@ export async function GET(
     const format = searchParams.get('format') || 'pdf';
     const { domain, id: documentId } = params;
 
-    // Find organization
+    // Find organization by domain OR publicUrl
+    const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, '');
+
     const organization = await Organization.findOne({
-      domain: domain.toLowerCase(),
+      $or: [
+        { domain: cleanDomain },
+        { 'settings.publicUrl': { $regex: new RegExp(cleanDomain, 'i') } }
+      ],
       status: 'active'
-    });
+    }).lean() as any;
 
     if (!organization) {
       return NextResponse.json(
@@ -74,7 +79,7 @@ export async function GET(
     }
 
     // Check public access
-    if (!organization.settings.enablePublicAccess) {
+    if (!organization.settings?.enablePublicAccess) {
       return NextResponse.json(
         { success: false, error: 'Public access is disabled' },
         { status: 403 }
@@ -141,10 +146,15 @@ export const POST = withAuth(async (request: NextRequest, { user, params }: any)
     const { format } = await request.json();
     const { domain, id: documentId } = params;
 
-    // Find organization
+    // Find organization by domain OR publicUrl
+    const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, '');
+
     const organization = await Organization.findOne({
-      domain: domain.toLowerCase()
-    });
+      $or: [
+        { domain: cleanDomain },
+        { 'settings.publicUrl': { $regex: new RegExp(cleanDomain, 'i') } }
+      ]
+    }).lean() as any;
 
     if (!organization) {
       return NextResponse.json(

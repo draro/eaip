@@ -19,11 +19,16 @@ export async function GET(
     const section = searchParams.get('section');
     const subsection = searchParams.get('subsection');
 
-    // Find organization by domain
+    // Find organization by domain OR publicUrl
+    const cleanDomain = params.domain.toLowerCase().replace(/^https?:\/\//, '');
+
     const organization = await Organization.findOne({
-      domain: params.domain.toLowerCase(),
+      $or: [
+        { domain: cleanDomain },
+        { 'settings.publicUrl': { $regex: new RegExp(cleanDomain, 'i') } }
+      ],
       status: 'active'
-    });
+    }).lean() as any;
 
     if (!organization) {
       return NextResponse.json(
@@ -33,7 +38,7 @@ export async function GET(
     }
 
     // Check if public access is enabled
-    if (!organization.settings.enablePublicAccess) {
+    if (!organization.settings?.enablePublicAccess) {
       return NextResponse.json(
         { success: false, error: 'Public access is disabled for this organization' },
         { status: 403 }
