@@ -69,27 +69,8 @@ export default function RichTextEditor({
 
       quill.on('selection-change', selectionChangeHandler);
 
-      // Fix space key issue - ensure proper space handling
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-          e.preventDefault();
-          const selection = quill.getSelection();
-          if (selection) {
-            // Get current format at cursor position
-            const format = quill.getFormat(selection.index);
-            // Insert space with current formatting preserved
-            quill.insertText(selection.index, ' ', format);
-            quill.setSelection(selection.index + 1);
-          }
-        }
-      };
-
-      const editorContainer = quill.root;
-      editorContainer.addEventListener('keydown', handleKeyDown, true);
-
       return () => {
         quill.off('selection-change', selectionChangeHandler);
-        editorContainer.removeEventListener('keydown', handleKeyDown, true);
       };
     }
   }, [onCursorChange]);
@@ -110,37 +91,31 @@ export default function RichTextEditor({
           const bounds = quill.getBounds(cursor.position);
           if (bounds && bounds.height > 0) {
             const cursorElement = document.createElement('div');
-            cursorElement.className = 'remote-cursor';
-            cursorElement.style.cssText = `
-              position: absolute;
-              left: ${bounds.left}px;
-              top: ${bounds.top}px;
-              height: ${bounds.height}px;
-              width: 2px;
-              background-color: ${cursor.userColor};
-              z-index: 9999;
-              pointer-events: none;
-              transition: all 0.1s ease;
-              animation: blink 1s ease-in-out infinite;
-            `;
+            cursorElement.className = 'remote-cursor remote-cursor-blink';
+            cursorElement.style.position = 'absolute';
+            cursorElement.style.left = `${bounds.left}px`;
+            cursorElement.style.top = `${bounds.top}px`;
+            cursorElement.style.height = `${bounds.height}px`;
+            cursorElement.style.width = '2px';
+            cursorElement.style.backgroundColor = cursor.userColor;
+            cursorElement.style.zIndex = '9999';
+            cursorElement.style.pointerEvents = 'none';
 
             const label = document.createElement('div');
             label.className = 'remote-cursor-label';
             label.textContent = cursor.userName;
-            label.style.cssText = `
-              position: absolute;
-              top: -24px;
-              left: -4px;
-              background-color: ${cursor.userColor};
-              color: white;
-              padding: 3px 8px;
-              border-radius: 4px;
-              font-size: 11px;
-              white-space: nowrap;
-              font-weight: 600;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-              letter-spacing: 0.3px;
-            `;
+            label.style.position = 'absolute';
+            label.style.top = '-24px';
+            label.style.left = '-4px';
+            label.style.backgroundColor = cursor.userColor;
+            label.style.color = 'white';
+            label.style.padding = '3px 8px';
+            label.style.borderRadius = '4px';
+            label.style.fontSize = '11px';
+            label.style.whiteSpace = 'nowrap';
+            label.style.fontWeight = '600';
+            label.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            label.style.letterSpacing = '0.3px';
 
             cursorElement.appendChild(label);
             editorRoot.parentElement?.appendChild(cursorElement);
@@ -198,9 +173,20 @@ export default function RichTextEditor({
           pointer-events: none;
           z-index: 9999 !important;
         }
+        .remote-cursor-blink {
+          animation: blink 1s ease-in-out infinite;
+        }
         .remote-cursor-label {
           white-space: nowrap;
           user-select: none;
+        }
+        @keyframes blink {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0;
+          }
         }
       `}</style>
     </div>
