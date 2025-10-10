@@ -205,9 +205,166 @@ export default function BlogPostPage() {
                 </div>
 
                 <div
-                  className="prose prose-lg max-w-none mb-8"
+                  className="blog-content mb-8"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
+
+                <style jsx>{`
+                  .blog-content {
+                    line-height: 1.75;
+                    color: #374151;
+                  }
+
+                  .blog-content :global(h1) {
+                    font-size: 2.25rem;
+                    font-weight: 800;
+                    margin-top: 2rem;
+                    margin-bottom: 1rem;
+                    color: #111827;
+                    line-height: 1.2;
+                  }
+
+                  .blog-content :global(h2) {
+                    font-size: 1.875rem;
+                    font-weight: 700;
+                    margin-top: 2rem;
+                    margin-bottom: 1rem;
+                    color: #111827;
+                    line-height: 1.3;
+                  }
+
+                  .blog-content :global(h3) {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                    color: #1f2937;
+                    line-height: 1.4;
+                  }
+
+                  .blog-content :global(h4) {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                    color: #1f2937;
+                  }
+
+                  .blog-content :global(p) {
+                    margin-bottom: 1.25rem;
+                    font-size: 1.125rem;
+                  }
+
+                  .blog-content :global(ul),
+                  .blog-content :global(ol) {
+                    margin-bottom: 1.25rem;
+                    margin-left: 1.5rem;
+                    font-size: 1.125rem;
+                  }
+
+                  .blog-content :global(ul) {
+                    list-style-type: disc;
+                  }
+
+                  .blog-content :global(ol) {
+                    list-style-type: decimal;
+                  }
+
+                  .blog-content :global(li) {
+                    margin-bottom: 0.5rem;
+                    padding-left: 0.5rem;
+                  }
+
+                  .blog-content :global(li > ul),
+                  .blog-content :global(li > ol) {
+                    margin-top: 0.5rem;
+                    margin-bottom: 0.5rem;
+                  }
+
+                  .blog-content :global(strong) {
+                    font-weight: 600;
+                    color: #111827;
+                  }
+
+                  .blog-content :global(em) {
+                    font-style: italic;
+                  }
+
+                  .blog-content :global(a) {
+                    color: #2563eb;
+                    text-decoration: underline;
+                  }
+
+                  .blog-content :global(a:hover) {
+                    color: #1d4ed8;
+                  }
+
+                  .blog-content :global(blockquote) {
+                    border-left: 4px solid #2563eb;
+                    padding-left: 1.5rem;
+                    margin: 1.5rem 0;
+                    font-style: italic;
+                    color: #4b5563;
+                    background-color: #f9fafb;
+                    padding: 1rem 1.5rem;
+                    border-radius: 0.25rem;
+                  }
+
+                  .blog-content :global(code) {
+                    background-color: #f3f4f6;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.25rem;
+                    font-family: ui-monospace, monospace;
+                    font-size: 0.875em;
+                    color: #ef4444;
+                  }
+
+                  .blog-content :global(pre) {
+                    background-color: #1f2937;
+                    color: #f9fafb;
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                    overflow-x: auto;
+                    margin-bottom: 1.25rem;
+                  }
+
+                  .blog-content :global(pre code) {
+                    background-color: transparent;
+                    padding: 0;
+                    color: inherit;
+                  }
+
+                  .blog-content :global(img) {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 0.5rem;
+                    margin: 1.5rem 0;
+                  }
+
+                  .blog-content :global(table) {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 1.25rem;
+                  }
+
+                  .blog-content :global(th),
+                  .blog-content :global(td) {
+                    border: 1px solid #e5e7eb;
+                    padding: 0.75rem;
+                    text-align: left;
+                  }
+
+                  .blog-content :global(th) {
+                    background-color: #f9fafb;
+                    font-weight: 600;
+                  }
+
+                  .blog-content :global(hr) {
+                    border: none;
+                    border-top: 1px solid #e5e7eb;
+                    margin: 2rem 0;
+                  }
+                `}</style>
 
                 {post.tags.length > 0 && (
                   <div className="flex items-start gap-3 mb-8 pb-8 border-b">
