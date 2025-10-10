@@ -28,7 +28,7 @@ interface Document {
   documentType: 'AIP' | 'SUPPLEMENT' | 'NOTAM';
   country: string;
   airport?: string;
-  status: 'draft' | 'review' | 'published';
+  status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
   airacCycle: string;
   effectiveDate: string;
   updatedAt: string;
@@ -62,10 +62,13 @@ export default function DocumentViewPage() {
   const { data: session } = useSession();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
+  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
   const userRole = (session?.user as any)?.role || 'viewer';
 
   useEffect(() => {
     fetchDocument();
+    fetchWorkflows();
   }, [params.id, searchParams]);
 
   const fetchDocument = async () => {
@@ -92,6 +95,24 @@ export default function DocumentViewPage() {
     }
   };
 
+  const fetchWorkflows = async () => {
+    try {
+      const response = await fetch('/api/workflows', {
+        cache: 'no-store'
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setWorkflows(data.data);
+        // Auto-select first workflow if available
+        if (data.data.length > 0) {
+          setSelectedWorkflow(data.data[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+    }
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     if (!document) return;
 
@@ -102,7 +123,10 @@ export default function DocumentViewPage() {
       const response = await fetch(`/api/documents/${document._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({
+          status: newStatus,
+          workflowId: selectedWorkflow || undefined
+        })
       });
 
       const result = await response.json();
@@ -110,7 +134,7 @@ export default function DocumentViewPage() {
         setDocument({ ...document, status: newStatus as any });
         alert(`✅ Status changed to ${newStatus}`);
       } else {
-        alert(`Failed to change status: ${result.error}`);
+        alert(`❌ Failed to change status: ${result.error}`);
       }
     } catch (error) {
       console.error('Error changing status:', error);
@@ -201,8 +225,10 @@ export default function DocumentViewPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published': return 'bg-green-100 text-green-800';
+      case 'approved': return 'bg-blue-100 text-blue-800';
       case 'review': return 'bg-yellow-100 text-yellow-800';
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'archived': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -219,7 +245,7 @@ export default function DocumentViewPage() {
   const canEdit = () => {
     if (!document) return false;
     return ['super_admin', 'org_admin', 'editor'].includes(userRole) &&
-           ['draft', 'review'].includes(document.status);
+           ['draft', 'review', 'approved'].includes(document.status);
   };
 
   const user = session?.user as any;
@@ -298,6 +324,25 @@ export default function DocumentViewPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <CardTitle className="text-2xl">{document.title}</CardTitle>
 
+                    {/* Workflow Selector */}
+                    {workflows.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <GitBranch className="w-4 h-4 text-gray-500" />
+                        <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
+                          <SelectTrigger className="w-[160px] h-8 text-xs">
+                            <SelectValue placeholder="Select workflow" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {workflows.map((workflow) => (
+                              <SelectItem key={workflow._id} value={workflow._id} className="text-xs">
+                                {workflow.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     {/* Status Selector */}
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-gray-500" />
@@ -308,20 +353,32 @@ export default function DocumentViewPage() {
                         <SelectContent>
                           <SelectItem value="draft">
                             <span className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                              <span className="w-2 h-2 rounded-full bg-gray-500"></span>
                               Draft
                             </span>
                           </SelectItem>
                           <SelectItem value="review">
                             <span className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
                               Review
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="approved">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                              Approved
                             </span>
                           </SelectItem>
                           <SelectItem value="published">
                             <span className="flex items-center gap-2">
                               <span className="w-2 h-2 rounded-full bg-green-500"></span>
                               Published
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="archived">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                              Archived
                             </span>
                           </SelectItem>
                         </SelectContent>

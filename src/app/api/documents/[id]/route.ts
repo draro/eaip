@@ -7,6 +7,9 @@ import { webhookService } from '@/lib/webhooks';
 import { remoteStorage } from '@/lib/remoteStorage';
 import { gitService } from '@/lib/gitService';
 import User from '@/models/User';
+import WorkflowTemplate from '@/models/Workflow';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
 
 export async function GET(
   request: NextRequest,
@@ -71,9 +74,10 @@ export async function PUT(
       status,
       metadata,
       updatedBy,
+      workflowId,
     } = body;
 
-    const document = await AIPDocument.findById(params.id).populate('version');
+    const document = await AIPDocument.findById(params.id).populate('version').populate('organization');
     if (!document) {
       return NextResponse.json(
         { success: false, error: 'Document not found' },
@@ -87,6 +91,34 @@ export async function PUT(
         { success: false, error: `Invalid status transition from ${document.status} to ${status}` },
         { status: 400 }
       );
+    }
+
+    // Check workflow permissions if status is changing
+    if (status && status !== document.status) {
+      const session = await getServerSession(authOptions);
+      const currentUser = session?.user as any;
+
+      if (!currentUser) {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+
+      // Check workflow permissions
+      const permissionCheck = await checkWorkflowPermission(
+        currentUser,
+        document,
+        status,
+        workflowId
+      );
+
+      if (!permissionCheck.allowed) {
+        return NextResponse.json(
+          { success: false, error: permissionCheck.message },
+          { status: 403 }
+        );
+      }
     }
 
     // Get or create a default user if updatedBy is not provided
@@ -204,12 +236,111 @@ export async function PUT(
 
 function isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
   const validTransitions: Record<string, string[]> = {
-    'draft': ['review', 'published'],
-    'review': ['draft', 'published'],
-    'published': ['draft'], // Can only go back to draft for revisions
+    'draft': ['review', 'approved', 'published'],
+    'review': ['draft', 'approved', 'published'],
+    'approved': ['draft', 'published'],
+    'published': ['draft', 'archived'],
+    'archived': ['draft'],
   };
 
   return validTransitions[currentStatus]?.includes(newStatus) || false;
+}
+
+// Check if user has permission to perform workflow transition
+async function checkWorkflowPermission(
+  user: any,
+  document: any,
+  newStatus: string,
+  workflowId?: string
+): Promise<{ allowed: boolean; message: string }> {
+  // Super admins can always transition
+  if (user.role === 'super_admin') {
+    return { allowed: true, message: 'OK' };
+  }
+
+  // If no workflow specified, use basic role checks
+  if (!workflowId) {
+    const canEdit = ['org_admin', 'editor'].includes(user.role);
+    return {
+      allowed: canEdit,
+      message: canEdit ? 'OK' : 'Insufficient permissions to change document status'
+    };
+  }
+
+  try {
+    // Fetch the workflow
+    const workflow = await WorkflowTemplate.findById(workflowId);
+    if (!workflow) {
+      return { allowed: false, message: 'Workflow not found' };
+    }
+
+    // Find the step that corresponds to the new status
+    const targetStep = workflow.steps.find((step: any) =>
+      step.name.toLowerCase() === newStatus.toLowerCase() ||
+      step.id === newStatus
+    );
+
+    if (!targetStep) {
+      // If no specific step found, use basic role check
+      const canEdit = ['org_admin', 'editor'].includes(user.role);
+      return {
+        allowed: canEdit,
+        message: canEdit ? 'OK' : 'Insufficient permissions'
+      };
+    }
+
+    // Check if user is assigned to this step
+    if (targetStep.assignedUsers && targetStep.assignedUsers.length > 0) {
+      const isAssigned = targetStep.assignedUsers.some(
+        (assignedUserId: any) => assignedUserId.toString() === user._id?.toString()
+      );
+
+      if (!isAssigned) {
+        return {
+          allowed: false,
+          message: `You are not assigned to the "${targetStep.name}" step. Only assigned users can transition to this status.`
+        };
+      }
+    }
+
+    // Check role requirements
+    if (targetStep.requiredRole) {
+      const roleHierarchy: Record<string, number> = {
+        'viewer': 1,
+        'editor': 2,
+        'org_admin': 3,
+        'super_admin': 4
+      };
+
+      const userRoleLevel = roleHierarchy[user.role] || 0;
+      const requiredRoleLevel = roleHierarchy[targetStep.requiredRole] || 0;
+
+      if (userRoleLevel < requiredRoleLevel) {
+        return {
+          allowed: false,
+          message: `Insufficient role. This step requires "${targetStep.requiredRole}" role or higher.`
+        };
+      }
+    }
+
+    // Check workflow role requirements
+    if (targetStep.requiredWorkflowRole) {
+      const userDoc = await User.findById(user._id);
+      const hasWorkflowRole = userDoc?.workflowRoles?.includes(targetStep.requiredWorkflowRole);
+
+      if (!hasWorkflowRole) {
+        return {
+          allowed: false,
+          message: `This step requires the "${targetStep.requiredWorkflowRole}" workflow role.`
+        };
+      }
+    }
+
+    return { allowed: true, message: 'OK' };
+  } catch (error) {
+    console.error('Error checking workflow permission:', error);
+    return { allowed: false, message: 'Error validating workflow permissions' };
+  }
 }
 
 export async function DELETE(
