@@ -68,76 +68,52 @@ export default function Navigation({ user }: NavigationProps) {
       icon: BarChart3,
       roles: ['super_admin', 'org_admin', 'atc_supervisor', 'atc', 'editor', 'viewer']
     },
-    // Document management
     {
       title: 'Documents',
       href: '/documents',
       icon: FileText,
-      description: 'AIP documents',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
-    // NOTAM management
     {
       title: 'NOTAM',
       href: '/notam',
       icon: Bell,
-      description: 'NOTAM management',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
-    // AIRAC Cycles
     {
-      title: 'AIRAC Cycles',
+      title: 'AIRAC',
       href: '/airac',
       icon: Calendar,
-      description: 'AIRAC cycle management',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
-    // Workflow management
     {
       title: 'Workflow',
       href: '/workflow',
       icon: GitBranch,
-      description: 'Approval workflows',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
-    // Checklists (for ATC and supervisors)
     {
       title: 'Checklists',
       href: '/atc-dashboard',
       icon: FileText,
-      description: 'Checklist management',
-      roles: ['atc', 'atc_supervisor', 'org_admin']
+      roles: ['super_admin', 'atc', 'atc_supervisor', 'org_admin']
     },
-    // Create Template (for org_admin and atc_supervisor)
-    {
-      title: 'Create Template',
-      href: '/checklists/templates/create',
-      icon: PlusCircle,
-      description: 'Create checklist template',
-      roles: ['org_admin', 'atc_supervisor']
-    },
-    // Compliance
     {
       title: 'Compliance',
       href: '/compliance',
       icon: Shield,
-      description: 'Compliance monitoring',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
-    // Organization management (condensed)
     {
       title: 'Organization',
       href: '/organization/setup',
       icon: Building2,
-      description: 'Organization management',
       roles: ['org_admin']
     },
-    // Public viewer
     {
       title: 'Public',
       href: '/public',
       icon: Globe,
-      description: 'Public eAIP',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     }
   ];
@@ -203,10 +179,10 @@ export default function Navigation({ user }: NavigationProps) {
             </Link>
           </div>
 
-          {/* Desktop Navigation - Scrollable with More Menu */}
-          <div className="hidden md:flex items-center flex-1 mx-4 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center space-x-1">
-              {visibleItems.slice(0, 6).map((item) => {
+          {/* Desktop Navigation - Compact with More Menu */}
+          <div className="hidden md:flex items-center flex-1 mx-2">
+            <div className="flex items-center gap-0.5">
+              {visibleItems.slice(0, 4).map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.href);
 
@@ -217,18 +193,13 @@ export default function Navigation({ user }: NavigationProps) {
                         <Button
                           variant={isActive ? "default" : "ghost"}
                           size="sm"
-                          className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium whitespace-nowrap ${
-                            isActive
-                              ? 'text-white hover:opacity-90'
-                              : 'text-gray-600 hover:text-gray-900'
+                          className={`px-1.5 py-1 h-8 text-xs ${
+                            isActive ? 'text-white' : 'text-gray-600'
                           }`}
-                          style={isActive ? {
-                            backgroundColor: branding.primaryColor,
-                          } : {}}
+                          style={isActive ? { backgroundColor: branding.primaryColor } : {}}
                         >
-                          <Icon className="w-3.5 h-3.5" />
-                          <span className="hidden lg:inline">{item.title}</span>
-                          <ChevronDown className="w-3 h-3" />
+                          <Icon className="w-4 h-4" />
+                          <ChevronDown className="w-3 h-3 ml-0.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
@@ -256,40 +227,37 @@ export default function Navigation({ user }: NavigationProps) {
                 }
 
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={item.href} href={item.href} title={item.title}>
                     <Button
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
-                      className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium whitespace-nowrap ${
-                        isActive
-                          ? 'text-white hover:opacity-90'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                      style={isActive ? {
-                        backgroundColor: branding.primaryColor,
-                      } : {}}
+                      className={`px-1.5 py-1 h-8 ${isActive ? 'text-white' : 'text-gray-600'}`}
+                      style={isActive ? { backgroundColor: branding.primaryColor } : {}}
                     >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="hidden lg:inline">{item.title}</span>
+                      <Icon className="w-4 h-4" />
                     </Button>
                   </Link>
                 );
               })}
 
-              {visibleItems.length > 6 && (
+              {visibleItems.length > 4 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="px-2 py-1.5">
-                      <Menu className="w-3.5 h-3.5" />
-                      <span className="ml-1 text-xs">More</span>
+                    <Button variant="ghost" size="sm" className="px-2 py-1 h-8 text-xs">
+                      <Menu className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3 ml-0.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {visibleItems.slice(6).map((item) => {
+                  <DropdownMenuContent align="start" className="w-48">
+                    {visibleItems.slice(4).map((item) => {
                       const Icon = item.icon;
+                      const isActive = isActiveRoute(item.href);
                       return (
                         <DropdownMenuItem key={item.href} asChild>
-                          <Link href={item.href} className="flex items-center gap-2">
+                          <Link
+                            href={item.href}
+                            className={`flex items-center gap-2 ${isActive ? 'bg-blue-50 text-blue-700' : ''}`}
+                          >
                             <Icon className="w-4 h-4" />
                             {item.title}
                           </Link>

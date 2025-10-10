@@ -96,6 +96,15 @@ export interface IOrganization extends Document {
     export_pdf: boolean;
     export_docx: boolean;
   };
+  modules?: {
+    eaip: boolean;
+    notam: boolean;
+    airac: boolean;
+    compliance: boolean;
+    workflow: boolean;
+    checklists: boolean;
+    publicViewer: boolean;
+  };
   aiProvider: 'claude' | 'openai';
   aiApiKey?: string;
   aiModel: string;

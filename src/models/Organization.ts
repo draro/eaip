@@ -163,6 +163,15 @@ const OrganizationSchema = new Schema<IOrganization>(
       export_pdf: { type: Boolean, default: true },
       export_docx: { type: Boolean, default: true },
     },
+    modules: {
+      eaip: { type: Boolean, default: true },
+      notam: { type: Boolean, default: true },
+      airac: { type: Boolean, default: true },
+      compliance: { type: Boolean, default: true },
+      workflow: { type: Boolean, default: true },
+      checklists: { type: Boolean, default: true },
+      publicViewer: { type: Boolean, default: true },
+    },
     subscription: {
       plan: {
         type: String,
@@ -246,6 +255,13 @@ OrganizationSchema.methods.hasFeature = function (feature: string) {
   }
   // Fallback to subscription features array for backward compatibility
   return this.subscription.features.includes(feature);
+};
+
+OrganizationSchema.methods.hasModule = function (moduleName: string) {
+  if (this.modules && moduleName in this.modules) {
+    return this.modules[moduleName] === true;
+  }
+  return true;
 };
 
 OrganizationSchema.methods.isActive = function () {
