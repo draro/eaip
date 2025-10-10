@@ -92,12 +92,17 @@ export default function CreateDocumentPage() {
 
   const fetchAiracCycles = async () => {
     try {
-      const response = await fetch('/api/airac?action=year&year=' + new Date().getFullYear());
+      const response = await fetch('/api/airac/activate?action=upcoming&count=24');
       const result = await response.json();
       if (result.success) {
         const cycles = result.data || [];
         setAiracCycles(cycles);
-        if (cycles.length > 0) {
+
+        // Set default to current active cycle
+        const activeCycle = cycles.find((c: any) => c.status === 'active');
+        if (activeCycle) {
+          setFormData(prev => ({ ...prev, airacCycle: activeCycle.airacCycle }));
+        } else if (cycles.length > 0) {
           setFormData(prev => ({ ...prev, airacCycle: cycles[0].airacCycle }));
         }
       }
@@ -647,7 +652,7 @@ export default function CreateDocumentPage() {
                       <SelectContent>
                         {airacCycles.map((cycle) => (
                           <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
-                            {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
+                            {cycle.airacCycle} - {cycle.status} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -658,7 +663,7 @@ export default function CreateDocumentPage() {
                       </p>
                     )}
                     <p className="text-xs text-gray-500">
-                      Select the AIRAC cycle for this document
+                      Select the AIRAC cycle for this document ({airacCycles.length} cycles available - current and future)
                     </p>
                   </div>
                 </div>
