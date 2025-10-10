@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -95,12 +96,29 @@ export default function DocumentsPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showDiffDialog, setShowDiffDialog] = useState(false);
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [cloneTargetAirac, setCloneTargetAirac] = useState('');
+  const [upcomingAiracCycles, setUpcomingAiracCycles] = useState<any[]>([]);
+  const [cloningDocument, setCloningDocument] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'structure'>('list');
   const userRole = (session?.user as any)?.role || 'viewer';
 
   useEffect(() => {
     fetchDocuments();
+    fetchUpcomingAiracCycles();
   }, []);
+
+  const fetchUpcomingAiracCycles = async () => {
+    try {
+      const response = await fetch('/api/airac/activate?action=upcoming&count=12');
+      const result = await response.json();
+      if (result.success) {
+        setUpcomingAiracCycles(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching upcoming AIRAC cycles:', error);
+    }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -357,27 +375,32 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleCloneDocument = async (document: Document) => {
-    const confirmed = confirm(
-      `Clone "${document.title}"?\n\n` +
-      `This will create a new document with:\n` +
-      `- All sections and content from the original\n` +
-      `- Draft status\n` +
-      `- Current date as creation date\n\n` +
-      `You can edit the cloned document after creation.`
-    );
+  const handleCloneDocument = (document: Document) => {
+    setSelectedDocument(document);
+    setCloneTargetAirac('');
+    setShowCloneDialog(true);
+  };
 
-    if (!confirmed) return;
+  const confirmCloneDocument = async () => {
+    if (!selectedDocument || !cloneTargetAirac) {
+      alert('Please select a target AIRAC cycle');
+      return;
+    }
 
+    setCloningDocument(true);
     try {
       const response = await fetch('/api/documents/clone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: document._id })
+        body: JSON.stringify({
+          documentId: selectedDocument._id,
+          targetAiracCycle: cloneTargetAirac
+        })
       });
 
       const result = await response.json();
       if (result.success) {
+        setShowCloneDialog(false);
         alert(`✅ Document cloned successfully!\n\nNew document: "${result.data.title}"`);
         router.push(`/documents/${result.data._id}/edit`);
       } else {
@@ -386,6 +409,8 @@ export default function DocumentsPage() {
     } catch (error) {
       console.error('Error cloning document:', error);
       alert('Failed to clone document. Please try again.');
+    } finally {
+      setCloningDocument(false);
     }
   };
 
@@ -752,6 +777,88 @@ export default function DocumentsPage() {
         )}
         </div>
         )}
+
+        {/* Clone Document Dialog */}
+        <Dialog open={showCloneDialog} onOpenChange={setShowCloneDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Copy className="w-5 h-5" />
+                Clone Document for New AIRAC Cycle
+              </DialogTitle>
+              <DialogDescription>
+                Select the target AIRAC cycle for the cloned document
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Source Document</Label>
+                <div className="p-3 bg-gray-50 rounded-md">
+                  <p className="font-medium">{selectedDocument?.title}</p>
+                  <p className="text-sm text-gray-600">Current AIRAC: {selectedDocument?.airacCycle}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="targetAirac">Target AIRAC Cycle *</Label>
+                <Select value={cloneTargetAirac} onValueChange={setCloneTargetAirac}>
+                  <SelectTrigger id="targetAirac">
+                    <SelectValue placeholder="Select AIRAC cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {upcomingAiracCycles.length === 0 ? (
+                      <div className="px-2 py-6 text-center text-sm text-gray-500">
+                        Loading AIRAC cycles...
+                      </div>
+                    ) : (
+                      upcomingAiracCycles.map((cycle) => (
+                        <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
+                          {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  {upcomingAiracCycles.length > 0 && `${upcomingAiracCycles.length} upcoming cycles available`}
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  <strong>Note:</strong> The cloned document will include all sections and content from the original document.
+                  It will be created as a draft and you can edit it after cloning.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCloneDialog(false)}
+                disabled={cloningDocument}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmCloneDocument}
+                disabled={!cloneTargetAirac || cloningDocument}
+              >
+                {cloningDocument ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Cloning...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Clone Document
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Enhanced Diff Viewer Dialog */}
         <Dialog open={showDiffDialog} onOpenChange={setShowDiffDialog}>
