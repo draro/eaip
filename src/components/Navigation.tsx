@@ -30,7 +30,8 @@ import {
   PlusCircle,
   Eye,
   Bell,
-  GitBranch
+  GitBranch,
+  Calendar
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -81,6 +82,14 @@ export default function Navigation({ user }: NavigationProps) {
       href: '/notam',
       icon: Bell,
       description: 'NOTAM management',
+      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    // AIRAC Cycles
+    {
+      title: 'AIRAC Cycles',
+      href: '/airac',
+      icon: Calendar,
+      description: 'AIRAC cycle management',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
     // Workflow management
