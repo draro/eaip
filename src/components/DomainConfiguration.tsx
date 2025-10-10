@@ -12,6 +12,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  AlertCircle,
   Copy,
   RefreshCw,
   ExternalLink,
@@ -366,13 +367,36 @@ export default function DomainConfiguration({
                           year: 'numeric'
                         })}</p>
                         {domain.verifiedAt && (
-                          <p>Last checked: {new Date(domain.lastCheckedAt || domain.updatedAt).toLocaleDateString('en-US', {
+                          <p>Verified: {new Date(domain.verifiedAt).toLocaleDateString('en-US', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}</p>
+                        )}
+                        {domain.lastCheckedAt && (
+                          <p>Last checked: {new Date(domain.lastCheckedAt).toLocaleDateString('en-US', {
                             month: 'numeric',
                             day: 'numeric',
                             year: 'numeric'
                           })}</p>
                         )}
                       </div>
+
+                      {!domain.isVerified ? (
+                        <Alert className="bg-yellow-50 border-yellow-200">
+                          <AlertCircle className="h-4 w-4 text-yellow-600" />
+                          <AlertDescription className="text-yellow-800 text-sm">
+                            Domain not yet verified. Click "Check DNS" to see configuration status, then click "Verify" to activate.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <Alert className="bg-green-50 border-green-200">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <AlertDescription className="text-green-800 text-sm">
+                            Domain verified and active! Your eAIP is accessible at this domain.
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
                       {/* DNS Records */}
                       {domain.dnsRecords && domain.dnsRecords.length > 0 && (
@@ -557,10 +581,20 @@ export default function DomainConfiguration({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getStatusIcon(dnsResult.valid)}
-                    <span className="font-medium">Current DNS Status</span>
+                    <span className="font-medium">DNS Configuration Status</span>
                   </div>
-                  {getStatusBadge(dnsResult.valid)}
+                  <Badge className={dnsResult.valid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                    {dnsResult.valid ? 'DNS Configured' : 'DNS Pending'}
+                  </Badge>
                 </div>
+                {!dnsResult.valid && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      DNS records need to be configured. Once DNS is set up correctly, click the "Verify" button to update the domain status.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {/* DNS Records Found */}
                 {(dnsResult.records.a || dnsResult.records.cname || dnsResult.records.txt) && (
