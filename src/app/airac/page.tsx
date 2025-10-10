@@ -127,52 +127,52 @@ export default function AIRACPage() {
   return (
     <Layout user={user}>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">AIRAC Cycle Management</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl font-bold text-gray-900">AIRAC Cycle Management</h1>
+            <p className="text-sm text-gray-600 mt-1">
               Manage 28-day Aeronautical Information Regulation and Control cycles
             </p>
           </div>
-          <Button onClick={fetchAIRACData} variant="outline">
+          <Button onClick={fetchAIRACData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
 
         {/* Current Cycle Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                Current AIRAC Cycle
-              </CardTitle>
-              <CardDescription>Active cycle information</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2 text-blue-600">
+                <Calendar className="h-4 w-4" />
+                <CardTitle className="text-base font-semibold">Current AIRAC Cycle</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Active cycle information</CardDescription>
             </CardHeader>
             <CardContent>
               {currentCycle && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold text-blue-600">{currentCycle.id}</span>
-                    <Badge className="bg-green-600">Active</Badge>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <span className="text-4xl font-bold text-blue-600">{currentCycle.id}</span>
+                    <Badge className="bg-green-600 text-white">Active</Badge>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Effective Date:</span>
-                      <span className="font-medium">{formatDate(currentCycle.effectiveDate)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(currentCycle.effectiveDate)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Publication Date:</span>
-                      <span className="font-medium">{formatDate(currentCycle.publicationDate)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(currentCycle.publicationDate)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Cycle Number:</span>
-                      <span className="font-medium">{currentCycle.cycleNumber} / {selectedYear}</span>
+                      <span className="font-medium text-gray-900">{currentCycle.cycleNumber} / {selectedYear}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Next Cycle:</span>
-                      <span className="font-medium">{formatDate(currentCycle.nextCycle)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(currentCycle.nextCycle)}</span>
                     </div>
                   </div>
                 </div>
@@ -181,36 +181,36 @@ export default function AIRACPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-600" />
-                Next AIRAC Cycle
-              </CardTitle>
-              <CardDescription>Upcoming cycle information</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2 text-orange-600">
+                <Clock className="h-4 w-4" />
+                <CardTitle className="text-base font-semibold">Next AIRAC Cycle</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Upcoming cycle information</CardDescription>
             </CardHeader>
             <CardContent>
               {nextCycle && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold text-orange-600">{nextCycle.id}</span>
-                    <Badge variant="outline">In {getDaysUntil(nextCycle.effectiveDate)} days</Badge>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <span className="text-4xl font-bold text-orange-600">{nextCycle.id}</span>
+                    <Badge variant="outline" className="font-normal">In {getDaysUntil(nextCycle.effectiveDate)} days</Badge>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Effective Date:</span>
-                      <span className="font-medium">{formatDate(nextCycle.effectiveDate)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(nextCycle.effectiveDate)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Publication Date:</span>
-                      <span className="font-medium">{formatDate(nextCycle.publicationDate)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(nextCycle.publicationDate)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Cycle Number:</span>
-                      <span className="font-medium">{nextCycle.cycleNumber} / {nextCycle.year}</span>
+                      <span className="font-medium text-gray-900">{nextCycle.cycleNumber} / {nextCycle.year}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Days Until Active:</span>
-                      <span className="font-medium">{getDaysUntil(nextCycle.effectiveDate)}</span>
+                      <span className="font-medium text-gray-900">{getDaysUntil(nextCycle.effectiveDate)}</span>
                     </div>
                   </div>
                 </div>
@@ -219,152 +219,65 @@ export default function AIRACPage() {
           </Card>
         </div>
 
-        {/* Publication Schedule */}
-        {schedule && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                Publication Schedule & Deadlines
-              </CardTitle>
-              <CardDescription>Key dates for current AIRAC cycle</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Initial Submission</p>
-                    <p className="text-sm text-gray-600">{formatDate(schedule.deadlines.initialSubmission)}</p>
-                  </div>
-                  <span className="text-sm text-gray-600">{getDaysUntil(schedule.deadlines.initialSubmission)} days</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Final Submission</p>
-                    <p className="text-sm text-gray-600">{formatDate(schedule.deadlines.finalSubmission)}</p>
-                  </div>
-                  <span className="text-sm text-gray-600">{getDaysUntil(schedule.deadlines.finalSubmission)} days</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Review Period</p>
-                    <p className="text-sm text-gray-600">{formatDate(schedule.deadlines.review)}</p>
-                  </div>
-                  <span className="text-sm text-gray-600">{getDaysUntil(schedule.deadlines.review)} days</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Publication Date</p>
-                    <p className="text-sm text-gray-600">{formatDate(schedule.deadlines.publication)}</p>
-                  </div>
-                  <span className="text-sm text-gray-600">{getDaysUntil(schedule.deadlines.publication)} days</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-green-100 rounded-lg">
-                  <div>
-                    <p className="font-medium">Effective Date</p>
-                    <p className="text-sm text-gray-600">{formatDate(schedule.deadlines.effective)}</p>
-                  </div>
-                  <Badge className={getStatusColor(schedule.status)}>{schedule.status.toUpperCase()}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Publication Schedule - Hidden for cleaner layout */}
 
         {/* Year Cycles */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AIRAC Cycles Calendar</CardTitle>
-            <CardDescription>View all cycles for the selected year</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex gap-2">
-              {[selectedYear - 1, selectedYear, selectedYear + 1].map((year) => (
-                <Button
-                  key={year}
-                  variant={year === selectedYear ? "default" : "outline"}
-                  onClick={() => setSelectedYear(year)}
-                >
-                  {year}
-                </Button>
-              ))}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">AIRAC Cycles Calendar</h2>
+              <p className="text-sm text-gray-600 mt-0.5">View all cycles for the selected year</p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {yearCycles.map((cycle) => (
-                <Card key={cycle.id} className={cycle.isActive ? "border-green-500 border-2" : ""}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{cycle.id}</CardTitle>
-                      {cycle.isActive && <Badge className="bg-green-600">Active</Badge>}
-                    </div>
-                    <CardDescription>Cycle {cycle.cycleNumber}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Effective:</span>
-                      <span className="font-medium">{formatDate(cycle.effectiveDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Published:</span>
-                      <span className="font-medium">{formatDate(cycle.publicationDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Days until:</span>
-                      <span className="font-medium">
-                        {getDaysUntil(cycle.effectiveDate) > 0
-                          ? `${getDaysUntil(cycle.effectiveDate)} days`
-                          : 'Past'}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-2">
+            {[selectedYear - 1, selectedYear, selectedYear + 1].map((year) => (
+              <Button
+                key={year}
+                variant={year === selectedYear ? "default" : "outline"}
+                onClick={() => setSelectedYear(year)}
+                className="px-6"
+              >
+                {year}
+              </Button>
+            ))}
+          </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AIRAC Management Actions</CardTitle>
-            <CardDescription>Tools for managing AIRAC cycles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="h-24 flex-col gap-2">
-                <Upload className="h-6 w-6" />
-                <span>Schedule Amendment</span>
-              </Button>
-              <Button variant="outline" className="h-24 flex-col gap-2">
-                <Download className="h-6 w-6" />
-                <span>Export Calendar</span>
-              </Button>
-              <Button variant="outline" className="h-24 flex-col gap-2">
-                <AlertCircle className="h-6 w-6" />
-                <span>View Pending Changes</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {yearCycles.map((cycle) => (
+              <Card key={cycle.id} className={cycle.isActive ? "border-l-4 border-l-green-500" : "border-l-4 border-l-transparent"}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-bold">{cycle.id}</CardTitle>
+                    {cycle.isActive && <Badge className="bg-green-600 text-white">Active</Badge>}
+                  </div>
+                  <CardDescription className="text-xs">Cycle {cycle.cycleNumber}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Effective:</span>
+                    <span className="font-medium text-gray-900">{formatDate(cycle.effectiveDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Published:</span>
+                    <span className="font-medium text-gray-900">{formatDate(cycle.publicationDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Days until:</span>
+                    <span className="font-medium text-gray-900">
+                      {getDaysUntil(cycle.effectiveDate) > 0
+                        ? getDaysUntil(cycle.effectiveDate)
+                        : <span className="text-gray-500">Past</span>}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
 
-        {/* Info Box */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <AlertCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-blue-900 mb-2">About AIRAC Cycles</h3>
-                <p className="text-sm text-blue-800">
-                  AIRAC (Aeronautical Information Regulation and Control) cycles are standardized 28-day periods
-                  established by ICAO for updating aeronautical information. Each cycle begins on a Thursday and
-                  ensures coordinated publication of critical aviation information worldwide. Changes must be
-                  submitted at least 56 days before the effective date to allow proper review and distribution.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick Actions - Hidden for cleaner layout */}
+        {/* Info Box - Hidden for cleaner layout */}
       </div>
     </Layout>
   );
