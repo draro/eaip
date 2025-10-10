@@ -135,7 +135,8 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
 );
 
 // Indexes
-AIPDocumentSchema.index({ organization: 1, country: 1, airport: 1, version: 1, documentType: 1 }, { unique: true });
+// Removed unique constraint - organizations can have multiple documents for same country/airport/version
+AIPDocumentSchema.index({ organization: 1, country: 1, airport: 1, version: 1, documentType: 1 });
 AIPDocumentSchema.index({ organization: 1 });
 AIPDocumentSchema.index({ version: 1 });
 AIPDocumentSchema.index({ status: 1 });
