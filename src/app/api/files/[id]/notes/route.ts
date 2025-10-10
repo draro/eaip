@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import connectDB from '@/lib/mongodb';
 import DocumentNote from '@/models/DocumentNote';
-import File from '@/models/File';
+import DocumentFile from '@/models/DocumentFile';
 import User from '@/models/User';
 
 export async function GET(
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     // Verify file exists and user has access
-    const file = await File.findById(params.id);
+    const file = await DocumentFile.findById(params.id);
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -102,7 +102,7 @@ export async function POST(
     }
 
     // Verify file exists and user has access
-    const file = await File.findById(params.id);
+    const file = await DocumentFile.findById(params.id);
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }

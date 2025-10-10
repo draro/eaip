@@ -377,9 +377,10 @@ export default function EditOrganizationModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+        {/* Fixed Header */}
+        <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Edit Organization</h2>
             <div className="flex items-center gap-2 mt-2">
@@ -401,9 +402,12 @@ export default function EditOrganizationModal({
           </button>
         </div>
 
+        {/* Scrollable Content */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 pt-4 space-y-6" style={{ scrollBehavior: 'smooth' }}>
+
         {/* Statistics Card */}
         {organization.statistics && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-3">Organization Statistics</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -421,8 +425,6 @@ export default function EditOrganizationModal({
             </div>
           </div>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -963,8 +965,11 @@ export default function EditOrganizationModal({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between pt-6">
+        </form>
+
+        {/* Fixed Footer with Action Buttons */}
+        <div className="border-t border-gray-200 p-6 pt-4 bg-gray-50">
+          <div className="flex justify-between">
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
@@ -982,15 +987,16 @@ export default function EditOrganizationModal({
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
                 disabled={isLoading}
+                onClick={handleSubmit}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Updating...' : 'Update Organization'}
               </button>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
