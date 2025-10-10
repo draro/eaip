@@ -421,15 +421,21 @@ export default function CreateDocumentPage() {
                           <SelectValue placeholder="Select a document to clone" />
                         </SelectTrigger>
                         <SelectContent>
-                          {documents.filter(d => d.status !== 'archived').map((doc) => (
-                            <SelectItem key={doc._id} value={doc._id}>
-                              {doc.title} - {doc.airacCycle} ({doc.status})
-                            </SelectItem>
-                          ))}
+                          {documents.filter(d => d.status !== 'archived').length === 0 ? (
+                            <div className="px-2 py-6 text-center text-sm text-gray-500">
+                              No documents available to clone
+                            </div>
+                          ) : (
+                            documents.filter(d => d.status !== 'archived').map((doc) => (
+                              <SelectItem key={doc._id} value={doc._id}>
+                                {doc.title} - {doc.airacCycle} ({doc.status})
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">
-                        Choose the document you want to clone
+                        Choose the document you want to clone {documents.length > 0 && `(${documents.filter(d => d.status !== 'archived').length} available)`}
                       </p>
                     </div>
 
@@ -507,15 +513,21 @@ export default function CreateDocumentPage() {
                               <SelectValue placeholder="Select AIRAC cycle" />
                             </SelectTrigger>
                             <SelectContent>
-                              {airacCycles.map((cycle) => (
-                                <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
-                                  {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
-                                </SelectItem>
-                              ))}
+                              {airacCycles.length === 0 ? (
+                                <div className="px-2 py-6 text-center text-sm text-gray-500">
+                                  Loading AIRAC cycles...
+                                </div>
+                              ) : (
+                                airacCycles.map((cycle) => (
+                                  <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
+                                    {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-gray-500">
-                            Select when this document should become effective
+                            Select when this document should become effective {airacCycles.length > 0 && `(${airacCycles.length} cycles available)`}
                           </p>
                         </div>
                       </>

@@ -54,15 +54,24 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+
+    if (action === 'upcoming') {
+      const count = parseInt(searchParams.get('count') || '3');
+      const upcoming = await AIRACCycleManager.getUpcomingAIRACCycles(count);
+      return NextResponse.json({
+        success: true,
+        data: upcoming
+      });
+    }
+
     if (!['super_admin', 'org_admin'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Only administrators can check AIRAC cycle status' },
+        { success: false, error: 'Only administrators can perform this action' },
         { status: 403 }
       );
     }
-
-    const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action');
 
     if (action === 'check_pending') {
       const result = await AIRACCycleManager.checkAndActivatePendingCycles();
@@ -72,15 +81,6 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
           activatedCycles: result.activated,
           errors: result.errors
         }
-      });
-    }
-
-    if (action === 'upcoming') {
-      const count = parseInt(searchParams.get('count') || '3');
-      const upcoming = await AIRACCycleManager.getUpcomingAIRACCycles(count);
-      return NextResponse.json({
-        success: true,
-        data: upcoming
       });
     }
 
