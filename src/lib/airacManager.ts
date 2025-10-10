@@ -201,29 +201,39 @@ export class AIRACManager {
   }
 
   public static getPublicationSchedule(cycle: AIRACCycle): PublicationSchedule {
+    const deadlines = {
+      initialSubmission: new Date(cycle.publicationDate.getTime() - (21 * 24 * 60 * 60 * 1000)), // 21 days before pub
+      finalSubmission: new Date(cycle.publicationDate.getTime() - (14 * 24 * 60 * 60 * 1000)), // 14 days before pub
+      review: new Date(cycle.publicationDate.getTime() - (7 * 24 * 60 * 60 * 1000)), // 7 days before pub
+      publication: cycle.publicationDate,
+      effective: cycle.effectiveDate,
+    };
+
     return {
       cycle,
       publicationDate: cycle.publicationDate,
       effectiveDate: cycle.effectiveDate,
-      deadlines: {
-        initialSubmission: new Date(cycle.publicationDate.getTime() - (21 * 24 * 60 * 60 * 1000)), // 21 days before pub
-        finalSubmission: new Date(cycle.publicationDate.getTime() - (14 * 24 * 60 * 60 * 1000)), // 14 days before pub
-        review: new Date(cycle.publicationDate.getTime() - (7 * 24 * 60 * 60 * 1000)), // 7 days before pub
-        publication: cycle.publicationDate,
-        effective: cycle.effectiveDate,
-      },
-      status: this.getPublicationStatus(cycle),
+      deadlines,
+      status: this.calculatePublicationStatus(cycle, deadlines),
     };
   }
 
-  private static getPublicationStatus(cycle: AIRACCycle): 'planning' | 'submission' | 'review' | 'published' | 'effective' | 'expired' {
+  private static calculatePublicationStatus(
+    cycle: AIRACCycle,
+    deadlines: {
+      initialSubmission: Date;
+      finalSubmission: Date;
+      review: Date;
+      publication: Date;
+      effective: Date;
+    }
+  ): 'planning' | 'submission' | 'review' | 'published' | 'effective' | 'expired' {
     const now = new Date();
-    const schedule = this.getPublicationSchedule(cycle);
 
-    if (now < schedule.deadlines.initialSubmission) return 'planning';
-    if (now < schedule.deadlines.finalSubmission) return 'submission';
-    if (now < schedule.deadlines.publication) return 'review';
-    if (now < schedule.deadlines.effective) return 'published';
+    if (now < deadlines.initialSubmission) return 'planning';
+    if (now < deadlines.finalSubmission) return 'submission';
+    if (now < deadlines.publication) return 'review';
+    if (now < deadlines.effective) return 'published';
     if (now < cycle.nextCycle) return 'effective';
     return 'expired';
   }
