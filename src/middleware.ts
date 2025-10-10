@@ -185,6 +185,23 @@ export default withAuth(
               });
             }
 
+            // Allow static files and assets
+            const staticFiles = [
+              "/manifest.json",
+              "/robots.txt",
+              "/sitemap.xml",
+              "/favicon.ico",
+              "/apple-touch-icon.png",
+              "/android-chrome-",
+              "/icon-",
+            ];
+            if (staticFiles.some((file) => pathname.startsWith(file))) {
+              console.log(`[Custom Domain] Static file passthrough: ${pathname}`);
+              return NextResponse.next({
+                request: { headers: requestHeaders },
+              });
+            }
+
             // Block all other routes on custom domains (admin, dashboard, auth, etc.)
             // Users must access the main app domain (eaip.flyclim.com) for these features
             console.log(
@@ -307,7 +324,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - static assets (manifest, robots, icons)
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|uploads|exports|auth).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|uploads|exports|auth|manifest.json|robots.txt|sitemap.xml|apple-touch-icon|android-chrome|icon-).*)",
   ],
 };
