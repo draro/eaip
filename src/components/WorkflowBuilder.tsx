@@ -276,6 +276,7 @@ export default function WorkflowBuilder({ steps, users, onStepsChange }: Workflo
           {/* Add Step Button */}
           <div className="flex-shrink-0 flex flex-col items-center">
             <button
+              type="button"
               onClick={addStep}
               className="w-20 h-20 rounded-2xl border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 hover:border-blue-500 flex items-center justify-center transition-all group shadow-sm"
             >
