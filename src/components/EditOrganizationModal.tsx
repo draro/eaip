@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Organization {
   _id: string;
@@ -30,6 +31,29 @@ interface Organization {
     plan: string;
     maxUsers: number;
     maxDocuments: number;
+  };
+  features?: {
+    document_management: boolean;
+    checklists: boolean;
+    file_upload: boolean;
+    word_conversion: boolean;
+    pdf_viewer: boolean;
+    pdf_annotations: boolean;
+    git_versioning: boolean;
+    review_workflow: boolean;
+    approval_workflow: boolean;
+    realtime_collaboration: boolean;
+    export_pdf: boolean;
+    export_docx: boolean;
+  };
+  modules?: {
+    eaip: boolean;
+    notam: boolean;
+    airac: boolean;
+    compliance: boolean;
+    workflow: boolean;
+    checklists: boolean;
+    publicViewer: boolean;
   };
   status: string;
   createdAt: string;
@@ -75,6 +99,29 @@ export default function EditOrganizationModal({
       maxUsers: 5,
       maxDocuments: 10
     },
+    features: {
+      document_management: true,
+      checklists: true,
+      file_upload: true,
+      word_conversion: true,
+      pdf_viewer: true,
+      pdf_annotations: true,
+      git_versioning: true,
+      review_workflow: true,
+      approval_workflow: true,
+      realtime_collaboration: true,
+      export_pdf: true,
+      export_docx: true,
+    },
+    modules: {
+      eaip: true,
+      notam: true,
+      airac: true,
+      compliance: true,
+      workflow: true,
+      checklists: true,
+      publicViewer: true,
+    },
     status: 'active'
   });
 
@@ -118,6 +165,29 @@ export default function EditOrganizationModal({
           maxUsers: organization.subscription.maxUsers,
           maxDocuments: organization.subscription.maxDocuments
         },
+        features: organization.features || {
+          document_management: true,
+          checklists: true,
+          file_upload: true,
+          word_conversion: true,
+          pdf_viewer: true,
+          pdf_annotations: true,
+          git_versioning: true,
+          review_workflow: true,
+          approval_workflow: true,
+          realtime_collaboration: true,
+          export_pdf: true,
+          export_docx: true,
+        },
+        modules: organization.modules || {
+          eaip: true,
+          notam: true,
+          airac: true,
+          compliance: true,
+          workflow: true,
+          checklists: true,
+          publicViewer: true,
+        },
         status: organization.status
       });
     }
@@ -151,6 +221,26 @@ export default function EditOrganizationModal({
         }
       }));
     }
+  };
+
+  const handleFeatureToggle = (feature: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      features: {
+        ...prev.features,
+        [feature]: !prev.features[feature as keyof typeof prev.features],
+      },
+    }));
+  };
+
+  const handleModuleToggle = (module: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      modules: {
+        ...prev.modules,
+        [module]: !prev.modules[module as keyof typeof prev.modules],
+      },
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -585,6 +675,290 @@ export default function EditOrganizationModal({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="1"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Features</h3>
+            <p className="text-sm text-gray-600">
+              Select which features will be available for this organization
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-document_management"
+                  checked={formData.features.document_management}
+                  onCheckedChange={() => handleFeatureToggle('document_management')}
+                />
+                <label
+                  htmlFor="feature-document_management"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Document Management
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-checklists"
+                  checked={formData.features.checklists}
+                  onCheckedChange={() => handleFeatureToggle('checklists')}
+                />
+                <label
+                  htmlFor="feature-checklists"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Checklists
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-file_upload"
+                  checked={formData.features.file_upload}
+                  onCheckedChange={() => handleFeatureToggle('file_upload')}
+                />
+                <label
+                  htmlFor="feature-file_upload"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  File Upload
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-word_conversion"
+                  checked={formData.features.word_conversion}
+                  onCheckedChange={() => handleFeatureToggle('word_conversion')}
+                />
+                <label
+                  htmlFor="feature-word_conversion"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Word Conversion
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-pdf_viewer"
+                  checked={formData.features.pdf_viewer}
+                  onCheckedChange={() => handleFeatureToggle('pdf_viewer')}
+                />
+                <label
+                  htmlFor="feature-pdf_viewer"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  PDF Viewer
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-pdf_annotations"
+                  checked={formData.features.pdf_annotations}
+                  onCheckedChange={() => handleFeatureToggle('pdf_annotations')}
+                />
+                <label
+                  htmlFor="feature-pdf_annotations"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  PDF Annotations
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-git_versioning"
+                  checked={formData.features.git_versioning}
+                  onCheckedChange={() => handleFeatureToggle('git_versioning')}
+                />
+                <label
+                  htmlFor="feature-git_versioning"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Git Versioning
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-review_workflow"
+                  checked={formData.features.review_workflow}
+                  onCheckedChange={() => handleFeatureToggle('review_workflow')}
+                />
+                <label
+                  htmlFor="feature-review_workflow"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Review Workflow
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-approval_workflow"
+                  checked={formData.features.approval_workflow}
+                  onCheckedChange={() => handleFeatureToggle('approval_workflow')}
+                />
+                <label
+                  htmlFor="feature-approval_workflow"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Approval Workflow
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-realtime_collaboration"
+                  checked={formData.features.realtime_collaboration}
+                  onCheckedChange={() => handleFeatureToggle('realtime_collaboration')}
+                />
+                <label
+                  htmlFor="feature-realtime_collaboration"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Realtime Collaboration
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-export_pdf"
+                  checked={formData.features.export_pdf}
+                  onCheckedChange={() => handleFeatureToggle('export_pdf')}
+                />
+                <label
+                  htmlFor="feature-export_pdf"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Export PDF
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="feature-export_docx"
+                  checked={formData.features.export_docx}
+                  onCheckedChange={() => handleFeatureToggle('export_docx')}
+                />
+                <label
+                  htmlFor="feature-export_docx"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Export DOCX
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Modules */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Modules</h3>
+            <p className="text-sm text-gray-600">
+              Select which modules will be available for this organization
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-eaip"
+                  checked={formData.modules.eaip}
+                  onCheckedChange={() => handleModuleToggle('eaip')}
+                />
+                <label
+                  htmlFor="module-eaip"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  eAIP
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-notam"
+                  checked={formData.modules.notam}
+                  onCheckedChange={() => handleModuleToggle('notam')}
+                />
+                <label
+                  htmlFor="module-notam"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  NOTAM
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-airac"
+                  checked={formData.modules.airac}
+                  onCheckedChange={() => handleModuleToggle('airac')}
+                />
+                <label
+                  htmlFor="module-airac"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  AIRAC
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-compliance"
+                  checked={formData.modules.compliance}
+                  onCheckedChange={() => handleModuleToggle('compliance')}
+                />
+                <label
+                  htmlFor="module-compliance"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Compliance
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-workflow"
+                  checked={formData.modules.workflow}
+                  onCheckedChange={() => handleModuleToggle('workflow')}
+                />
+                <label
+                  htmlFor="module-workflow"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Workflow
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-checklists"
+                  checked={formData.modules.checklists}
+                  onCheckedChange={() => handleModuleToggle('checklists')}
+                />
+                <label
+                  htmlFor="module-checklists"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Checklists
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="module-publicViewer"
+                  checked={formData.modules.publicViewer}
+                  onCheckedChange={() => handleModuleToggle('publicViewer')}
+                />
+                <label
+                  htmlFor="module-publicViewer"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Public Viewer
+                </label>
               </div>
             </div>
           </div>

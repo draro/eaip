@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import ChecklistInstance from '@/models/ChecklistInstance';
 import User from '@/models/User';
 import DocumentActionLog from '@/models/DocumentActionLog';
+import DocumentReader from '@/models/DocumentReader';
 import { gitDocumentService } from '@/lib/gitDocumentService';
 
 export async function GET(
@@ -42,6 +43,20 @@ export async function GET(
         { error: 'You do not have permission to view this checklist' },
         { status: 403 }
       );
+    }
+
+    // Track document reader
+    try {
+      await DocumentReader.create({
+        document: instance._id,
+        documentType: 'checklist_instance',
+        user: user._id,
+        organization: user.organization,
+        openedAt: new Date(),
+      });
+    } catch (readerError) {
+      console.error('Failed to log document reader:', readerError);
+      // Don't fail the request if reader tracking fails
     }
 
     const totalItems = instance.items.length;

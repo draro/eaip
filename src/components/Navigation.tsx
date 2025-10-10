@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import {
   Building2,
@@ -26,12 +27,12 @@ import {
   LogOut,
   Menu,
   ChevronDown,
-  Home,
-  PlusCircle,
-  Eye,
   Bell,
   GitBranch,
-  Calendar
+  Calendar,
+  CheckSquare,
+  Eye,
+  X
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -75,6 +76,12 @@ export default function Navigation({ user }: NavigationProps) {
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
     {
+      title: 'Checklists',
+      href: '/atc-dashboard',
+      icon: CheckSquare,
+      roles: ['super_admin', 'atc', 'atc_supervisor', 'org_admin']
+    },
+    {
       title: 'NOTAM',
       href: '/notam',
       icon: Bell,
@@ -93,22 +100,10 @@ export default function Navigation({ user }: NavigationProps) {
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
     },
     {
-      title: 'Checklists',
-      href: '/atc-dashboard',
-      icon: FileText,
-      roles: ['super_admin', 'atc', 'atc_supervisor', 'org_admin']
-    },
-    {
       title: 'Compliance',
       href: '/compliance',
       icon: Shield,
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
-    },
-    {
-      title: 'Organization',
-      href: '/organization/setup',
-      icon: Building2,
-      roles: ['org_admin']
     },
     {
       title: 'Public',
@@ -125,23 +120,32 @@ export default function Navigation({ user }: NavigationProps) {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'super_admin': return 'bg-red-100 text-red-800';
-      case 'org_admin': return 'bg-purple-100 text-purple-800';
-      case 'atc_supervisor': return 'bg-orange-100 text-orange-800';
-      case 'atc': return 'bg-cyan-100 text-cyan-800';
-      case 'editor': return 'bg-blue-100 text-blue-800';
-      case 'viewer': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'super_admin': return 'bg-red-500 text-white';
+      case 'org_admin': return 'bg-purple-500 text-white';
+      case 'atc_supervisor': return 'bg-orange-500 text-white';
+      case 'atc': return 'bg-cyan-500 text-white';
+      case 'editor': return 'bg-blue-500 text-white';
+      case 'viewer': return 'bg-gray-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'super_admin': return 'Super Admin';
+      case 'org_admin': return 'Org Admin';
+      case 'atc_supervisor': return 'ATC Supervisor';
+      case 'atc': return 'ATC';
+      case 'editor': return 'Editor';
+      case 'viewer': return 'Viewer';
+      default: return role;
     }
   };
 
   const isActiveRoute = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
-    }
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
+    if (href === '/') return pathname === '/';
+    if (href === '/dashboard') return pathname === '/dashboard';
+    if (href === '/atc-dashboard') return pathname === '/atc-dashboard';
     return pathname.startsWith(href);
   };
 
@@ -152,184 +156,125 @@ export default function Navigation({ user }: NavigationProps) {
   const visibleItems = getVisibleItems();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14">
-          {/* Logo */}
-          <div className="flex items-center">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo Section */}
+          <div className="flex items-center gap-4">
             <Link
-              href={user ? (user.role === 'super_admin' ? '/admin' : '/dashboard') : '/'}
-              className="flex items-center"
+              href={user ? (user.role === 'super_admin' ? '/admin' : (user.role === 'atc' || user.role === 'atc_supervisor') ? '/atc-dashboard' : '/dashboard') : '/'}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
                   alt={branding.organizationName}
-                  className="h-7 w-auto"
+                  className="h-8 w-auto"
                 />
               ) : (
-                <FileText className="h-7 w-7" style={{ color: branding.primaryColor }} />
+                <div className="flex items-center gap-2">
+                  <FileText className="h-8 w-8 text-blue-600" />
+                  <span className="text-xl font-bold text-gray-900">
+                    {user?.organization?.name || branding.organizationName || 'eAIP'}
+                  </span>
+                </div>
               )}
-              <span
-                className="ml-2 text-lg font-bold"
-                style={{ color: branding.primaryColor }}
-              >
-                {user?.organization?.name || branding.organizationName}
-              </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation - Compact with More Menu */}
-          <div className="hidden md:flex items-center flex-1 mx-2">
-            <div className="flex items-center gap-0.5">
-              {visibleItems.slice(0, 4).map((item) => {
-                const Icon = item.icon;
-                const isActive = isActiveRoute(item.href);
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-1">
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = isActiveRoute(item.href);
 
-                if (item.title === 'Organization' && user?.role === 'org_admin') {
-                  return (
-                    <DropdownMenu key="organization">
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant={isActive ? "default" : "ghost"}
-                          size="sm"
-                          className={`px-1.5 py-1 h-8 text-xs ${
-                            isActive ? 'text-white' : 'text-gray-600'
-                          }`}
-                          style={isActive ? { backgroundColor: branding.primaryColor } : {}}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <ChevronDown className="w-3 h-3 ml-0.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem asChild>
-                          <Link href="/organization/setup" className="flex items-center gap-2">
-                            <Settings className="w-4 h-4" />
-                            Setup
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/organization/users" className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            Users
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/organization/analytics" className="flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4" />
-                            Analytics
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  );
-                }
-
-                return (
-                  <Link key={item.href} href={item.href} title={item.title}>
-                    <Button
-                      variant={isActive ? "default" : "ghost"}
-                      size="sm"
-                      className={`px-1.5 py-1 h-8 ${isActive ? 'text-white' : 'text-gray-600'}`}
-                      style={isActive ? { backgroundColor: branding.primaryColor } : {}}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                );
-              })}
-
-              {visibleItems.length > 4 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="px-2 py-1 h-8 text-xs">
-                      <Menu className="w-4 h-4" />
-                      <ChevronDown className="w-3 h-3 ml-0.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    {visibleItems.slice(4).map((item) => {
-                      const Icon = item.icon;
-                      const isActive = isActiveRoute(item.href);
-                      return (
-                        <DropdownMenuItem key={item.href} asChild>
-                          <Link
-                            href={item.href}
-                            className={`flex items-center gap-2 ${isActive ? 'bg-blue-50 text-blue-700' : ''}`}
-                          >
-                            <Icon className="w-4 h-4" />
-                            {item.title}
-                          </Link>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    className={`flex items-center gap-2 ${
+                      isActive
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{item.title}</span>
+                  </Button>
+                </Link>
+              );
+            })}
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center gap-4">
-            {/* Organization Badge (if applicable) */}
-            {user?.organization && (
-              <div className="hidden sm:block">
-                <Badge variant="outline" className="text-xs">
-                  {user.organization.name}
-                </Badge>
-              </div>
-            )}
-
-            {/* User Dropdown */}
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
+            {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-blue-600" />
+                <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="hidden md:block text-right">
+                      <div className="text-sm font-medium text-gray-900">{user?.name || 'User'}</div>
+                      <div className="text-xs text-gray-500">{user?.email}</div>
+                    </div>
+                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
                   </div>
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-medium">{user?.name || 'User'}</div>
-                    <div className="text-xs text-gray-500">{user?.email}</div>
-                  </div>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-3 py-2">
-                  <div className="text-sm font-medium">{user?.name}</div>
-                  <div className="text-xs text-gray-500">{user?.email}</div>
-                  {user?.role && (
-                    <Badge className={`mt-1 text-xs ${getRoleColor(user.role)}`}>
-                      {user.role.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  )}
-                </div>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-1">
+                    <div className="font-medium text-gray-900">{user?.name}</div>
+                    <div className="text-xs text-gray-500 font-normal">{user?.email}</div>
+                    {user?.role && (
+                      <Badge className={`${getRoleColor(user.role)} mt-1 w-fit text-xs`}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                    )}
+                    {user?.organization && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {user.organization.name}
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center gap-2">
+                  <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
                     <User className="w-4 h-4" />
                     Profile Settings
                   </Link>
                 </DropdownMenuItem>
                 {user?.role === 'org_admin' && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/organization/setup" className="flex items-center gap-2">
-                      <Settings className="w-4 h-4" />
-                      Organization Settings
-                    </Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/organization/setup" className="flex items-center gap-2 cursor-pointer">
+                        <Settings className="w-4 h-4" />
+                        Organization Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/organization/users" className="flex items-center gap-2 cursor-pointer">
+                        <Users className="w-4 h-4" />
+                        Manage Users
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {user?.role === 'super_admin' && (
                   <DropdownMenuItem asChild>
-                    <Link href="/admin" className="flex items-center gap-2">
+                    <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
                       <Shield className="w-4 h-4" />
                       System Administration
                     </Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
@@ -340,17 +285,21 @@ export default function Navigation({ user }: NavigationProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              <Menu className="w-5 h-5" />
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="lg:hidden py-4 border-t">
             <div className="space-y-1">
               {visibleItems.map((item) => {
                 const Icon = item.icon;
@@ -362,34 +311,20 @@ export default function Navigation({ user }: NavigationProps) {
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                      isActive
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}>
+                    <div
+                      className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <Icon className="w-5 h-5" />
-                      <div>
-                        <div className="font-medium">{item.title}</div>
-                        {item.description && (
-                          <div className="text-xs text-gray-500">{item.description}</div>
-                        )}
-                      </div>
+                      <span className="text-sm font-medium">{item.title}</span>
                     </div>
                   </Link>
                 );
               })}
             </div>
-
-            {/* Mobile Organization Info */}
-            {user?.organization && (
-              <div className="mt-4 pt-4 border-t">
-                <div className="px-3 py-2">
-                  <div className="text-sm font-medium text-gray-900">Organization</div>
-                  <div className="text-sm text-gray-600">{user.organization.name}</div>
-                  <div className="text-xs text-gray-500">{user.organization.domain}</div>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

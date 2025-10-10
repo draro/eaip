@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Navigation from '@/components/Navigation';
 import { Search, FileText, Clock, CheckCircle2, Filter, Tag, X } from 'lucide-react';
 
 interface ChecklistTemplate {
@@ -153,11 +154,13 @@ export default function ATCDashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">ATC Dashboard</h1>
-        <p className="text-gray-600">Manage your checklists and track progress</p>
-      </div>
+    <>
+      <Navigation user={session?.user as any} />
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">ATC Dashboard</h1>
+          <p className="text-gray-600">Manage your checklists and track progress</p>
+        </div>
 
       <div className="mb-6 space-y-4">
         <div className="flex gap-4 items-center">
@@ -346,6 +349,7 @@ export default function ATCDashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

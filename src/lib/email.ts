@@ -135,6 +135,183 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendReviewRequestEmail(data: {
+    reviewerEmail: string;
+    reviewerName: string;
+    requesterName: string;
+    documentTitle: string;
+    documentLink: string;
+    organizationName: string;
+  }): Promise<boolean> {
+    try {
+      // For now, use generic email webhook
+      // In production, you'd have a specific template for reviews
+      const webhookUrl = this.getWebhookUrl();
+
+      const payload = {
+        emailTo: data.reviewerEmail,
+        subject: `Review Requested: ${data.documentTitle}`,
+        name: data.reviewerName,
+        message: `${data.requesterName} has requested your review for "${data.documentTitle}". Please review at your earliest convenience.`,
+        link: data.documentLink,
+        organization: data.organizationName
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const success = response.ok;
+      if (success) {
+        console.log('Review request email sent to:', SecurityUtils.sanitizeLogInput(data.reviewerEmail));
+      }
+      return success;
+    } catch (error) {
+      console.error('Failed to send review request email:', error);
+      return false;
+    }
+  }
+
+  async sendApprovalRequestEmail(data: {
+    approverEmail: string;
+    approverName: string;
+    requesterName: string;
+    documentTitle: string;
+    documentLink: string;
+    organizationName: string;
+  }): Promise<boolean> {
+    try {
+      const webhookUrl = this.getWebhookUrl();
+
+      const payload = {
+        emailTo: data.approverEmail,
+        subject: `Approval Requested: ${data.documentTitle}`,
+        name: data.approverName,
+        message: `${data.requesterName} has requested your approval for "${data.documentTitle}". Please review and approve at your earliest convenience.`,
+        link: data.documentLink,
+        organization: data.organizationName
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const success = response.ok;
+      if (success) {
+        console.log('Approval request email sent to:', SecurityUtils.sanitizeLogInput(data.approverEmail));
+      }
+      return success;
+    } catch (error) {
+      console.error('Failed to send approval request email:', error);
+      return false;
+    }
+  }
+
+  async sendReviewCompletedEmail(data: {
+    recipientEmail: string;
+    recipientName: string;
+    reviewerName: string;
+    documentTitle: string;
+    documentLink: string;
+    status: 'approved' | 'rejected';
+    comments?: string;
+  }): Promise<boolean> {
+    try {
+      const webhookUrl = this.getWebhookUrl();
+
+      const statusText = status === 'approved' ? 'approved' : 'rejected';
+      const payload = {
+        emailTo: data.recipientEmail,
+        subject: `Review ${statusText}: ${data.documentTitle}`,
+        name: data.recipientName,
+        message: `${data.reviewerName} has ${statusText} your document "${data.documentTitle}"${data.comments ? `. Comments: ${data.comments}` : ''}`,
+        link: data.documentLink,
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to send review completed email:', error);
+      return false;
+    }
+  }
+
+  async sendApprovalCompletedEmail(data: {
+    recipientEmail: string;
+    recipientName: string;
+    approverName: string;
+    documentTitle: string;
+    documentLink: string;
+    status: 'approved' | 'rejected';
+    comments?: string;
+  }): Promise<boolean> {
+    try {
+      const webhookUrl = this.getWebhookUrl();
+
+      const statusText = status === 'approved' ? 'approved' : 'rejected';
+      const payload = {
+        emailTo: data.recipientEmail,
+        subject: `Approval ${statusText}: ${data.documentTitle}`,
+        name: data.recipientName,
+        message: `${data.approverName} has ${statusText} your document "${data.documentTitle}"${data.comments ? `. Comments: ${data.comments}` : ''}`,
+        link: data.documentLink,
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to send approval completed email:', error);
+      return false;
+    }
+  }
+
+  async sendChecklistCompletedEmail(data: {
+    recipientEmail: string;
+    recipientName: string;
+    completedBy: string;
+    documentTitle: string;
+    documentLink: string;
+    organizationName: string;
+  }): Promise<boolean> {
+    try {
+      const webhookUrl = this.getWebhookUrl();
+
+      const payload = {
+        emailTo: data.recipientEmail,
+        subject: `Checklist Completed: ${data.documentTitle}`,
+        name: data.recipientName,
+        message: `${data.completedBy} has completed the checklist "${data.documentTitle}". All required items have been checked off.`,
+        link: data.documentLink,
+        organization: data.organizationName
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to send checklist completed email:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

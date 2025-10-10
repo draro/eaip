@@ -161,6 +161,34 @@ export function initializeWebSocketServer(httpServer: HTTPServer) {
       }
     });
 
+    // Checkbox toggle in checklist
+    socket.on('checkbox-toggle', (data: {
+      documentId: string;
+      itemId: string;
+      checked: boolean;
+      checkedBy: { userId: string; userName: string; userEmail: string };
+      checkedAt: string;
+    }) => {
+      const { documentId, itemId, checked, checkedBy, checkedAt } = data;
+      const presences = documentPresences.get(documentId);
+
+      if (presences && presences.has(socket.id)) {
+        const presence = presences.get(socket.id)!;
+        presence.lastActivity = Date.now();
+
+        // Broadcast checkbox toggle to all others in the room
+        socket.to(`document:${documentId}`).emit('checkbox-toggled', {
+          itemId,
+          checked,
+          checkedBy,
+          checkedAt,
+          timestamp: Date.now(),
+        });
+
+        console.log(`Checkbox ${itemId} ${checked ? 'checked' : 'unchecked'} by ${checkedBy.userName} in document ${documentId}`);
+      }
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);

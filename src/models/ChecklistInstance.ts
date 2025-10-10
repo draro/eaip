@@ -17,6 +17,8 @@ export interface IChecklistInstance extends Document {
   organization: mongoose.Types.ObjectId;
   items: IChecklistInstanceItem[];
   status: 'in_progress' | 'completed';
+  reviewStatus: 'not_requested' | 'pending' | 'reviewed' | 'rejected';
+  approvalStatus: 'not_requested' | 'pending' | 'approved' | 'rejected';
   initiatedBy: mongoose.Types.ObjectId;
   initiatedAt: Date;
   completedAt?: Date;
@@ -24,6 +26,10 @@ export interface IChecklistInstance extends Document {
   gitCommitHash?: string;
   createdAt: Date;
   updatedAt: Date;
+  isFullyReviewed(): Promise<boolean>;
+  isFullyApproved(): Promise<boolean>;
+  updateReviewStatus(): Promise<void>;
+  updateApprovalStatus(): Promise<void>;
 }
 
 const ChecklistInstanceItemSchema = new Schema<IChecklistInstanceItem>(
@@ -75,6 +81,18 @@ const ChecklistInstanceSchema = new Schema<IChecklistInstance>(
       type: String,
       enum: ['in_progress', 'completed'],
       default: 'in_progress',
+      index: true,
+    },
+    reviewStatus: {
+      type: String,
+      enum: ['not_requested', 'pending', 'reviewed', 'rejected'],
+      default: 'not_requested',
+      index: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['not_requested', 'pending', 'approved', 'rejected'],
+      default: 'not_requested',
       index: true,
     },
     initiatedBy: {
@@ -131,6 +149,92 @@ ChecklistInstanceSchema.methods.checkAndUpdateStatus = function () {
     return true;
   }
   return false;
+};
+
+ChecklistInstanceSchema.methods.isFullyReviewed = async function (): Promise<boolean> {
+  const DocumentReview = mongoose.models.DocumentReview || mongoose.model('DocumentReview');
+
+  const reviews = await DocumentReview.find({
+    document: this._id,
+    documentType: 'checklist_instance',
+  });
+
+  if (reviews.length === 0) {
+    return false;
+  }
+
+  return reviews.every((review: any) => review.status === 'approved');
+};
+
+ChecklistInstanceSchema.methods.isFullyApproved = async function (): Promise<boolean> {
+  const DocumentApproval = mongoose.models.DocumentApproval || mongoose.model('DocumentApproval');
+
+  const approvals = await DocumentApproval.find({
+    document: this._id,
+    documentType: 'checklist_instance',
+  });
+
+  if (approvals.length === 0) {
+    return false;
+  }
+
+  return approvals.every((approval: any) => approval.status === 'approved');
+};
+
+ChecklistInstanceSchema.methods.updateReviewStatus = async function (): Promise<void> {
+  const DocumentReview = mongoose.models.DocumentReview || mongoose.model('DocumentReview');
+
+  const reviews = await DocumentReview.find({
+    document: this._id,
+    documentType: 'checklist_instance',
+  });
+
+  if (reviews.length === 0) {
+    this.reviewStatus = 'not_requested';
+    return;
+  }
+
+  const hasRejected = reviews.some((review: any) => review.status === 'rejected');
+  if (hasRejected) {
+    this.reviewStatus = 'rejected';
+    return;
+  }
+
+  const allApproved = reviews.every((review: any) => review.status === 'approved');
+  if (allApproved) {
+    this.reviewStatus = 'reviewed';
+    return;
+  }
+
+  this.reviewStatus = 'pending';
+};
+
+ChecklistInstanceSchema.methods.updateApprovalStatus = async function (): Promise<void> {
+  const DocumentApproval = mongoose.models.DocumentApproval || mongoose.model('DocumentApproval');
+
+  const approvals = await DocumentApproval.find({
+    document: this._id,
+    documentType: 'checklist_instance',
+  });
+
+  if (approvals.length === 0) {
+    this.approvalStatus = 'not_requested';
+    return;
+  }
+
+  const hasRejected = approvals.some((approval: any) => approval.status === 'rejected');
+  if (hasRejected) {
+    this.approvalStatus = 'rejected';
+    return;
+  }
+
+  const allApproved = approvals.every((approval: any) => approval.status === 'approved');
+  if (allApproved) {
+    this.approvalStatus = 'approved';
+    return;
+  }
+
+  this.approvalStatus = 'pending';
 };
 
 export default mongoose.models.ChecklistInstance ||

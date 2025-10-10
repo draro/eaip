@@ -21,6 +21,7 @@ export const GET = withAuth(async (request: NextRequest, { user }: { user: any }
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || '';
+    const roles = searchParams.get('roles') || '';
     const organization = searchParams.get('organization') || '';
     const active = searchParams.get('active');
 
@@ -38,6 +39,11 @@ export const GET = withAuth(async (request: NextRequest, { user }: { user: any }
 
     if (role) {
       query.role = role;
+    }
+
+    if (roles) {
+      const rolesList = roles.split(',');
+      query.role = { $in: rolesList };
     }
 
     if (organization) {
@@ -92,6 +98,15 @@ export const GET = withAuth(async (request: NextRequest, { user }: { user: any }
 
     // Log access
     DataIsolationService.logAccess(user, 'users', 'read', true);
+
+    // Support both old and new response format
+    if (limit === 10000) {
+      // Simple list format for modals
+      return NextResponse.json({
+        success: true,
+        users
+      });
+    }
 
     return NextResponse.json({
       success: true,
