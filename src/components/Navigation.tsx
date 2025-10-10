@@ -38,7 +38,7 @@ interface NavigationProps {
   user?: {
     name: string;
     email: string;
-    role: 'super_admin' | 'org_admin' | 'editor' | 'viewer';
+    role: 'super_admin' | 'org_admin' | 'atc_supervisor' | 'atc' | 'editor' | 'viewer';
     organization?: {
       name: string;
       domain: string;
@@ -64,9 +64,9 @@ export default function Navigation({ user }: NavigationProps) {
   const navigationItems: NavItem[] = [
     {
       title: 'Dashboard',
-      href: user?.role === 'super_admin' ? '/admin' : '/dashboard',
+      href: user?.role === 'super_admin' ? '/admin' : (user?.role === 'atc' || user?.role === 'atc_supervisor') ? '/atc-dashboard' : '/dashboard',
       icon: BarChart3,
-      roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+      roles: ['super_admin', 'org_admin', 'atc_supervisor', 'atc', 'editor', 'viewer']
     },
     // Document management
     {
@@ -99,6 +99,22 @@ export default function Navigation({ user }: NavigationProps) {
       icon: GitBranch,
       description: 'Approval workflows',
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    // Checklists (for ATC and supervisors)
+    {
+      title: 'Checklists',
+      href: '/atc-dashboard',
+      icon: FileText,
+      description: 'Checklist management',
+      roles: ['atc', 'atc_supervisor', 'org_admin']
+    },
+    // Create Template (for org_admin and atc_supervisor)
+    {
+      title: 'Create Template',
+      href: '/checklists/templates/create',
+      icon: PlusCircle,
+      description: 'Create checklist template',
+      roles: ['org_admin', 'atc_supervisor']
     },
     // Compliance
     {
@@ -135,6 +151,8 @@ export default function Navigation({ user }: NavigationProps) {
     switch (role) {
       case 'super_admin': return 'bg-red-100 text-red-800';
       case 'org_admin': return 'bg-purple-100 text-purple-800';
+      case 'atc_supervisor': return 'bg-orange-100 text-orange-800';
+      case 'atc': return 'bg-cyan-100 text-cyan-800';
       case 'editor': return 'bg-blue-100 text-blue-800';
       case 'viewer': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
