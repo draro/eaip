@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadImageToLocal, validateImageFile } from '@/lib/imageUpload';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
+import { fileStorage } from '@/lib/fileStorage';
 import connectDB from '@/lib/mongodb';
 import AIPDocument from '@/models/AIPDocument';
+import User from '@/models/User';
 import { getOrCreateDefaultUser } from '@/lib/defaultUser';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const documentId = formData.get('documentId') as string;
-    const uploadedBy = formData.get('uploadedBy') as string;
+    const fileType = formData.get('fileType') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -18,7 +23,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validation = validateImageFile(file);
+    const validation = fileType === 'document'
+      ? fileStorage.validateDocumentFile(file)
+      : fileStorage.validateImageFile(file);
+
     if (!validation.valid) {
       return NextResponse.json(
         { success: false, error: validation.error },
@@ -26,16 +34,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadResult = await uploadImageToLocal(file);
+    const subDir = fileType === 'logo' ? 'logos' : undefined;
+    const uploadResult = await fileStorage.uploadFile(file, subDir);
 
     if (documentId) {
       await connectDB();
-      // Get or create a default user if uploadedBy is not provided
-      const userId = uploadedBy && uploadedBy !== 'default-user' ? uploadedBy : await getOrCreateDefaultUser();
+
+      let userId;
+      if (session?.user?.id) {
+        userId = session.user.id;
+      } else {
+        userId = await getOrCreateDefaultUser();
+      }
 
       const imageData = {
         ...uploadResult,
-        uploadedAt: new Date(),
         uploadedBy: userId,
       };
 
