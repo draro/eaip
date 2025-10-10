@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VersionHistoryViewer from '@/components/VersionHistoryViewer';
+import ReviewApprovalPanel from '@/components/ReviewApprovalPanel';
+import ActionLogsViewer from '@/components/ActionLogsViewer';
 import {
   CheckCircle2,
   Clock,
@@ -20,6 +22,8 @@ import {
   Calendar,
   GitBranch,
   MessageSquare,
+  Shield,
+  Activity,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -366,7 +370,7 @@ export default function ChecklistViewerPage({ params }: { params: { id: string }
       </Card>
 
       <Tabs defaultValue="notes" className="mb-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="notes">
             <MessageSquare className="h-4 w-4 mr-2" />
             Notes
@@ -374,6 +378,14 @@ export default function ChecklistViewerPage({ params }: { params: { id: string }
           <TabsTrigger value="history">
             <GitBranch className="h-4 w-4 mr-2" />
             Version History
+          </TabsTrigger>
+          <TabsTrigger value="review">
+            <Shield className="h-4 w-4 mr-2" />
+            Review
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            <Activity className="h-4 w-4 mr-2" />
+            Activity Log
           </TabsTrigger>
         </TabsList>
 
@@ -400,6 +412,17 @@ export default function ChecklistViewerPage({ params }: { params: { id: string }
             documentType="checklist_instance"
             onRestore={fetchInstance}
           />
+        </TabsContent>
+
+        <TabsContent value="review">
+          <ReviewApprovalPanel
+            documentId={params.id}
+            onReviewSubmitted={fetchInstance}
+          />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <ActionLogsViewer checklistInstanceId={params.id} />
         </TabsContent>
       </Tabs>
     </div>

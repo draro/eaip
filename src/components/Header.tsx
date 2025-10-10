@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import NotificationBell from '@/components/NotificationBell';
 import { Book, User, LogOut, Settings, Radio } from 'lucide-react';
 
 interface HeaderProps {
@@ -60,6 +61,7 @@ export default function Header({ currentPage = 'home' }: HeaderProps) {
           <div className="flex items-center space-x-4">
             {session ? (
               <>
+                <NotificationBell />
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm">
