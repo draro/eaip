@@ -343,15 +343,15 @@ export default function DomainConfiguration({
 
             {domains.map((domain) => (
               <Card key={domain._id} className="border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-3">
                         <h5 className="font-semibold text-lg">{domain.domain}</h5>
                         {getStatusIcon(domain.isVerified)}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         {getStatusBadge(domain.isVerified)}
                         {getSSLBadge(domain.sslStatus)}
                         <Badge variant="outline">
@@ -360,12 +360,17 @@ export default function DomainConfiguration({
                       </div>
 
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>Added: {new Date(domain.createdAt).toLocaleDateString()}</p>
+                        <p>Added: {new Date(domain.createdAt).toLocaleDateString('en-US', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}</p>
                         {domain.verifiedAt && (
-                          <p>Verified: {new Date(domain.verifiedAt).toLocaleDateString()}</p>
-                        )}
-                        {domain.lastCheckedAt && (
-                          <p>Last checked: {new Date(domain.lastCheckedAt).toLocaleDateString()}</p>
+                          <p>Last checked: {new Date(domain.lastCheckedAt || domain.updatedAt).toLocaleDateString('en-US', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}</p>
                         )}
                       </div>
 
@@ -384,15 +389,16 @@ export default function DomainConfiguration({
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-2 ml-4">
+                    <div className="flex flex-col gap-2 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleVerifyDomain(domain._id)}
                         disabled={verifying === domain._id}
+                        className="w-28"
                       >
                         {verifying === domain._id ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
                           'Verify'
                         )}
@@ -403,9 +409,10 @@ export default function DomainConfiguration({
                         size="sm"
                         onClick={() => handleCheckDNS(domain.domain)}
                         disabled={checking}
+                        className="w-28"
                       >
                         {checking ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
                           'Check DNS'
                         )}
@@ -415,14 +422,15 @@ export default function DomainConfiguration({
                         variant="outline"
                         size="sm"
                         asChild
+                        className="w-28"
                       >
                         <a
                           href={`https://${domain.domain}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1"
+                          className="flex items-center justify-center gap-1"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-4 h-4" />
                         </a>
                       </Button>
 
@@ -430,9 +438,9 @@ export default function DomainConfiguration({
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteDomain(domain._id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 w-28"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>

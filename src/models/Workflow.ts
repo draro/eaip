@@ -12,6 +12,8 @@ export interface IWorkflowStep {
   autoApprove?: boolean;
   requiresComment?: boolean;
   position?: { x: number; y: number }; // Visual position in workflow builder
+  airacDeadline?: 'initial_submission' | 'final_submission' | 'review' | 'publication' | 'effective'; // AIRAC deadline alignment
+  daysBeforeEffective?: number; // Days before AIRAC effective date this step should complete
 }
 
 export interface IWorkflow extends Document {
@@ -22,6 +24,7 @@ export interface IWorkflow extends Document {
   isActive: boolean;
   documentTypes: ('AIP' | 'GEN' | 'ENR' | 'AD' | 'SUPPLEMENT' | 'NOTAM')[];
   steps: IWorkflowStep[];
+  airacAligned: boolean; // Whether this workflow follows AIRAC deadlines
   createdBy: mongoose.Types.ObjectId;
   updatedBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -54,7 +57,12 @@ const WorkflowStepSchema = new Schema<IWorkflowStep>({
       y: { type: Number }
     },
     required: false
-  }
+  },
+  airacDeadline: {
+    type: String,
+    enum: ['initial_submission', 'final_submission', 'review', 'publication', 'effective']
+  },
+  daysBeforeEffective: { type: Number }
 }, { _id: false });
 
 const WorkflowSchema = new Schema<IWorkflow>({
@@ -95,6 +103,10 @@ const WorkflowSchema = new Schema<IWorkflow>({
       },
       message: 'Workflow must have at least one step'
     }
+  },
+  airacAligned: {
+    type: Boolean,
+    default: false
   },
   createdBy: {
     type: Schema.Types.ObjectId,
@@ -221,6 +233,94 @@ export const DEFAULT_WORKFLOWS = {
         requiredRole: 'editor',
         allowedTransitions: ['draft'],
         requiresComment: false
+      }
+    ]
+  },
+
+  AIRAC: {
+    name: 'AIRAC-Aligned Workflow',
+    description: 'Workflow aligned with AIRAC cycle deadlines (77 days before effective)',
+    documentTypes: ['AIP', 'GEN', 'ENR', 'AD'],
+    airacAligned: true,
+    steps: [
+      {
+        id: 'draft',
+        name: 'Draft',
+        description: 'Initial document creation',
+        requiredRole: 'editor',
+        allowedTransitions: ['initial_submission'],
+        requiresComment: false,
+        daysBeforeEffective: 77,
+        airacDeadline: 'initial_submission'
+      },
+      {
+        id: 'initial_submission',
+        name: 'Initial Submission',
+        description: 'Submit for technical review (77 days before AIRAC effective)',
+        requiredRole: 'editor',
+        allowedTransitions: ['draft', 'technical_review'],
+        requiresComment: true,
+        daysBeforeEffective: 77,
+        airacDeadline: 'initial_submission'
+      },
+      {
+        id: 'technical_review',
+        name: 'Technical Review',
+        description: 'Technical accuracy verification',
+        requiredRole: 'editor',
+        allowedTransitions: ['initial_submission', 'final_submission'],
+        requiresComment: true,
+        daysBeforeEffective: 70
+      },
+      {
+        id: 'final_submission',
+        name: 'Final Submission',
+        description: 'Final submission for approval (70 days before AIRAC effective)',
+        requiredRole: 'admin',
+        allowedTransitions: ['technical_review', 'regulatory_review'],
+        requiresComment: true,
+        daysBeforeEffective: 70,
+        airacDeadline: 'final_submission'
+      },
+      {
+        id: 'regulatory_review',
+        name: 'Regulatory Review',
+        description: 'ICAO compliance check (63 days before AIRAC effective)',
+        requiredRole: 'admin',
+        allowedTransitions: ['final_submission', 'publication_ready'],
+        requiresComment: true,
+        daysBeforeEffective: 63,
+        airacDeadline: 'review'
+      },
+      {
+        id: 'publication_ready',
+        name: 'Publication Ready',
+        description: 'Ready for publication (56 days before AIRAC effective)',
+        requiredRole: 'admin',
+        allowedTransitions: ['regulatory_review', 'published'],
+        requiresComment: true,
+        daysBeforeEffective: 56,
+        airacDeadline: 'publication'
+      },
+      {
+        id: 'published',
+        name: 'Published',
+        description: 'Document published (awaiting AIRAC effective date)',
+        requiredRole: 'admin',
+        allowedTransitions: ['effective'],
+        requiresComment: true,
+        daysBeforeEffective: 0,
+        airacDeadline: 'effective'
+      },
+      {
+        id: 'effective',
+        name: 'Effective',
+        description: 'Document is now effective per AIRAC cycle',
+        requiredRole: 'admin',
+        allowedTransitions: ['draft'],
+        requiresComment: false,
+        daysBeforeEffective: 0,
+        airacDeadline: 'effective'
       }
     ]
   }
