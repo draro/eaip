@@ -41,18 +41,18 @@ export default function NewDocumentPage() {
   const [documentType, setDocumentType] = useState('AIP');
   const [country, setCountry] = useState('');
   const [airport, setAirport] = useState('');
-  const [versionId, setVersionId] = useState('');
+  const [airacCycle, setAiracCycle] = useState('');
   const [organizationId, setOrganizationId] = useState('');
-  const [versions, setVersions] = useState<Version[]>([]);
+  const [airacCycles, setAiracCycles] = useState<any[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [userRole, setUserRole] = useState<string>((session?.user as any)?.role || 'viewer');
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [useAI, setUseAI] = useState(false);
-  const [previousVersionId, setPreviousVersionId] = useState('');
+  const [previousAiracCycle, setPreviousAiracCycle] = useState('');
 
   useEffect(() => {
-    fetchVersions();
+    fetchAiracCycles();
     if (session?.user) {
       const role = (session.user as any)?.role || 'viewer';
       setUserRole(role);
@@ -62,18 +62,20 @@ export default function NewDocumentPage() {
     }
   }, [session]);
 
-  const fetchVersions = async () => {
+  const fetchAiracCycles = async () => {
     try {
-      const response = await fetch('/api/versions');
+      const currentYear = new Date().getFullYear();
+      const response = await fetch(`/api/airac?action=year&year=${currentYear}`);
       const result = await response.json();
       if (result.success) {
-        setVersions(result.data);
-        if (result.data.length > 0) {
-          setVersionId(result.data[0]._id);
+        const cycles = result.data || [];
+        setAiracCycles(cycles);
+        if (cycles.length > 0) {
+          setAiracCycle(cycles[0].airacCycle);
         }
       }
     } catch (error) {
-      console.error('Error fetching versions:', error);
+      console.error('Error fetching AIRAC cycles:', error);
     }
   };
 
@@ -98,8 +100,8 @@ export default function NewDocumentPage() {
   };
 
   const handleCreate = async () => {
-    if (!title || !documentType || !country || !versionId) {
-      alert('Please fill in all required fields: title, document type, country, and version');
+    if (!title || !documentType || !country || !airacCycle) {
+      alert('Please fill in all required fields: title, document type, country, and AIRAC cycle');
       return;
     }
 
@@ -118,14 +120,14 @@ export default function NewDocumentPage() {
       return;
     }
 
-    if (useAI && !previousVersionId) {
-      alert('Please select a previous version to build from when using AI assistance');
+    if (useAI && !previousAiracCycle) {
+      alert('Please select a previous AIRAC cycle to build from when using AI assistance');
       return;
     }
 
     setCreating(true);
     try {
-      if (useAI && previousVersionId) {
+      if (useAI && previousAiracCycle) {
         // Show progress message for AI creation
         console.log('🤖 AI is analyzing and creating document... This may take 30-60 seconds.');
 
@@ -135,9 +137,9 @@ export default function NewDocumentPage() {
           documentType,
           country: country.toUpperCase(),
           airport: airport?.toUpperCase() || undefined,
-          versionId,
-          previousVersionId,
-          effectiveDate: versions.find(v => v._id === versionId)?.effectiveDate,
+          airacCycle,
+          previousAiracCycle,
+          effectiveDate: airacCycles.find(c => c.airacCycle === airacCycle)?.effectiveDate,
         };
 
         if (userRole === 'super_admin' && organizationId) {
@@ -183,8 +185,8 @@ export default function NewDocumentPage() {
           country: country.toUpperCase(),
           airport: airport?.toUpperCase() || undefined,
           sections: [],
-          versionId,
-          effectiveDate: versions.find(v => v._id === versionId)?.effectiveDate,
+          airacCycle,
+          effectiveDate: airacCycles.find(c => c.airacCycle === airacCycle)?.effectiveDate,
         };
 
         if (userRole === 'super_admin' && organizationId) {
@@ -343,35 +345,36 @@ export default function NewDocumentPage() {
             </div>
 
             <div>
-              <Label htmlFor="version">AIP Version *</Label>
+              <Label htmlFor="airacCycle">AIRAC Cycle *</Label>
               <select
-                id="version"
-                value={versionId}
-                onChange={(e) => setVersionId(e.target.value)}
+                id="airacCycle"
+                value={airacCycle}
+                onChange={(e) => setAiracCycle(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md"
                 required
               >
-                <option value="">Select Version</option>
-                {versions.map((version) => (
-                  <option key={version._id} value={version._id}>
-                    {version.versionNumber} - AIRAC {version.airacCycle} - {version.status}
-                    ({new Date(version.effectiveDate).toLocaleDateString()})
+                <option value="">Select AIRAC Cycle</option>
+                {airacCycles.map((cycle) => (
+                  <option key={cycle.airacCycle} value={cycle.airacCycle}>
+                    {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
                   </option>
                 ))}
               </select>
-              {versions.length === 0 && (
+              {airacCycles.length === 0 && (
                 <p className="text-sm text-red-600 mt-1">
-                  No versions found. Please create a version first.
+                  Loading AIRAC cycles...
                 </p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                Select the AIRAC cycle for this document
+              </p>
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-medium text-blue-900 mb-2">Version Status Information</h3>
+              <h3 className="font-medium text-blue-900 mb-2">AIRAC Cycle Information</h3>
               <p className="text-sm text-blue-700">
-                You can create documents under any version (draft, active, or archived).
-                Note: New versions are created as "draft" by default. You can activate them
-                from the Versions page when ready.
+                AIRAC cycles represent publication periods. Select the cycle when this document should become effective.
+                Documents created will start as "draft" and can be published when ready.
               </p>
             </div>
 
@@ -443,27 +446,27 @@ export default function NewDocumentPage() {
 
                   {useAI && (
                     <div>
-                      <Label htmlFor="previousVersion" className="text-purple-900">
-                        Previous Version to Build From *
+                      <Label htmlFor="previousAiracCycle" className="text-purple-900">
+                        Previous AIRAC Cycle to Build From *
                       </Label>
                       <select
-                        id="previousVersion"
-                        value={previousVersionId}
-                        onChange={(e) => setPreviousVersionId(e.target.value)}
+                        id="previousAiracCycle"
+                        value={previousAiracCycle}
+                        onChange={(e) => setPreviousAiracCycle(e.target.value)}
                         className="w-full p-2 border border-purple-300 rounded-md bg-white"
                         required
                       >
-                        <option value="">Select Previous Version</option>
-                        {versions
-                          .filter(v => v._id !== versionId)
-                          .map((version) => (
-                            <option key={version._id} value={version._id}>
-                              {version.versionNumber} - AIRAC {version.airacCycle} - {version.status}
+                        <option value="">Select Previous AIRAC Cycle</option>
+                        {airacCycles
+                          .filter(c => c.airacCycle !== airacCycle)
+                          .map((cycle) => (
+                            <option key={cycle.airacCycle} value={cycle.airacCycle}>
+                              {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
                             </option>
                           ))}
                       </select>
                       <p className="text-xs text-purple-600 mt-1">
-                        AI will analyze documents from this version and create updated content for the selected version
+                        AI will analyze documents from this AIRAC cycle and create updated content for the selected cycle
                       </p>
                     </div>
                   )}
@@ -477,7 +480,7 @@ export default function NewDocumentPage() {
               </Link>
               <Button
                 onClick={handleCreate}
-                disabled={creating || !title || !documentType || !country || !versionId || (useAI && !previousVersionId)}
+                disabled={creating || !title || !documentType || !country || !airacCycle || (useAI && !previousAiracCycle)}
                 className={`min-w-[180px] ${useAI ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
               >
                 {creating ? (
