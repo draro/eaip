@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import VersionHistoryViewer from '@/components/VersionHistoryViewer';
 import {
   CheckCircle2,
   Clock,
@@ -15,7 +17,9 @@ import {
   AlertCircle,
   ArrowLeft,
   User,
-  Calendar
+  Calendar,
+  GitBranch,
+  MessageSquare,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -361,20 +365,43 @@ export default function ChecklistViewerPage({ params }: { params: { id: string }
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Add your notes here... (autosaved every 30 seconds)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={6}
-            className="resize-none"
+      <Tabs defaultValue="notes" className="mb-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="notes">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Notes
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <GitBranch className="h-4 w-4 mr-2" />
+            Version History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Add your notes here... (autosaved every 30 seconds)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={6}
+                className="resize-none"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <VersionHistoryViewer
+            documentId={params.id}
+            documentType="checklist_instance"
+            onRestore={fetchInstance}
           />
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

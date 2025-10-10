@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import ChecklistInstance from '@/models/ChecklistInstance';
 import User from '@/models/User';
 import DocumentActionLog from '@/models/DocumentActionLog';
+import { gitDocumentService } from '@/lib/gitDocumentService';
 
 export async function GET(
   req: NextRequest,
@@ -163,6 +164,26 @@ export async function PATCH(
       },
       timestamp: new Date(),
     });
+
+    const organization = await user.populate('organization');
+    if (organization.organization?.hasFeature('git_versioning')) {
+      try {
+        await gitDocumentService.autoCommitChecklistChange(
+          instance._id.toString(),
+          user._id.toString(),
+          user.name,
+          user.email,
+          user.organization.toString(),
+          completed ? 'checkbox_ticked' : 'checkbox_unticked',
+          {
+            itemId: itemId,
+            itemText: item.text,
+          }
+        );
+      } catch (gitError) {
+        console.error('Git auto-commit failed:', gitError);
+      }
+    }
 
     const updatedInstance = await ChecklistInstance.findById(instance._id)
       .populate('template', 'title description')
