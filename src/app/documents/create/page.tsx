@@ -192,8 +192,18 @@ export default function CreateDocumentPage() {
     e.preventDefault();
 
     if (cloneMode) {
-      if (!selectedSourceDocument || !formData.targetAiracCycle) {
-        setError('Please select a source document and target AIRAC cycle');
+      if (!selectedSourceDocument || !formData.targetAiracCycle || !formData.title || !formData.documentType || !formData.country) {
+        setError('Please fill in all required fields: source document, AIRAC cycle, title, document type, and country');
+        return;
+      }
+
+      if (formData.country.length !== 2) {
+        setError('Country code must be a 2-letter ICAO code (e.g., US, GB, IT)');
+        return;
+      }
+
+      if (formData.airport && formData.airport.length !== 4) {
+        setError('Airport code must be a 4-letter ICAO code (e.g., KJFK, EGLL, LIRF)');
         return;
       }
 
@@ -381,6 +391,13 @@ export default function CreateDocumentPage() {
                 {cloneMode ? (
                   <>
                     {/* Clone Mode Fields */}
+                    <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200 mb-6">
+                      <h3 className="font-medium text-blue-900 mb-2">Clone Document for New AIRAC Cycle</h3>
+                      <p className="text-sm text-blue-700">
+                        Select a source document and customize it for a new AIRAC cycle. All content will be copied and you can modify the details below.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="sourceDocument">Source Document *</Label>
                       <Select
@@ -389,7 +406,13 @@ export default function CreateDocumentPage() {
                           setSelectedSourceDocument(value);
                           const doc = documents.find(d => d._id === value);
                           if (doc) {
-                            setFormData(prev => ({ ...prev, title: doc.title }));
+                            setFormData(prev => ({
+                              ...prev,
+                              title: doc.title,
+                              documentType: doc.documentType,
+                              country: doc.country,
+                              airport: doc.airport || ''
+                            }));
                           }
                         }}
                         required
@@ -410,41 +433,93 @@ export default function CreateDocumentPage() {
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="targetAiracCycle">Target AIRAC Cycle *</Label>
-                      <Select
-                        value={formData.targetAiracCycle}
-                        onValueChange={(value) => handleInputChange('targetAiracCycle', value)}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select AIRAC cycle" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {airacCycles.map((cycle) => (
-                            <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
-                              {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-gray-500">
-                        Select when this document should become effective
-                      </p>
-                    </div>
+                    {selectedSourceDocument && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Document Title *</Label>
+                          <Input
+                            id="title"
+                            placeholder="e.g., Italy AIP, Rome Fiumicino Airport"
+                            value={formData.title}
+                            onChange={(e) => handleInputChange('title', e.target.value)}
+                            required
+                          />
+                          <p className="text-xs text-gray-500">
+                            Customize the title for the cloned document
+                          </p>
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Document Title (Optional)</Label>
-                      <Input
-                        id="title"
-                        placeholder="Leave blank to use source document title"
-                        value={formData.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
-                      />
-                      <p className="text-xs text-gray-500">
-                        Optionally customize the title for the cloned document
-                      </p>
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="documentType">Document Type *</Label>
+                            <Select
+                              value={formData.documentType}
+                              onValueChange={(value) => handleInputChange('documentType', value)}
+                              required
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select document type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {documentTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country Code (ICAO) *</Label>
+                            <Input
+                              id="country"
+                              value={formData.country}
+                              onChange={(e) => handleInputChange('country', e.target.value.toUpperCase())}
+                              placeholder="e.g., IT, US, GB"
+                              maxLength={2}
+                              className="uppercase"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="airport">Airport Code (ICAO) - Optional</Label>
+                          <Input
+                            id="airport"
+                            value={formData.airport}
+                            onChange={(e) => handleInputChange('airport', e.target.value.toUpperCase())}
+                            placeholder="e.g., LIRF, KJFK, EGLL"
+                            maxLength={4}
+                            className="uppercase"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="targetAiracCycle">Target AIRAC Cycle *</Label>
+                          <Select
+                            value={formData.targetAiracCycle}
+                            onValueChange={(value) => handleInputChange('targetAiracCycle', value)}
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select AIRAC cycle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {airacCycles.map((cycle) => (
+                                <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
+                                  {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-gray-500">
+                            Select when this document should become effective
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -620,7 +695,7 @@ export default function CreateDocumentPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={loading || (cloneMode ? (!selectedSourceDocument || !formData.targetAiracCycle) : (!formData.title || !formData.documentType || !formData.country || !formData.versionId))}
+                      disabled={loading || (cloneMode ? (!selectedSourceDocument || !formData.targetAiracCycle || !formData.title || !formData.documentType || !formData.country) : (!formData.title || !formData.documentType || !formData.country || !formData.versionId))}
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">
