@@ -203,78 +203,103 @@ export default function Navigation({ user }: NavigationProps) {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {visibleItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActiveRoute(item.href);
+          {/* Desktop Navigation - Scrollable with More Menu */}
+          <div className="hidden md:flex items-center flex-1 mx-4 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center space-x-1">
+              {visibleItems.slice(0, 6).map((item) => {
+                const Icon = item.icon;
+                const isActive = isActiveRoute(item.href);
 
-              // Special handling for Organization menu if user is org_admin
-              if (item.title === 'Organization' && user?.role === 'org_admin') {
+                if (item.title === 'Organization' && user?.role === 'org_admin') {
+                  return (
+                    <DropdownMenu key="organization">
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant={isActive ? "default" : "ghost"}
+                          size="sm"
+                          className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium whitespace-nowrap ${
+                            isActive
+                              ? 'text-white hover:opacity-90'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                          style={isActive ? {
+                            backgroundColor: branding.primaryColor,
+                          } : {}}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="hidden lg:inline">{item.title}</span>
+                          <ChevronDown className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem asChild>
+                          <Link href="/organization/setup" className="flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
+                            Setup
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/organization/users" className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            Users
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/organization/analytics" className="flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4" />
+                            Analytics
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+
                 return (
-                  <DropdownMenu key="organization">
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant={isActive ? "default" : "ghost"}
-                        size="sm"
-                        className={`flex items-center gap-1 px-3 py-2 text-xs font-medium ${
-                          isActive
-                            ? 'text-white hover:opacity-90'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                        style={isActive ? {
-                          backgroundColor: branding.primaryColor,
-                        } : {}}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {item.title}
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem asChild>
-                        <Link href="/organization/setup" className="flex items-center gap-2">
-                          <Settings className="w-4 h-4" />
-                          Setup
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/organization/users" className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Users
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/organization/analytics" className="flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4" />
-                          Analytics
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Link key={item.href} href={item.href}>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium whitespace-nowrap ${
+                        isActive
+                          ? 'text-white hover:opacity-90'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      style={isActive ? {
+                        backgroundColor: branding.primaryColor,
+                      } : {}}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="hidden lg:inline">{item.title}</span>
+                    </Button>
+                  </Link>
                 );
-              }
+              })}
 
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    className={`flex items-center gap-1 px-3 py-2 text-xs font-medium ${
-                      isActive
-                        ? 'text-white hover:opacity-90'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    style={isActive ? {
-                      backgroundColor: branding.primaryColor,
-                    } : {}}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {item.title}
-                  </Button>
-                </Link>
-              );
-            })}
+              {visibleItems.length > 6 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="px-2 py-1.5">
+                      <Menu className="w-3.5 h-3.5" />
+                      <span className="ml-1 text-xs">More</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {visibleItems.slice(6).map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link href={item.href} className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            {item.title}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
 
           {/* User Menu */}
