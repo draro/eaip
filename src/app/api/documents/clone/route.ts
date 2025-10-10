@@ -87,7 +87,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       const effectiveDate = new Date(baseDate.getTime() + daysSinceStart * 24 * 60 * 60 * 1000);
 
       targetVersion = await AIPVersion.create({
-        versionNumber: targetAiracCycle,
+        versionNumber: `v${targetAiracCycle}`,
         airacCycle: targetAiracCycle,
         effectiveDate,
         status: 'draft',
@@ -120,8 +120,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
+    const defaultTitle = `${sourceDoc.title.replace(/\s+AIRAC\s+\d{4}(-\d{2})?/i, '').trim()} - AIRAC ${targetAiracCycle}`;
+
     const clonedDocData = {
-      title: title || sourceDoc.title,
+      title: title || defaultTitle,
       documentType: sourceDoc.documentType,
       country: sourceDoc.country,
       airport: sourceDoc.airport,

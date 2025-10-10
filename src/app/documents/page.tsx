@@ -98,6 +98,7 @@ export default function DocumentsPage() {
   const [showDiffDialog, setShowDiffDialog] = useState(false);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [cloneTargetAirac, setCloneTargetAirac] = useState('');
+  const [cloneTitle, setCloneTitle] = useState('');
   const [upcomingAiracCycles, setUpcomingAiracCycles] = useState<any[]>([]);
   const [cloningDocument, setCloningDocument] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'structure'>('list');
@@ -378,6 +379,7 @@ export default function DocumentsPage() {
   const handleCloneDocument = (document: Document) => {
     setSelectedDocument(document);
     setCloneTargetAirac('');
+    setCloneTitle('');
     setShowCloneDialog(true);
   };
 
@@ -394,7 +396,8 @@ export default function DocumentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           documentId: selectedDocument._id,
-          targetAiracCycle: cloneTargetAirac
+          targetAiracCycle: cloneTargetAirac,
+          title: cloneTitle || undefined
         })
       });
 
@@ -821,6 +824,19 @@ export default function DocumentsPage() {
                 </Select>
                 <p className="text-xs text-gray-500">
                   {upcomingAiracCycles.length > 0 && `${upcomingAiracCycles.length} upcoming cycles available`}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cloneTitle">Document Title (Optional)</Label>
+                <Input
+                  id="cloneTitle"
+                  value={cloneTitle}
+                  onChange={(e) => setCloneTitle(e.target.value)}
+                  placeholder={selectedDocument ? `${selectedDocument.title.replace(/\s+AIRAC\s+\d{4}(-\d{2})?/i, '').trim()} - AIRAC ${cloneTargetAirac || '____'}` : 'Enter custom title'}
+                />
+                <p className="text-xs text-gray-500">
+                  Leave empty to auto-generate title with AIRAC cycle
                 </p>
               </div>
 
