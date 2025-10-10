@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { Search, FileText, Clock, CheckCircle2, Filter, Tag, X } from 'lucide-react';
+import { Search, FileText, Clock, CircleCheck as CheckCircle2, Filter, Tag, X } from 'lucide-react';
 
 interface ChecklistTemplate {
   _id: string;
