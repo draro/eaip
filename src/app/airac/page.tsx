@@ -112,9 +112,11 @@ export default function AIRACPage() {
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
+  const user = session?.user as any;
+
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <Layout user={user}>
         <div className="flex items-center justify-center h-64">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
         </div>
@@ -123,7 +125,7 @@ export default function AIRACPage() {
   }
 
   return (
-    <Layout>
+    <Layout user={user}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
