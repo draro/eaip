@@ -71,8 +71,9 @@ export class DataIsolationService {
       throw new Error('Organization not found');
     }
 
-    if (currentUserCount >= organization.subscription.maxUsers) {
-      throw new Error(`Organization has reached its user limit of ${organization.subscription.maxUsers}`);
+    const maxUsers = organization.subscription?.maxUsers || 5;
+    if (currentUserCount >= maxUsers) {
+      throw new Error(`Organization has reached its user limit of ${maxUsers}`);
     }
   }
 
@@ -87,8 +88,9 @@ export class DataIsolationService {
       throw new Error('Organization not found');
     }
 
-    if (currentDocumentCount >= organization.subscription.maxDocuments) {
-      throw new Error(`Organization has reached its document limit of ${organization.subscription.maxDocuments}`);
+    const maxDocuments = organization.subscription?.maxDocuments || 10;
+    if (currentDocumentCount >= maxDocuments) {
+      throw new Error(`Organization has reached its document limit of ${maxDocuments}`);
     }
   }
 
