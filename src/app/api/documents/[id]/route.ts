@@ -64,6 +64,7 @@ export async function PUT(
     const body = await request.json();
     const {
       title,
+      documentType,
       country,
       airport,
       sections,
@@ -104,6 +105,7 @@ export async function PUT(
     }
 
     if (title !== undefined) document.title = title;
+    if (documentType !== undefined) document.documentType = documentType;
     if (country !== undefined) document.country = country;
     if (airport !== undefined) document.airport = airport;
     if (sections !== undefined) {

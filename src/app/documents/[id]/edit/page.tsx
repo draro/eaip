@@ -8,7 +8,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Plus, Trash2, ChevronDown, ChevronRight, GitBranch } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, ChevronDown, ChevronRight, GitBranch, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollaboration } from '@/hooks/useCollaboration';
@@ -44,6 +44,11 @@ interface Document {
   version: any;
   airacCycle: string;
   effectiveDate: string;
+  metadata?: {
+    language?: string;
+    authority?: string;
+    contact?: string;
+  };
 }
 
 export default function EditDocumentPage({ params }: { params: { id: string } }) {
@@ -56,6 +61,11 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState('');
+  const [documentType, setDocumentType] = useState('AIP');
+  const [country, setCountry] = useState('');
+  const [airport, setAirport] = useState('');
+  const [showProperties, setShowProperties] = useState(false);
 
   // Real-time collaboration
   const {
@@ -107,6 +117,10 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
 
       if (data.success && data.data) {
         setDocument(data.data);
+        setDocumentTitle(data.data.title || '');
+        setDocumentType(data.data.documentType || 'AIP');
+        setCountry(data.data.country || '');
+        setAirport(data.data.airport || '');
 
         // Initialize sections with default content if missing
         const initializedSections = (data.data.sections || []).map((section: Section) => ({
@@ -293,7 +307,13 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
       const response = await fetch(`/api/documents/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sections })
+        body: JSON.stringify({
+          title: documentTitle,
+          documentType,
+          country,
+          airport,
+          sections
+        })
       });
 
       const result = await response.json();
@@ -376,17 +396,77 @@ export default function EditDocumentPage({ params }: { params: { id: string } })
             </div>
           </div>
 
-          {/* Document Info */}
+          {/* Document Properties */}
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-2xl font-bold">{document.title}</CardTitle>
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Badge className="text-sm py-1">{document.documentType}</Badge>
-                <Badge variant="outline" className="text-sm py-1">{document.country}</Badge>
-                {document.airport && <Badge variant="outline" className="text-sm py-1">{document.airport}</Badge>}
-                <Badge variant="outline" className="text-sm py-1">AIRAC {document.airacCycle}</Badge>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">Document Properties</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowProperties(!showProperties)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  {showProperties ? 'Hide' : 'Edit Properties'}
+                </Button>
               </div>
             </CardHeader>
+            {showProperties && (
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
+                    <Input
+                      value={documentTitle}
+                      onChange={(e) => setDocumentTitle(e.target.value)}
+                      placeholder="Enter document title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                    <Select value={documentType} onValueChange={setDocumentType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AIP">AIP</SelectItem>
+                        <SelectItem value="SUPPLEMENT">SUPPLEMENT</SelectItem>
+                        <SelectItem value="NOTAM">NOTAM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+                    <Input
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value.toUpperCase())}
+                      placeholder="e.g., US, GB, DE"
+                      maxLength={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Airport Code (Optional)</label>
+                    <Input
+                      value={airport}
+                      onChange={(e) => setAirport(e.target.value.toUpperCase())}
+                      placeholder="e.g., KJFK, EGLL"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            )}
+            {!showProperties && (
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold mb-2">{documentTitle}</div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="text-sm py-1">{documentType}</Badge>
+                  <Badge variant="outline" className="text-sm py-1">{country}</Badge>
+                  {airport && <Badge variant="outline" className="text-sm py-1">{airport}</Badge>}
+                  <Badge variant="outline" className="text-sm py-1">AIRAC {document.airacCycle}</Badge>
+                </div>
+              </CardContent>
+            )}
           </Card>
 
           {/* Sections Editor */}
