@@ -7,6 +7,32 @@ import User from '@/models/User';
 import { ChecklistPdfExporter } from '@/lib/exporters/checklistPdfExporter';
 import { ChecklistDocxExporter } from '@/lib/exporters/checklistDocxExporter';
 import DocumentActionLog from '@/models/DocumentActionLog';
+import mongoose from 'mongoose';
+
+// Type for lean ChecklistInstance
+interface LeanChecklistInstance {
+  _id: mongoose.Types.ObjectId;
+  organization: mongoose.Types.ObjectId;
+  title: string;
+  description?: string;
+  items: Array<{
+    _id: mongoose.Types.ObjectId;
+    id: string;
+    text: string;
+    order: number;
+    required: boolean;
+    completed: boolean;
+    completedBy?: { _id: mongoose.Types.ObjectId; name?: string; email?: string };
+    completedAt?: Date;
+  }>;
+  createdBy?: { _id: mongoose.Types.ObjectId; name?: string; email?: string };
+  assignedTo?: { _id: mongoose.Types.ObjectId; name?: string; email?: string };
+  completedAt?: Date;
+  dueDate?: Date;
+  version?: mongoose.Types.ObjectId;
+  airacCycle?: string;
+  effectiveDate?: Date;
+}
 
 export async function GET(
   req: NextRequest,
@@ -40,8 +66,8 @@ export async function GET(
     const instance = await ChecklistInstance.findById(params.id)
       .populate('createdBy', 'name email')
       .populate('assignedTo', 'name email')
-      .populate('items.checkedBy', 'name email')
-      .lean();
+      .populate('items.completedBy', 'name email')
+      .lean() as LeanChecklistInstance | null;
 
     if (!instance) {
       return NextResponse.json({ error: 'Checklist not found' }, { status: 404 });
@@ -61,24 +87,24 @@ export async function GET(
       title: instance.title,
       description: instance.description,
       createdBy: {
-        name: (instance.createdBy as any)?.name || 'Unknown',
-        email: (instance.createdBy as any)?.email || '',
+        name: instance.createdBy?.name || 'Unknown',
+        email: instance.createdBy?.email || '',
       },
       assignedTo: instance.assignedTo ? {
-        name: (instance.assignedTo as any)?.name || 'Unknown',
-        email: (instance.assignedTo as any)?.email || '',
+        name: instance.assignedTo.name || 'Unknown',
+        email: instance.assignedTo.email || '',
       } : undefined,
       completedAt: instance.completedAt,
       dueDate: instance.dueDate,
-      items: instance.items.map((item: any) => ({
+      items: instance.items.map((item) => ({
         id: item._id.toString(),
         text: item.text,
-        checked: item.checked || false,
-        checkedBy: item.checkedBy ? {
-          name: item.checkedBy.name || 'Unknown',
-          email: item.checkedBy.email || '',
+        checked: item.completed || false,
+        checkedBy: item.completedBy ? {
+          name: item.completedBy.name || 'Unknown',
+          email: item.completedBy.email || '',
         } : undefined,
-        checkedAt: item.checkedAt,
+        checkedAt: item.completedAt,
       })),
       metadata: {
         version: instance.version?.toString(),
@@ -117,7 +143,7 @@ export async function GET(
           title: instance.title,
           format: format.toUpperCase(),
           itemsCount: instance.items.length,
-          completedItems: instance.items.filter((item: any) => item.checked).length,
+          completedItems: instance.items.filter((item) => item.completed).length,
         },
         timestamp: new Date(),
       });
@@ -127,7 +153,7 @@ export async function GET(
     }
 
     // Return file as download
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': contentType,
