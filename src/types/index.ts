@@ -82,6 +82,20 @@ export interface IOrganization extends Document {
     allowedExportFormats?: string[];
     airacStartDate: Date;
   };
+  features: {
+    document_management: boolean;
+    checklists: boolean;
+    file_upload: boolean;
+    word_conversion: boolean;
+    pdf_viewer: boolean;
+    pdf_annotations: boolean;
+    git_versioning: boolean;
+    review_workflow: boolean;
+    approval_workflow: boolean;
+    realtime_collaboration: boolean;
+    export_pdf: boolean;
+    export_docx: boolean;
+  };
   aiProvider: 'claude' | 'openai';
   aiApiKey?: string;
   aiModel: string;
@@ -96,6 +110,7 @@ export interface IOrganization extends Document {
   createdAt: Date;
   updatedAt: Date;
   createdBy?: Types.ObjectId;
+  hasFeature(feature: string): boolean;
 }
 
 export interface IUser extends Document {
@@ -105,7 +120,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   password: string;
-  role: 'super_admin' | 'org_admin' | 'editor' | 'viewer';
+  role: 'super_admin' | 'org_admin' | 'atc_supervisor' | 'atc' | 'editor' | 'viewer';
   workflowRoles?: ('reviewer' | 'approver')[];
   organization?: Types.ObjectId;
   avatar?: string;
@@ -137,6 +152,8 @@ export interface IUser extends Document {
   updatedAt: Date;
   createdBy?: Types.ObjectId;
   verifyPassword(password: string): boolean;
+  canCreateTemplates(): boolean;
+  isATCRole(): boolean;
 }
 
 export interface IImage {

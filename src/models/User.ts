@@ -36,7 +36,7 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['super_admin', 'org_admin', 'editor', 'viewer'],
+      enum: ['super_admin', 'org_admin', 'atc_supervisor', 'atc', 'editor', 'viewer'],
       default: 'viewer',
       required: true,
     },
@@ -171,7 +171,15 @@ UserSchema.methods.canManageOrganization = function(organizationId: string) {
 };
 
 UserSchema.methods.canEdit = function() {
-  return ['super_admin', 'org_admin', 'editor'].includes(this.role);
+  return ['super_admin', 'org_admin', 'atc_supervisor', 'editor'].includes(this.role);
+};
+
+UserSchema.methods.canCreateTemplates = function() {
+  return ['super_admin', 'org_admin', 'atc_supervisor'].includes(this.role);
+};
+
+UserSchema.methods.isATCRole = function() {
+  return ['atc', 'atc_supervisor'].includes(this.role);
 };
 
 UserSchema.methods.hasPermission = function(permission: string) {

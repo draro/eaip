@@ -149,6 +149,20 @@ const OrganizationSchema = new Schema<IOrganization>(
       type: String,
       default: "claude-sonnet-4-5-20250929",
     },
+    features: {
+      document_management: { type: Boolean, default: true },
+      checklists: { type: Boolean, default: true },
+      file_upload: { type: Boolean, default: true },
+      word_conversion: { type: Boolean, default: true },
+      pdf_viewer: { type: Boolean, default: true },
+      pdf_annotations: { type: Boolean, default: true },
+      git_versioning: { type: Boolean, default: true },
+      review_workflow: { type: Boolean, default: true },
+      approval_workflow: { type: Boolean, default: true },
+      realtime_collaboration: { type: Boolean, default: true },
+      export_pdf: { type: Boolean, default: true },
+      export_docx: { type: Boolean, default: true },
+    },
     subscription: {
       plan: {
         type: String,
@@ -226,6 +240,11 @@ OrganizationSchema.methods.canAddDocument = function () {
 };
 
 OrganizationSchema.methods.hasFeature = function (feature: string) {
+  // Check new features object first
+  if (this.features && feature in this.features) {
+    return this.features[feature] === true;
+  }
+  // Fallback to subscription features array for backward compatibility
   return this.subscription.features.includes(feature);
 };
 
