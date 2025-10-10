@@ -15,25 +15,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import {
-  Building2,
-  FileText,
-  Users,
-  Settings,
-  BarChart3,
-  Globe,
-  Shield,
-  User,
-  LogOut,
-  Menu,
-  ChevronDown,
-  Bell,
-  GitBranch,
-  Calendar,
-  CheckSquare,
-  Eye,
-  X
-} from 'lucide-react';
+import { Building2, FileText, Users, Settings, ChartBar as BarChart3, Globe, Shield, User, LogOut, Menu, ChevronDown, Bell, GitBranch, Calendar, SquareCheck as CheckSquare, Eye, X } from 'lucide-react';
 
 interface NavigationProps {
   user?: {
