@@ -68,21 +68,21 @@ export default function CreateDocumentPage() {
     documentType: 'AIP',
     country: '',
     airport: '',
-    versionId: '',
+    airacCycle: '',
     effectiveDate: '',
     content: '',
     targetAiracCycle: ''
   });
-  const [versions, setVersions] = useState<any[]>([]);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState('');
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedSourceDocument, setSelectedSourceDocument] = useState('');
   const [airacCycles, setAiracCycles] = useState<any[]>([]);
+  const [targetAiracCycles, setTargetAiracCycles] = useState<any[]>([]);
   const [cloneMode, setCloneMode] = useState(false);
 
   React.useEffect(() => {
-    fetchVersions();
+    fetchAiracCycles();
     fetchDocuments();
     fetchUpcomingAiracCycles();
     if (session?.user && (session.user as any).role === 'super_admin') {
@@ -90,18 +90,19 @@ export default function CreateDocumentPage() {
     }
   }, [session]);
 
-  const fetchVersions = async () => {
+  const fetchAiracCycles = async () => {
     try {
-      const response = await fetch('/api/versions');
+      const response = await fetch('/api/airac?action=year&year=' + new Date().getFullYear());
       const result = await response.json();
       if (result.success) {
-        setVersions(result.data);
-        if (result.data.length > 0) {
-          setFormData(prev => ({ ...prev, versionId: result.data[0]._id }));
+        const cycles = result.data || [];
+        setAiracCycles(cycles);
+        if (cycles.length > 0) {
+          setFormData(prev => ({ ...prev, airacCycle: cycles[0].airacCycle }));
         }
       }
     } catch (error) {
-      console.error('Error fetching versions:', error);
+      console.error('Error fetching AIRAC cycles:', error);
     }
   };
 
@@ -135,10 +136,10 @@ export default function CreateDocumentPage() {
       const response = await fetch('/api/airac/activate?action=upcoming&count=12');
       const result = await response.json();
       if (result.success) {
-        setAiracCycles(result.data || []);
+        setTargetAiracCycles(result.data || []);
       }
     } catch (error) {
-      console.error('Error fetching AIRAC cycles:', error);
+      console.error('Error fetching upcoming AIRAC cycles:', error);
     }
   };
 
@@ -248,8 +249,8 @@ export default function CreateDocumentPage() {
       return;
     }
 
-    if (!formData.title || !formData.documentType || !formData.country || !formData.versionId) {
-      setError('Please fill in all required fields: title, document type, country, and version');
+    if (!formData.title || !formData.documentType || !formData.country || !formData.airacCycle) {
+      setError('Please fill in all required fields: title, document type, country, and AIRAC cycle');
       return;
     }
 
@@ -278,8 +279,8 @@ export default function CreateDocumentPage() {
         country: formData.country.toUpperCase(),
         airport: formData.airport?.toUpperCase() || undefined,
         sections: [], // Empty sections will trigger template generation
-        versionId: formData.versionId,
-        effectiveDate: formData.effectiveDate || versions.find(v => v._id === formData.versionId)?.effectiveDate,
+        airacCycle: formData.airacCycle,
+        effectiveDate: formData.effectiveDate || airacCycles.find(c => c.airacCycle === formData.airacCycle)?.effectiveDate,
       };
 
       if (user.role === 'super_admin' && organizationId) {
@@ -513,12 +514,12 @@ export default function CreateDocumentPage() {
                               <SelectValue placeholder="Select AIRAC cycle" />
                             </SelectTrigger>
                             <SelectContent>
-                              {airacCycles.length === 0 ? (
+                              {targetAiracCycles.length === 0 ? (
                                 <div className="px-2 py-6 text-center text-sm text-gray-500">
                                   Loading AIRAC cycles...
                                 </div>
                               ) : (
-                                airacCycles.map((cycle) => (
+                                targetAiracCycles.map((cycle) => (
                                   <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
                                     {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
                                   </SelectItem>
@@ -527,7 +528,7 @@ export default function CreateDocumentPage() {
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-gray-500">
-                            Select when this document should become effective {airacCycles.length > 0 && `(${airacCycles.length} cycles available)`}
+                            Select when this document should become effective {targetAiracCycles.length > 0 && `(${targetAiracCycles.length} cycles available)`}
                           </p>
                         </div>
                       </>
@@ -632,30 +633,33 @@ export default function CreateDocumentPage() {
                     </p>
                   </div>
 
-                  {/* Version */}
+                  {/* AIRAC Cycle */}
                   <div className="space-y-2">
-                    <Label htmlFor="versionId">AIP Version *</Label>
+                    <Label htmlFor="airacCycle">AIRAC Cycle *</Label>
                     <Select
-                      value={formData.versionId}
-                      onValueChange={(value) => handleInputChange('versionId', value)}
+                      value={formData.airacCycle}
+                      onValueChange={(value) => handleInputChange('airacCycle', value)}
                       required
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select Version" />
+                        <SelectValue placeholder="Select AIRAC Cycle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {versions.map((version) => (
-                          <SelectItem key={version._id} value={version._id}>
-                            {version.versionNumber} - AIRAC {version.airacCycle} - {version.status}
+                        {airacCycles.map((cycle) => (
+                          <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
+                            {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {versions.length === 0 && (
+                    {airacCycles.length === 0 && (
                       <p className="text-sm text-red-600">
-                        No versions found. Please create a version first.
+                        No AIRAC cycles found. Please wait while cycles are loaded.
                       </p>
                     )}
+                    <p className="text-xs text-gray-500">
+                      Select the AIRAC cycle for this document
+                    </p>
                   </div>
                 </div>
 
@@ -707,7 +711,7 @@ export default function CreateDocumentPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={loading || (cloneMode ? (!selectedSourceDocument || !formData.targetAiracCycle || !formData.title || !formData.documentType || !formData.country) : (!formData.title || !formData.documentType || !formData.country || !formData.versionId))}
+                      disabled={loading || (cloneMode ? (!selectedSourceDocument || !formData.targetAiracCycle || !formData.title || !formData.documentType || !formData.country) : (!formData.title || !formData.documentType || !formData.country || !formData.airacCycle))}
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">

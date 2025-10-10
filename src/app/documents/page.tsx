@@ -58,6 +58,7 @@ interface Document {
   airport?: string;
   status: 'draft' | 'review' | 'published';
   airacCycle: string;
+  revisionNumber?: number;
   effectiveDate: string;
   updatedAt: string;
   updatedBy: {
@@ -556,7 +557,7 @@ export default function DocumentsPage() {
                                             <span>{doc.country}</span>
                                             {doc.airport && <span>• {doc.airport}</span>}
                                             <span>• AIRAC: {formatAiracCycle(doc.airacCycle)}</span>
-                                            <span>• v{doc.version.versionNumber}</span>
+                                            <span>• Revision: v{doc.revisionNumber || 1}</span>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -649,7 +650,7 @@ export default function DocumentsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <GitBranch className="w-4 h-4" />
-                        <span>Version: {document.version.versionNumber}</span>
+                        <span>Revision: v{document.revisionNumber || 1}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />

@@ -75,15 +75,24 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       airport,
       sections,
       versionId,
+      airacCycle,
       effectiveDate,
       metadata,
       organizationId
     } = body;
 
     // Validate required fields for new multi-tenant structure
-    if (!title || !documentType || !country || !versionId) {
+    if (!title || !documentType || !country) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: title, documentType, country, and versionId are required' },
+        { success: false, error: 'Missing required fields: title, documentType, and country are required' },
+        { status: 400 }
+      );
+    }
+
+    // Require either versionId or airacCycle
+    if (!versionId && !airacCycle) {
+      return NextResponse.json(
+        { success: false, error: 'Either versionId or airacCycle must be provided' },
         { status: 400 }
       );
     }
@@ -143,18 +152,43 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       currentDocCount
     );
 
-    const version = await AIPVersion.findById(versionId);
-    if (!version) {
-      return NextResponse.json(
-        { success: false, error: 'Version not found' },
-        { status: 404 }
-      );
+    // Get or create version based on airacCycle or versionId
+    let version;
+    if (airacCycle) {
+      // Find or create version for AIRAC cycle
+      version = await AIPVersion.findOne({ airacCycle });
+      if (!version) {
+        // Auto-create version for AIRAC cycle
+        const [year, cycleNum] = airacCycle.split('-');
+        const cycleNumber = parseInt(cycleNum);
+        const baseDate = new Date(parseInt(year), 0, 1);
+        const daysSinceStart = (cycleNumber - 1) * 28;
+        const effectiveDateCalc = new Date(baseDate.getTime() + daysSinceStart * 24 * 60 * 60 * 1000);
+
+        version = await AIPVersion.create({
+          versionNumber: airacCycle,
+          airacCycle,
+          effectiveDate: effectiveDateCalc,
+          status: 'draft',
+          description: `AIRAC Cycle ${airacCycle}`,
+          createdBy: user._id,
+          documents: []
+        });
+      }
+    } else if (versionId) {
+      version = await AIPVersion.findById(versionId);
+      if (!version) {
+        return NextResponse.json(
+          { success: false, error: 'Version not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Check for existing document with same criteria
     const existingDocQuery: any = {
       country: country.toUpperCase(),
-      version: versionId,
+      version: version._id,
       documentType,
       organization: targetOrganizationId
     };
@@ -218,7 +252,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       country: country.toUpperCase(),
       airport: airport?.toUpperCase() || undefined,
       sections: documentSections,
-      version: versionId,
+      version: version._id,
+      revisionNumber: 1,
       organization: targetOrganizationId,
       createdBy: user._id,
       updatedBy: user._id,
@@ -237,7 +272,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     const document = await AIPDocument.create(documentData);
 
-    await AIPVersion.findByIdAndUpdate(versionId, {
+    await AIPVersion.findByIdAndUpdate(version._id, {
       $push: { documents: document._id },
     });
 

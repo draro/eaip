@@ -75,6 +75,10 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
       ref: 'AIPVersion',
       required: true,
     },
+    revisionNumber: {
+      type: Number,
+      default: 1,
+    },
     status: {
       type: String,
       enum: ['draft', 'review', 'approved', 'published', 'archived'],

@@ -178,6 +178,7 @@ export interface IAIPDocument extends Document {
   airport?: string; // For AD sections
   sections: ISection[];
   version: Types.ObjectId;
+  revisionNumber: number; // Revision/version count (1, 2, 3, etc.)
   status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
   organization: Types.ObjectId;
   createdBy: Types.ObjectId;
