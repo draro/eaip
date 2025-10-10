@@ -5,7 +5,7 @@ import AIPDocument from "@/models/AIPDocument";
 import BlogPost from "@/models/BlogPost";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 0; // No caching - generate on every request
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
