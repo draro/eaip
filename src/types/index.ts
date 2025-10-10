@@ -178,10 +178,14 @@ export interface IAIPDocument extends Document {
   airport?: string; // For AD sections
   sections: ISection[];
   version: Types.ObjectId;
-  status: 'draft' | 'review' | 'published';
+  status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
   organization: Types.ObjectId;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
+  publishedAt?: Date;
+  parentDocument?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   airacCycle: string;

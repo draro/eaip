@@ -70,15 +70,21 @@ export default function CreateDocumentPage() {
     airport: '',
     versionId: '',
     effectiveDate: '',
-    content: ''
+    content: '',
+    targetAiracCycle: ''
   });
   const [versions, setVersions] = useState<any[]>([]);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState('');
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [selectedSourceDocument, setSelectedSourceDocument] = useState('');
+  const [airacCycles, setAiracCycles] = useState<any[]>([]);
+  const [cloneMode, setCloneMode] = useState(false);
 
-  // Fetch versions and organizations on mount
   React.useEffect(() => {
     fetchVersions();
+    fetchDocuments();
+    fetchUpcomingAiracCycles();
     if (session?.user && (session.user as any).role === 'super_admin') {
       fetchOrganizations();
     }
@@ -109,6 +115,30 @@ export default function CreateDocumentPage() {
       }
     } catch (error) {
       console.error('Error fetching organizations:', error);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    try {
+      const response = await fetch('/api/documents?limit=1000');
+      const result = await response.json();
+      if (result.success) {
+        setDocuments(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    }
+  };
+
+  const fetchUpcomingAiracCycles = async () => {
+    try {
+      const response = await fetch('/api/airac/activate?action=upcoming&count=12');
+      const result = await response.json();
+      if (result.success) {
+        setAiracCycles(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching AIRAC cycles:', error);
     }
   };
 
@@ -161,7 +191,53 @@ export default function CreateDocumentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
+    if (cloneMode) {
+      if (!selectedSourceDocument || !formData.targetAiracCycle) {
+        setError('Please select a source document and target AIRAC cycle');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const response = await fetch('/api/documents/clone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentId: selectedSourceDocument,
+            targetAiracCycle: formData.targetAiracCycle,
+            title: formData.title || undefined
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          router.push(`/documents/${result.data._id}/edit`);
+        } else {
+          if (result.details?.existingDocumentId) {
+            const viewExisting = confirm(
+              `${result.error}\n\nWould you like to view/edit the existing document instead?`
+            );
+            if (viewExisting) {
+              router.push(`/documents/${result.details.existingDocumentId}/edit`);
+            }
+          } else {
+            setError(result.error || 'Failed to clone document');
+          }
+        }
+      } catch (error) {
+        console.error('Error cloning document:', error);
+        setError('Failed to clone document');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!formData.title || !formData.documentType || !formData.country || !formData.versionId) {
       setError('Please fill in all required fields: title, document type, country, and version');
       return;
@@ -266,17 +342,114 @@ export default function CreateDocumentPage() {
             </Alert>
           )}
 
+          {/* Mode Selection */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant={!cloneMode ? "default" : "outline"}
+                  onClick={() => setCloneMode(false)}
+                  className="flex-1"
+                >
+                  Create New Document
+                </Button>
+                <Button
+                  type="button"
+                  variant={cloneMode ? "default" : "outline"}
+                  onClick={() => setCloneMode(true)}
+                  className="flex-1"
+                >
+                  Clone for New AIRAC Cycle
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Document Details</CardTitle>
+              <CardTitle>{cloneMode ? 'Clone Document for AIRAC Cycle' : 'Document Details'}</CardTitle>
               <CardDescription>
-                Enter the basic information for your new AIP document
+                {cloneMode
+                  ? 'Select an existing document and target AIRAC cycle to create a copy'
+                  : 'Enter the basic information for your new AIP document'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Title */}
+                {cloneMode ? (
+                  <>
+                    {/* Clone Mode Fields */}
+                    <div className="space-y-2">
+                      <Label htmlFor="sourceDocument">Source Document *</Label>
+                      <Select
+                        value={selectedSourceDocument}
+                        onValueChange={(value) => {
+                          setSelectedSourceDocument(value);
+                          const doc = documents.find(d => d._id === value);
+                          if (doc) {
+                            setFormData(prev => ({ ...prev, title: doc.title }));
+                          }
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a document to clone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {documents.filter(d => d.status !== 'archived').map((doc) => (
+                            <SelectItem key={doc._id} value={doc._id}>
+                              {doc.title} - {doc.airacCycle} ({doc.status})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">
+                        Choose the document you want to clone
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="targetAiracCycle">Target AIRAC Cycle *</Label>
+                      <Select
+                        value={formData.targetAiracCycle}
+                        onValueChange={(value) => handleInputChange('targetAiracCycle', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select AIRAC cycle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {airacCycles.map((cycle) => (
+                            <SelectItem key={cycle.airacCycle} value={cycle.airacCycle}>
+                              {cycle.airacCycle} - Effective: {new Date(cycle.effectiveDate).toLocaleDateString()} ({cycle.status})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">
+                        Select when this document should become effective
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Document Title (Optional)</Label>
+                      <Input
+                        id="title"
+                        placeholder="Leave blank to use source document title"
+                        value={formData.title}
+                        onChange={(e) => handleInputChange('title', e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Optionally customize the title for the cloned document
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Original Create Mode Fields */}
+                    {/* Title */}
                 <div className="space-y-2">
                   <Label htmlFor="title">Document Title *</Label>
                   <Input
@@ -413,8 +586,8 @@ export default function CreateDocumentPage() {
                   </p>
                 </div>
 
-                {/* Info Box */}
-                <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                    {/* Info Box */}
+                    <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
                   <h3 className="font-medium text-yellow-900 mb-2">
                     ICAO Annex 15 Compliant Templates
                   </h3>
@@ -425,9 +598,11 @@ export default function CreateDocumentPage() {
                     <li><strong>Full AIP:</strong> Complete document with all three parts (GEN + ENR + AD) - 86 mandatory subsections</li>
                     <li><strong>GEN section:</strong> 30 mandatory subsections including preface, amendments, authorities</li>
                     <li><strong>ENR section:</strong> 28 subsections covering airways, airspace, navigation aids</li>
-                    <li><strong>AD section:</strong> 28 subsections for aerodrome information and facilities</li>
-                  </ul>
-                </div>
+                        <li><strong>AD section:</strong> 28 subsections for aerodrome information and facilities</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
 
                 {/* Actions */}
                 <div className="flex justify-between items-center pt-6 border-t">
@@ -445,17 +620,17 @@ export default function CreateDocumentPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={loading || !formData.title || !formData.documentType || !formData.country || !formData.versionId}
+                      disabled={loading || (cloneMode ? (!selectedSourceDocument || !formData.targetAiracCycle) : (!formData.title || !formData.documentType || !formData.country || !formData.versionId))}
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Creating...
+                          {cloneMode ? 'Cloning...' : 'Creating...'}
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <Save className="w-4 h-4" />
-                          Create Document
+                          {cloneMode ? 'Clone Document' : 'Create Document'}
                         </div>
                       )}
                     </Button>

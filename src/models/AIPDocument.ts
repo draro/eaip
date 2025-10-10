@@ -77,8 +77,22 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
     },
     status: {
       type: String,
-      enum: ['draft', 'review', 'published'],
+      enum: ['draft', 'review', 'approved', 'published', 'archived'],
       default: 'draft',
+    },
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    approvedAt: {
+      type: Date,
+    },
+    publishedAt: {
+      type: Date,
+    },
+    parentDocument: {
+      type: Schema.Types.ObjectId,
+      ref: 'AIPDocument',
     },
     organization: {
       type: Schema.Types.ObjectId,

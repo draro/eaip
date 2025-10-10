@@ -10,11 +10,18 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     await connectDB();
 
     const body = await request.json();
-    const { documentId } = body;
+    const { documentId, targetAiracCycle, title } = body;
 
     if (!documentId) {
       return NextResponse.json(
         { success: false, error: 'Missing required field: documentId' },
+        { status: 400 }
+      );
+    }
+
+    if (!targetAiracCycle) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required field: targetAiracCycle (e.g., "2024-10")' },
         { status: 400 }
       );
     }
@@ -70,27 +77,82 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       currentDocCount
     );
 
-    // Create cloned document
+    let targetVersion = await AIPVersion.findOne({ airacCycle: targetAiracCycle });
+
+    if (!targetVersion) {
+      const [year, cycleNum] = targetAiracCycle.split('-');
+      const cycleNumber = parseInt(cycleNum);
+      const baseDate = new Date(parseInt(year), 0, 1);
+      const daysSinceStart = (cycleNumber - 1) * 28;
+      const effectiveDate = new Date(baseDate.getTime() + daysSinceStart * 24 * 60 * 60 * 1000);
+
+      targetVersion = await AIPVersion.create({
+        versionNumber: targetAiracCycle,
+        airacCycle: targetAiracCycle,
+        effectiveDate,
+        status: 'draft',
+        description: `AIRAC Cycle ${targetAiracCycle}`,
+        createdBy: user._id,
+        documents: []
+      });
+    }
+
+    const checkDuplicate = await AIPDocument.findOne({
+      organization: targetOrganizationId,
+      country: sourceDoc.country,
+      airport: sourceDoc.airport,
+      documentType: sourceDoc.documentType,
+      airacCycle: targetAiracCycle,
+      version: targetVersion._id
+    });
+
+    if (checkDuplicate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'A document for this AIRAC cycle already exists',
+          details: {
+            existingDocumentId: checkDuplicate._id,
+            existingDocumentTitle: checkDuplicate.title
+          }
+        },
+        { status: 409 }
+      );
+    }
+
     const clonedDocData = {
-      title: `${sourceDoc.title} (Copy)`,
+      title: title || sourceDoc.title,
       documentType: sourceDoc.documentType,
       country: sourceDoc.country,
       airport: sourceDoc.airport,
-      sections: sourceDoc.sections.map((section: any) => ({
-        ...section.toObject(),
-        _id: undefined // Generate new IDs for sections
-      })),
-      version: sourceDoc.version._id,
+      sections: sourceDoc.sections.map((section: any) => {
+        const sectionObj = section.toObject ? section.toObject() : section;
+        return {
+          ...sectionObj,
+          _id: undefined,
+          subsections: sectionObj.subsections?.map((subsection: any) => {
+            const subObj = subsection.toObject ? subsection.toObject() : subsection;
+            return {
+              ...subObj,
+              _id: undefined,
+              lastModified: new Date(),
+              modifiedBy: user._id
+            };
+          }) || []
+        };
+      }),
+      version: targetVersion._id,
       organization: targetOrganizationId,
       createdBy: user._id,
       updatedBy: user._id,
-      airacCycle: sourceDoc.airacCycle,
-      effectiveDate: sourceDoc.effectiveDate,
-      status: 'draft', // Always create clones as draft
+      airacCycle: targetAiracCycle,
+      effectiveDate: targetVersion.effectiveDate,
+      status: 'draft',
+      parentDocument: sourceDoc._id,
       metadata: {
-        ...sourceDoc.metadata,
-        clonedFrom: sourceDoc._id,
-        clonedAt: new Date(),
+        language: sourceDoc.metadata.language,
+        authority: sourceDoc.metadata.authority,
+        contact: sourceDoc.metadata.contact,
         lastReview: new Date(),
         nextReview: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       }
@@ -98,8 +160,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     const clonedDoc = await AIPDocument.create(clonedDocData);
 
-    // Add to version's documents array
-    await AIPVersion.findByIdAndUpdate(sourceDoc.version._id, {
+    await AIPVersion.findByIdAndUpdate(targetVersion._id, {
       $push: { documents: clonedDoc._id }
     });
 
@@ -110,13 +171,14 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       .populate('version', 'versionNumber airacCycle effectiveDate')
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email')
-      .populate('organization', 'name domain');
+      .populate('organization', 'name domain')
+      .populate('parentDocument', 'title airacCycle');
 
     return NextResponse.json(
       {
         success: true,
         data: populatedDoc,
-        message: 'Document cloned successfully'
+        message: `Document cloned successfully for AIRAC cycle ${targetAiracCycle}`
       },
       { status: 201 }
     );
