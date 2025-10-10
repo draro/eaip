@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import connectDB from "@/lib/mongodb";
 import Organization from "@/models/Organization";
 import AIPDocument from "@/models/AIPDocument";
+import BlogPost from "@/models/BlogPost";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // Revalidate every hour
@@ -62,6 +63,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
         changeFrequency: "weekly" as const,
       },
+      {
+        url: `${baseUrl}/blog`,
+        priority: 0.9,
+        changeFrequency: "daily" as const,
+      },
     ];
 
     mainPages.forEach((page) => {
@@ -72,6 +78,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: page.priority,
       });
     });
+
+    // Add blog posts
+    const blogPosts = await BlogPost.find({
+      status: "published",
+    })
+      .select("slug updatedAt")
+      .sort({ publishedAt: -1 })
+      .lean();
+
+    for (const post of blogPosts) {
+      sitemapEntries.push({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: post.updatedAt || new Date(),
+        changeFrequency: "weekly",
+        priority: 0.7,
+      });
+    }
 
     // Get all organizations with custom domains
     const organizations = await Organization.find({

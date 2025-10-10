@@ -3,9 +3,13 @@
 
 # Default rules for all crawlers
 User-agent: *
-# Allow public organization pages (no authentication required)
+# Allow public pages (no authentication required)
 Allow: /public/
 Allow: /api/public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 
 # Disallow all authenticated areas
 Disallow: /api/
@@ -16,7 +20,6 @@ Disallow: /dashboard
 Disallow: /admin/
 Disallow: /organization/
 Disallow: /documents/*/edit
-Disallow: /features/
 Disallow: /workflow/
 Disallow: /compliance/
 Disallow: /notam/
@@ -33,6 +36,10 @@ Sitemap: https://demoaip.flyclim.com/sitemap.xml
 User-agent: Googlebot
 Allow: /public/
 Allow: /api/public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
@@ -42,12 +49,17 @@ Disallow: /organization/
 # Google Image crawler
 User-agent: Googlebot-Image
 Allow: /public/
+Allow: /blog/
 Disallow: /
 
 # Bing specific rules
 User-agent: Bingbot
 Allow: /public/
 Allow: /api/public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /api/
 Disallow: /auth/
 Disallow: /dashboard
@@ -83,24 +95,44 @@ Disallow: /auth/
 # ChatGPT crawler (for AEO)
 User-agent: GPTBot
 Allow: /public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /
 
 # Claude crawler (for AEO)
 User-agent: ClaudeBot
 Allow: /public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /
 
 # Common AI crawlers for Answer Engine Optimization
 User-agent: CCBot
 Allow: /public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /
 
 User-agent: anthropic-ai
 Allow: /public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /
 
 User-agent: Claude-Web
 Allow: /public/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /features/
 Disallow: /
 
 # Crawl delay (in seconds)
