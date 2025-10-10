@@ -10,24 +10,33 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   GitBranch, Search, Clock, CheckCircle, XCircle,
-  AlertTriangle, FileText, User, Calendar, ArrowRight
+  AlertTriangle, FileText, User, Calendar, ArrowRight, Settings, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Workflow {
   _id: string;
-  id: string;
-  documentId: string;
-  documentTitle: string;
-  workflowType: 'CRITICAL' | 'ESSENTIAL' | 'ROUTINE';
-  currentState: string;
-  requiredApprovals: string[];
-  approvals: any[];
-  initiatedBy: string;
-  initiatedAt: string;
-  completedAt?: string;
-  targetCompletionDate: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  isActive: boolean;
+  documentTypes: string[];
+  steps: {
+    id: string;
+    name: string;
+    description?: string;
+    requiredRole?: string;
+    requiredWorkflowRole?: string;
+    allowedTransitions: string[];
+    assignedUsers?: any[];
+  }[];
+  organization?: {
+    _id: string;
+    name: string;
+  };
+  createdBy: {
+    name: string;
+  };
 }
 
 export default function WorkflowPage() {
@@ -50,10 +59,10 @@ export default function WorkflowPage() {
 
   const fetchWorkflows = async () => {
     try {
-      const response = await fetch('/api/workflow');
+      const response = await fetch('/api/workflows');
       if (response.ok) {
         const data = await response.json();
-        setWorkflows(data.workflows || []);
+        setWorkflows(data.success ? data.data : []);
       }
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -62,70 +71,42 @@ export default function WorkflowPage() {
     }
   };
 
-  const getStatusBadge = (state: string) => {
-    switch (state) {
-      case 'draft':
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
-      case 'technical_review':
-        return <Badge className="bg-blue-100 text-blue-800">Technical Review</Badge>;
-      case 'operational_review':
-        return <Badge className="bg-purple-100 text-purple-800">Operational Review</Badge>;
-      case 'authority_approval':
-        return <Badge className="bg-orange-100 text-orange-800">Authority Approval</Badge>;
-      case 'final_review':
-        return <Badge className="bg-yellow-100 text-yellow-800">Final Review</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
-      case 'published':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Published</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
-      default:
-        return <Badge>{state}</Badge>;
-    }
-  };
+  const seedDefaultWorkflows = async () => {
+    if (!confirm('Seed default workflows? This will create standard workflow templates.')) return;
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Critical</Badge>;
-      case 'high':
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">High</Badge>;
-      case 'medium':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Medium</Badge>;
-      case 'low':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Low</Badge>;
-      default:
-        return <Badge variant="outline">{priority}</Badge>;
-    }
-  };
+    try {
+      const response = await fetch('/api/workflows/seed-defaults', {
+        method: 'POST'
+      });
 
-  const getWorkflowTypeBadge = (type: string) => {
-    switch (type) {
-      case 'CRITICAL':
-        return <Badge variant="outline" className="bg-red-50 text-red-700">Critical (4-level)</Badge>;
-      case 'ESSENTIAL':
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700">Essential (3-level)</Badge>;
-      case 'ROUTINE':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700">Routine (2-level)</Badge>;
-      default:
-        return <Badge variant="outline">{type}</Badge>;
+      const result = await response.json();
+      if (result.success) {
+        alert(`✅ ${result.message}`);
+        fetchWorkflows();
+      } else {
+        alert(`Failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error seeding workflows:', error);
+      alert('Failed to seed workflows');
     }
   };
 
   const filteredWorkflows = workflows.filter(workflow => {
     const matchesSearch = searchTerm === '' ||
-      workflow.documentTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workflow.id.toLowerCase().includes(searchTerm.toLowerCase());
+      workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      workflow.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus === 'all' || workflow.currentState === filterStatus;
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'active' && workflow.isActive) ||
+      (filterStatus === 'inactive' && !workflow.isActive);
 
     return matchesSearch && matchesStatus;
   });
 
-  const pendingWorkflows = workflows.filter(w =>
-    !['approved', 'published', 'rejected', 'withdrawn'].includes(w.currentState)
-  );
+  const activeWorkflows = workflows.filter(w => w.isActive);
+  const totalSteps = workflows.reduce((sum, w) => sum + w.steps.length, 0);
+  const defaultWorkflows = workflows.filter(w => w.isDefault);
 
   if (status === 'loading' || loading) {
     return (
@@ -138,6 +119,8 @@ export default function WorkflowPage() {
   }
 
   const user = session?.user as any;
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isAdmin = ['super_admin', 'org_admin'].includes(user?.role);
 
   return (
     <Layout user={user}>
@@ -155,12 +138,20 @@ export default function WorkflowPage() {
                   Manage multi-level approval workflows for AIP documents
                 </p>
               </div>
-              <Link href="/workflows">
-                <Button variant="outline">
-                  <GitBranch className="w-4 h-4 mr-2" />
-                  Configure Workflows
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                {isSuperAdmin && (
+                  <Button onClick={seedDefaultWorkflows} variant="outline">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Seed Defaults
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button onClick={() => router.push('/workflows/new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Configure Workflows
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Stats */}
@@ -180,22 +171,9 @@ export default function WorkflowPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Pending</p>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {pendingWorkflows.length}
-                      </p>
-                    </div>
-                    <Clock className="h-8 w-8 text-orange-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Approved</p>
+                      <p className="text-sm text-gray-600">Active</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {workflows.filter(w => ['approved', 'published'].includes(w.currentState)).length}
+                        {activeWorkflows.length}
                       </p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-600" />
@@ -206,12 +184,25 @@ export default function WorkflowPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Rejected</p>
-                      <p className="text-2xl font-bold text-red-600">
-                        {workflows.filter(w => w.currentState === 'rejected').length}
+                      <p className="text-sm text-gray-600">Total Steps</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {totalSteps}
                       </p>
                     </div>
-                    <XCircle className="h-8 w-8 text-red-600" />
+                    <ArrowRight className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Default Templates</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {defaultWorkflows.length}
+                      </p>
+                    </div>
+                    <Settings className="h-8 w-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -237,14 +228,8 @@ export default function WorkflowPage() {
                   className="border border-gray-300 rounded-md px-3 py-2"
                 >
                   <option value="all">All Status</option>
-                  <option value="draft">Draft</option>
-                  <option value="technical_review">Technical Review</option>
-                  <option value="operational_review">Operational Review</option>
-                  <option value="authority_approval">Authority Approval</option>
-                  <option value="final_review">Final Review</option>
-                  <option value="approved">Approved</option>
-                  <option value="published">Published</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </CardContent>
@@ -256,72 +241,97 @@ export default function WorkflowPage() {
               <CardContent className="p-12 text-center">
                 <GitBranch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No workflows found</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 mb-4">
                   {searchTerm || filterStatus !== 'all'
                     ? 'Try adjusting your filters'
-                    : 'Workflows will appear here when documents are submitted for approval'}
+                    : 'Create or seed workflow templates to get started'}
                 </p>
+                {isSuperAdmin && (
+                  <Button onClick={seedDefaultWorkflows}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Seed Default Workflows
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredWorkflows.map((workflow) => (
                 <Card key={workflow._id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl font-bold text-gray-900">
-                            {workflow.documentTitle}
-                          </CardTitle>
-                          {getStatusBadge(workflow.currentState)}
-                          {getPriorityBadge(workflow.priority)}
-                          {getWorkflowTypeBadge(workflow.workflowType)}
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="text-xl">{workflow.name}</CardTitle>
+                          {workflow.isDefault && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                              Default
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className={workflow.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'}>
+                            {workflow.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center">
-                            <FileText className="h-4 w-4 mr-1" />
-                            Workflow ID: {workflow.id}
-                          </span>
-                          <span className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            Initiated by: {workflow.initiatedBy}
-                          </span>
-                          <span className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {new Date(workflow.initiatedAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                        <CardDescription>{workflow.description || 'No description'}</CardDescription>
                       </div>
-                      <Link href={`/workflow/${workflow._id}`}>
-                        <Button variant="outline" size="sm">
-                          View Details
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </Link>
+                    </div>
+
+                    {/* Document Types */}
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {workflow.documentTypes.map((type) => (
+                        <Badge key={type} variant="outline" className="text-xs">
+                          {type}
+                        </Badge>
+                      ))}
                     </div>
                   </CardHeader>
+
                   <CardContent>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Progress:</span>
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{
-                            width: `${(workflow.approvals.length / workflow.requiredApprovals.length) * 100}%`
-                          }}
-                        ></div>
+                    {/* Steps Summary */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-700">
+                        {workflow.steps.length} Steps
+                      </h4>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        {workflow.steps.slice(0, 3).map((step, idx) => (
+                          <div key={step.id} className="flex items-center gap-2">
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <span>{step.name}</span>
+                            {step.requiredWorkflowRole && (
+                              <Badge variant="outline" className="text-xs">
+                                {step.requiredWorkflowRole}
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                        {workflow.steps.length > 3 && (
+                          <div className="text-xs text-gray-500 ml-5">
+                            +{workflow.steps.length - 3} more steps...
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm text-gray-600">
-                        {workflow.approvals.length}/{workflow.requiredApprovals.length} approvals
-                      </span>
                     </div>
-                    {workflow.targetCompletionDate && (
-                      <div className="mt-3 text-sm text-gray-600 flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        Target completion: {new Date(workflow.targetCompletionDate).toLocaleDateString()}
-                      </div>
-                    )}
+
+                    {/* Actions */}
+                    <div className="mt-4 pt-4 border-t flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/workflows/${workflow._id}`)}
+                      >
+                        View Details
+                      </Button>
+                      {isAdmin && !workflow.isDefault && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/workflows/${workflow._id}/edit`)}
+                        >
+                          <Settings className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
