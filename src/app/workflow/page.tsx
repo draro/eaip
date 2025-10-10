@@ -21,6 +21,7 @@ interface Workflow {
   isDefault: boolean;
   isActive: boolean;
   documentTypes: string[];
+  inUseBy?: number;
   steps: {
     id: string;
     name: string;
@@ -283,6 +284,11 @@ export default function WorkflowPage() {
                           {type}
                         </Badge>
                       ))}
+                      {workflow.inUseBy !== undefined && workflow.inUseBy > 0 && (
+                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
+                          In use by {workflow.inUseBy} doc(s)
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
 
@@ -322,14 +328,28 @@ export default function WorkflowPage() {
                         View Details
                       </Button>
                       {isAdmin && !workflow.isDefault && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/workflows/${workflow._id}/edit`)}
-                        >
-                          <Settings className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
+                        <>
+                          {workflow.inUseBy && workflow.inUseBy > 0 ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled
+                              title={`Cannot edit - in use by ${workflow.inUseBy} document(s)`}
+                            >
+                              <Settings className="w-3 h-3 mr-1" />
+                              Edit (In Use)
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/workflows/${workflow._id}/edit`)}
+                            >
+                              <Settings className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                   </CardContent>
