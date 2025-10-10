@@ -29,6 +29,9 @@ interface Document {
   country: string;
   airport?: string;
   status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
+  workflow?: any;
+  currentWorkflowStep?: string;
+  createdBy: any;
   airacCycle: string;
   effectiveDate: string;
   updatedAt: string;
@@ -102,14 +105,55 @@ export default function DocumentViewPage() {
       });
       const data = await response.json();
       if (data.success && data.data) {
-        setWorkflows(data.data);
-        // Auto-select first workflow if available
-        if (data.data.length > 0) {
-          setSelectedWorkflow(data.data[0]._id);
+        // Filter workflows to only show those compatible with document type
+        const compatibleWorkflows = data.data.filter((wf: any) =>
+          !document || wf.documentTypes.includes(document.documentType)
+        );
+        setWorkflows(compatibleWorkflows);
+
+        // Set selected workflow to document's current workflow or first compatible
+        if (document?.workflow?._id) {
+          setSelectedWorkflow(document.workflow._id);
+        } else if (compatibleWorkflows.length > 0) {
+          setSelectedWorkflow(compatibleWorkflows[0]._id);
         }
       }
     } catch (error) {
       console.error('Error fetching workflows:', error);
+    }
+  };
+
+  const handleWorkflowChange = async (newWorkflowId: string) => {
+    if (!document) return;
+
+    const isOwner = document.createdBy?._id === user?._id || document.createdBy === user?._id;
+    if (!isOwner && user?.role !== 'super_admin') {
+      alert('❌ Only the document owner can change the workflow');
+      return;
+    }
+
+    const workflow = workflows.find((wf: any) => wf._id === newWorkflowId);
+    const confirmMessage = `Assign "${workflow?.name}" workflow to this document?`;
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      const response = await fetch(`/api/documents/${document._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflowId: newWorkflowId })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setSelectedWorkflow(newWorkflowId);
+        setDocument(result.data);
+        alert(`✅ Workflow assigned successfully`);
+      } else {
+        alert(`❌ Failed to assign workflow: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error assigning workflow:', error);
+      alert('Failed to assign workflow. Please try again.');
     }
   };
 
@@ -123,15 +167,12 @@ export default function DocumentViewPage() {
       const response = await fetch(`/api/documents/${document._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: newStatus,
-          workflowId: selectedWorkflow || undefined
-        })
+        body: JSON.stringify({ status: newStatus })
       });
 
       const result = await response.json();
       if (result.success) {
-        setDocument({ ...document, status: newStatus as any });
+        setDocument(result.data);
         alert(`✅ Status changed to ${newStatus}`);
       } else {
         alert(`❌ Failed to change status: ${result.error}`);
@@ -324,22 +365,34 @@ export default function DocumentViewPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <CardTitle className="text-2xl">{document.title}</CardTitle>
 
-                    {/* Workflow Selector */}
+                    {/* Workflow Selector - Only owner can change */}
                     {workflows.length > 0 && (
                       <div className="flex items-center gap-2">
                         <GitBranch className="w-4 h-4 text-gray-500" />
-                        <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
-                          <SelectTrigger className="w-[160px] h-8 text-xs">
+                        <Select
+                          value={selectedWorkflow}
+                          onValueChange={handleWorkflowChange}
+                          disabled={document.createdBy?._id !== user?._id && user?.role !== 'super_admin'}
+                        >
+                          <SelectTrigger className="w-[180px] h-8 text-xs">
                             <SelectValue placeholder="Select workflow" />
                           </SelectTrigger>
                           <SelectContent>
-                            {workflows.map((workflow) => (
+                            {workflows.map((workflow: any) => (
                               <SelectItem key={workflow._id} value={workflow._id} className="text-xs">
                                 {workflow.name}
+                                {workflow.documentTypes && (
+                                  <span className="text-gray-400 ml-1">
+                                    ({workflow.documentTypes.join(', ')})
+                                  </span>
+                                )}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        {document.createdBy?._id !== user?._id && user?.role !== 'super_admin' && (
+                          <span className="text-xs text-gray-500">(Owner only)</span>
+                        )}
                       </div>
                     )}
 
@@ -396,6 +449,11 @@ export default function DocumentViewPage() {
                   </div>
                   <CardDescription>
                     Official aeronautical information publication for {document.country}
+                    {document.workflow && document.currentWorkflowStep && (
+                      <span className="ml-2 text-blue-600 font-medium">
+                        • Current Step: {document.workflow.steps?.find((s: any) => s.id === document.currentWorkflowStep)?.name || document.currentWorkflowStep}
+                      </span>
+                    )}
                   </CardDescription>
                 </div>
               </div>

@@ -180,6 +180,8 @@ export interface IAIPDocument extends Document {
   version: Types.ObjectId;
   revisionNumber: number; // Revision/version count (1, 2, 3, etc.)
   status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
+  workflow?: Types.ObjectId;
+  currentWorkflowStep?: string;
   organization: Types.ObjectId;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;

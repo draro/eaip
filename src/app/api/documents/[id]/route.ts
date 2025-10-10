@@ -77,12 +77,67 @@ export async function PUT(
       workflowId,
     } = body;
 
-    const document = await AIPDocument.findById(params.id).populate('version').populate('organization');
+    const session = await getServerSession(authOptions);
+    const currentUser = session?.user as any;
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const document = await AIPDocument.findById(params.id)
+      .populate('version')
+      .populate('organization')
+      .populate('workflow');
+
     if (!document) {
       return NextResponse.json(
         { success: false, error: 'Document not found' },
         { status: 404 }
       );
+    }
+
+    // Handle workflow assignment - only document owner can set/change workflow
+    if (workflowId !== undefined) {
+      // Check if user is the document owner
+      const isOwner = document.createdBy.toString() === currentUser._id?.toString();
+      if (!isOwner && currentUser.role !== 'super_admin') {
+        return NextResponse.json(
+          { success: false, error: 'Only the document owner can assign or change the workflow' },
+          { status: 403 }
+        );
+      }
+
+      // Validate workflow exists and is compatible with document type
+      if (workflowId) {
+        const workflow = await WorkflowTemplate.findById(workflowId);
+        if (!workflow) {
+          return NextResponse.json(
+            { success: false, error: 'Workflow not found' },
+            { status: 404 }
+          );
+        }
+
+        // Check document type compatibility
+        if (!workflow.documentTypes.includes(document.documentType)) {
+          return NextResponse.json(
+            { success: false, error: `This workflow is not compatible with ${document.documentType} documents. It supports: ${workflow.documentTypes.join(', ')}` },
+            { status: 400 }
+          );
+        }
+
+        // Set workflow and initialize to first step
+        document.workflow = workflowId;
+        if (workflow.steps.length > 0) {
+          document.currentWorkflowStep = workflow.steps[0].id;
+        }
+      } else {
+        // Remove workflow
+        document.workflow = undefined;
+        document.currentWorkflowStep = undefined;
+      }
     }
 
     // Check status transition validity
@@ -95,22 +150,15 @@ export async function PUT(
 
     // Check workflow permissions if status is changing
     if (status && status !== document.status) {
-      const session = await getServerSession(authOptions);
-      const currentUser = session?.user as any;
-
-      if (!currentUser) {
-        return NextResponse.json(
-          { success: false, error: 'Authentication required' },
-          { status: 401 }
-        );
-      }
+      // Use document's assigned workflow or the one being set
+      const effectiveWorkflowId = document.workflow?.toString() || workflowId;
 
       // Check workflow permissions
       const permissionCheck = await checkWorkflowPermission(
         currentUser,
         document,
         status,
-        workflowId
+        effectiveWorkflowId
       );
 
       if (!permissionCheck.allowed) {
@@ -118,6 +166,11 @@ export async function PUT(
           { success: false, error: permissionCheck.message },
           { status: 403 }
         );
+      }
+
+      // Update current workflow step if using a workflow
+      if (effectiveWorkflowId && permissionCheck.nextStepId) {
+        document.currentWorkflowStep = permissionCheck.nextStepId;
       }
     }
 
@@ -252,7 +305,7 @@ async function checkWorkflowPermission(
   document: any,
   newStatus: string,
   workflowId?: string
-): Promise<{ allowed: boolean; message: string }> {
+): Promise<{ allowed: boolean; message: string; nextStepId?: string }> {
   // Super admins can always transition
   if (user.role === 'super_admin') {
     return { allowed: true, message: 'OK' };
@@ -274,6 +327,10 @@ async function checkWorkflowPermission(
       return { allowed: false, message: 'Workflow not found' };
     }
 
+    // Get current step in workflow
+    const currentStepId = document.currentWorkflowStep;
+    const currentStep = workflow.steps.find((step: any) => step.id === currentStepId);
+
     // Find the step that corresponds to the new status
     const targetStep = workflow.steps.find((step: any) =>
       step.name.toLowerCase() === newStatus.toLowerCase() ||
@@ -287,6 +344,24 @@ async function checkWorkflowPermission(
         allowed: canEdit,
         message: canEdit ? 'OK' : 'Insufficient permissions'
       };
+    }
+
+    // CRITICAL: Enforce sequential workflow - check if target step is in allowed transitions
+    if (currentStep) {
+      const allowedTransitions = currentStep.allowedTransitions || [];
+      const isAllowedTransition = allowedTransitions.includes(targetStep.id);
+
+      if (!isAllowedTransition) {
+        const allowedStepNames = workflow.steps
+          .filter((step: any) => allowedTransitions.includes(step.id))
+          .map((step: any) => step.name)
+          .join(', ');
+
+        return {
+          allowed: false,
+          message: `You cannot skip workflow steps. From "${currentStep.name}", you can only transition to: ${allowedStepNames || 'no steps (end of workflow)'}`
+        };
+      }
     }
 
     // Check if user is assigned to this step
@@ -336,7 +411,7 @@ async function checkWorkflowPermission(
       }
     }
 
-    return { allowed: true, message: 'OK' };
+    return { allowed: true, message: 'OK', nextStepId: targetStep.id };
   } catch (error) {
     console.error('Error checking workflow permission:', error);
     return { allowed: false, message: 'Error validating workflow permissions' };

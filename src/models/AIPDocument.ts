@@ -84,6 +84,13 @@ const AIPDocumentSchema = new Schema<IAIPDocument>(
       enum: ['draft', 'review', 'approved', 'published', 'archived'],
       default: 'draft',
     },
+    workflow: {
+      type: Schema.Types.ObjectId,
+      ref: 'WorkflowTemplate',
+    },
+    currentWorkflowStep: {
+      type: String,
+    },
     approvedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -142,5 +149,6 @@ AIPDocumentSchema.index({ version: 1 });
 AIPDocumentSchema.index({ status: 1 });
 AIPDocumentSchema.index({ airacCycle: 1 });
 AIPDocumentSchema.index({ organization: 1, status: 1 });
+AIPDocumentSchema.index({ workflow: 1 });
 
 export default mongoose.models.AIPDocument || mongoose.model<IAIPDocument>('AIPDocument', AIPDocumentSchema);
