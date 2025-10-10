@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +13,13 @@ import {
   Maximize,
   RotateCw,
   StickyNote,
+  Loader2,
 } from 'lucide-react';
+
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerProps {
   fileUrl: string;
@@ -36,17 +43,23 @@ export default function PDFViewer({
 }: PDFViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(1.0);
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 25, 200));
+    setZoom((prev) => Math.min(prev + 0.25, 2.0));
   };
 
   const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 25, 50));
+    setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setTotalPages(numPages);
+    setLoading(false);
   };
 
   const handleRotate = () => {
@@ -101,7 +114,7 @@ export default function PDFViewer({
               <ZoomOut className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium min-w-[60px] text-center">
-              {zoom}%
+              {Math.round(zoom * 100)}%
             </span>
             <Button variant="outline" size="sm" onClick={handleZoomIn}>
               <ZoomIn className="h-4 w-4" />
@@ -135,21 +148,39 @@ export default function PDFViewer({
           </div>
         )}
 
-        <div className="relative border rounded-lg overflow-hidden bg-gray-100">
+        <div className="relative border rounded-lg overflow-auto bg-gray-100 flex justify-center">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          )}
+
           <div
-            className={`relative ${addingNote ? 'cursor-crosshair' : 'cursor-default'}`}
+            className={`relative inline-block ${addingNote ? 'cursor-crosshair' : 'cursor-default'}`}
             onClick={handleCanvasClick}
-            style={{
-              transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-              transformOrigin: 'center',
-              transition: 'transform 0.2s',
-            }}
           >
-            <iframe
-              src={`${fileUrl}#page=${currentPage}`}
-              className="w-full h-[600px] border-0"
-              title={fileName}
-            />
+            <Document
+              file={fileUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={
+                <div className="flex items-center justify-center h-[600px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              }
+              error={
+                <div className="flex items-center justify-center h-[600px] text-red-600">
+                  <p>Failed to load PDF</p>
+                </div>
+              }
+            >
+              <Page
+                pageNumber={currentPage}
+                scale={zoom}
+                rotate={rotation}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+              />
+            </Document>
 
             {currentPageNotes.map((note) => (
               <div
