@@ -58,6 +58,8 @@ export default function UserAssignmentModal({
 
   const roles = [
     { value: 'org_admin', label: 'Organization Admin', color: 'bg-purple-100 text-purple-800' },
+    { value: 'atc_supervisor', label: 'ATC Supervisor', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'atc', label: 'ATC', color: 'bg-cyan-100 text-cyan-800' },
     { value: 'editor', label: 'Editor', color: 'bg-blue-100 text-blue-800' },
     { value: 'viewer', label: 'Viewer', color: 'bg-gray-100 text-gray-800' }
   ];

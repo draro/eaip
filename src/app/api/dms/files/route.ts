@@ -5,12 +5,8 @@ import connectDB from '@/lib/mongodb';
 import DMSFile from '@/models/DMSFile';
 import Folder from '@/models/Folder';
 import User from '@/models/User';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'dms');
+import { uploadToGCS, generateGCSPath } from '@/lib/googleCloudStorage';
 
 function getFileType(mimeType: string): string {
   if (mimeType.startsWith('image/')) return 'image';
@@ -117,6 +113,7 @@ export async function POST(req: NextRequest) {
     const tags = formData.get('tags') as string;
     const description = formData.get('description') as string;
     const allowedRoles = formData.get('allowedRoles') as string;
+    const approvalRequired = formData.get('approvalRequired') === 'true';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -143,21 +140,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!existsSync(UPLOAD_DIR)) {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    }
-
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const checksum = calculateChecksum(buffer);
 
-    const timestamp = Date.now();
-    const randomString = crypto.randomBytes(8).toString('hex');
-    const ext = file.name.split('.').pop();
-    const filename = `${timestamp}-${randomString}.${ext}`;
-    const filePath = path.join(UPLOAD_DIR, filename);
+    // Generate GCS path
+    const gcsPath = generateGCSPath(
+      user.organization?.toString() || '',
+      folderId === 'root' ? null : folderId,
+      file.name
+    );
 
-    await writeFile(filePath, buffer);
+    // Upload to Google Cloud Storage
+    const gcsResult = await uploadToGCS({
+      destination: gcsPath,
+      file: buffer,
+      contentType: file.type,
+      metadata: {
+        originalName: file.name,
+        uploadedBy: user._id.toString(),
+        organization: user.organization?.toString() || '',
+        checksum,
+      },
+      makePublic: false, // Keep files private by default
+    });
 
     const parsedTags = tags ? tags.split(',').map(tag => tag.toLowerCase().trim()) : [];
     const parsedRoles = allowedRoles
@@ -165,10 +171,11 @@ export async function POST(req: NextRequest) {
       : ['org_admin', 'atc_supervisor', 'atc', 'editor'];
 
     const dmsFile = await DMSFile.create({
-      filename,
+      filename: file.name,
       originalName: file.name,
-      filePath: `/uploads/dms/${filename}`,
-      storageUrl: `/uploads/dms/${filename}`,
+      filePath: gcsPath, // Store GCS path
+      storageUrl: gcsResult.url, // Store signed URL
+      gcsUrl: gcsResult.gsUrl, // Store gs:// URL
       mimeType: file.type,
       fileType: getFileType(file.type),
       size: file.size,
@@ -178,8 +185,21 @@ export async function POST(req: NextRequest) {
       tags: parsedTags,
       description: description || '',
       allowedRoles: parsedRoles,
+      approvalRequired,
+      approvalStatus: approvalRequired ? 'pending' : undefined,
+      approvalHistory: approvalRequired
+        ? [
+            {
+              action: 'submitted',
+              by: user._id,
+              at: new Date(),
+              comments: 'File submitted for approval',
+            },
+          ]
+        : [],
       metadata: {
         checksum,
+        gcsPath,
       },
     });
 

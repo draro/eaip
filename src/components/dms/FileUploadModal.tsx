@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Upload, X, FileIcon, AlertCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Upload, X, FileIcon, AlertCircle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FileUploadModalProps {
@@ -33,6 +34,7 @@ export default function FileUploadModal({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [description, setDescription] = useState('');
+  const [approvalRequired, setApprovalRequired] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
@@ -120,6 +122,7 @@ export default function FileUploadModal({
       formData.append('folderId', currentFolderId);
       formData.append('tags', tags.join(','));
       formData.append('description', description);
+      formData.append('approvalRequired', String(approvalRequired));
       formData.append(
         'allowedRoles',
         JSON.stringify(['org_admin', 'atc_supervisor', 'atc', 'editor'])
@@ -149,6 +152,7 @@ export default function FileUploadModal({
     setTags([]);
     setTagInput('');
     setDescription('');
+    setApprovalRequired(false);
     setError('');
     setUploading(false);
     onClose();
@@ -287,6 +291,36 @@ export default function FileUploadModal({
             <p className="text-xs text-gray-400 mt-1">
               {description.length}/1000 characters
             </p>
+          </div>
+
+          {/* Approval Required */}
+          <div className="flex items-start space-x-3 rounded-lg border border-gray-200 p-4">
+            <Checkbox
+              id="approval"
+              checked={approvalRequired}
+              onCheckedChange={(checked) => setApprovalRequired(checked as boolean)}
+              disabled={uploading}
+            />
+            <div className="flex-1">
+              <Label
+                htmlFor="approval"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Requires Approval
+              </Label>
+              <p className="text-sm text-gray-500 mt-1">
+                This file will need to be approved by an administrator before it becomes
+                accessible to all users. You will be notified once it's reviewed.
+              </p>
+              {approvalRequired && (
+                <Alert className="mt-3 bg-amber-50 border-amber-200">
+                  <CheckCircle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800">
+                    File will be submitted for approval and marked as pending until reviewed.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           </div>
         </div>
 

@@ -5,6 +5,7 @@ export interface IDMSFile extends Document {
   originalName: string;
   filePath: string;
   storageUrl: string;
+  gcsUrl?: string; // Google Cloud Storage gs:// URL
   mimeType: string;
   fileType: 'document' | 'image' | 'pdf' | 'excel' | 'video' | 'audio' | 'other';
   size: number;
@@ -25,10 +26,33 @@ export interface IDMSFile extends Document {
     author?: string;
     title?: string;
     checksum?: string;
+    gcsPath?: string; // Google Cloud Storage path
   };
   allowedRoles: string[];
   downloadCount: number;
   lastDownloadedAt?: Date;
+  viewCount: number;
+  lastViewedAt?: Date;
+  approvalRequired: boolean;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: mongoose.Types.ObjectId;
+  approvedAt?: Date;
+  approvalComments?: string;
+  approvalHistory: Array<{
+    action: 'submitted' | 'approved' | 'rejected' | 'resubmitted';
+    by: mongoose.Types.ObjectId;
+    at: Date;
+    comments?: string;
+  }>;
+  versionHistory: Array<{
+    version: number;
+    fileId: mongoose.Types.ObjectId;
+    uploadedBy: mongoose.Types.ObjectId;
+    uploadedAt: Date;
+    changeNote?: string;
+    size: number;
+    checksum?: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +75,10 @@ const DMSFileSchema = new Schema<IDMSFile>(
       trim: true,
     },
     storageUrl: {
+      type: String,
+      trim: true,
+    },
+    gcsUrl: {
       type: String,
       trim: true,
     },
@@ -136,6 +164,7 @@ const DMSFileSchema = new Schema<IDMSFile>(
       author: { type: String, trim: true },
       title: { type: String, trim: true },
       checksum: { type: String, trim: true },
+      gcsPath: { type: String, trim: true },
     },
     allowedRoles: {
       type: [String],
@@ -149,6 +178,94 @@ const DMSFileSchema = new Schema<IDMSFile>(
     },
     lastDownloadedAt: {
       type: Date,
+    },
+    viewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastViewedAt: {
+      type: Date,
+    },
+    approvalRequired: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      index: true,
+    },
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    approvedAt: {
+      type: Date,
+    },
+    approvalComments: {
+      type: String,
+      maxLength: [1000, 'Approval comments cannot exceed 1000 characters'],
+    },
+    approvalHistory: {
+      type: [{
+        action: {
+          type: String,
+          enum: ['submitted', 'approved', 'rejected', 'resubmitted'],
+          required: true,
+        },
+        by: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        at: {
+          type: Date,
+          required: true,
+          default: Date.now,
+        },
+        comments: {
+          type: String,
+          maxLength: 1000,
+        },
+      }],
+      default: [],
+    },
+    versionHistory: {
+      type: [{
+        version: {
+          type: Number,
+          required: true,
+        },
+        fileId: {
+          type: Schema.Types.ObjectId,
+          ref: 'DMSFile',
+          required: true,
+        },
+        uploadedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        uploadedAt: {
+          type: Date,
+          required: true,
+          default: Date.now,
+        },
+        changeNote: {
+          type: String,
+          maxLength: 500,
+        },
+        size: {
+          type: Number,
+          required: true,
+        },
+        checksum: {
+          type: String,
+        },
+      }],
+      default: [],
     },
   },
   {
@@ -164,6 +281,9 @@ DMSFileSchema.index({ organization: 1, fileType: 1 });
 DMSFileSchema.index({ uploadedBy: 1, uploadedAt: -1 });
 DMSFileSchema.index({ tags: 1, organization: 1 });
 DMSFileSchema.index({ originalName: 'text', description: 'text', tags: 'text' });
+DMSFileSchema.index({ organization: 1, approvalRequired: 1, approvalStatus: 1 });
+DMSFileSchema.index({ parentFile: 1, version: 1 });
+DMSFileSchema.index({ parentFile: 1, isLatest: 1 });
 
 // Methods
 DMSFileSchema.methods.getFileExtension = function (): string {
@@ -197,6 +317,12 @@ DMSFileSchema.methods.incrementDownloadCount = async function (): Promise<void> 
   await this.save();
 };
 
+DMSFileSchema.methods.incrementViewCount = async function (): Promise<void> {
+  this.viewCount += 1;
+  this.lastViewedAt = new Date();
+  await this.save();
+};
+
 DMSFileSchema.methods.addTags = function (newTags: string[]): void {
   const uniqueTags = new Set([...this.tags, ...newTags.map((tag: string) => tag.toLowerCase().trim())]);
   this.tags = Array.from(uniqueTags).slice(0, 20);
@@ -225,6 +351,26 @@ DMSFileSchema.statics.getLatestFiles = function (organizationId: mongoose.Types.
     .limit(limit)
     .populate('uploadedBy', 'name email')
     .populate('folder', 'name path');
+};
+
+DMSFileSchema.statics.getAllVersions = function (fileId: mongoose.Types.ObjectId) {
+  return this.find({
+    $or: [
+      { _id: fileId },
+      { parentFile: fileId }
+    ]
+  })
+    .sort({ version: -1 })
+    .populate('uploadedBy', 'name email');
+};
+
+DMSFileSchema.statics.getVersion = function (fileId: mongoose.Types.ObjectId, version: number) {
+  return this.findOne({
+    $or: [
+      { _id: fileId, version: version },
+      { parentFile: fileId, version: version }
+    ]
+  });
 };
 
 export default mongoose.models.DMSFile ||

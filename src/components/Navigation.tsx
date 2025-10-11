@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { Building2, FileText, Users, Settings, ChartBar as BarChart3, Globe, Shield, User, LogOut, Menu, ChevronDown, Bell, GitBranch, Calendar, SquareCheck as CheckSquare, Eye, X } from 'lucide-react';
+import { Building2, FileText, Users, Settings, ChartBar as BarChart3, Globe, Shield, User, LogOut, Menu, ChevronDown, Bell, GitBranch, Calendar, SquareCheck as CheckSquare, Eye, X, FolderOpen } from 'lucide-react';
 
 interface NavigationProps {
   user?: {
@@ -56,6 +56,12 @@ export default function Navigation({ user }: NavigationProps) {
       href: '/documents',
       icon: FileText,
       roles: ['super_admin', 'org_admin', 'editor', 'viewer']
+    },
+    {
+      title: 'DMS',
+      href: '/dms',
+      icon: FolderOpen,
+      roles: ['super_admin', 'org_admin', 'atc_supervisor', 'atc', 'editor', 'viewer']
     },
     {
       title: 'Checklists',
@@ -128,6 +134,8 @@ export default function Navigation({ user }: NavigationProps) {
     if (href === '/') return pathname === '/';
     if (href === '/dashboard') return pathname === '/dashboard';
     if (href === '/atc-dashboard') return pathname === '/atc-dashboard';
+    if (href === '/admin') return pathname === '/admin' || pathname.startsWith('/admin/');
+    if (href === '/dms') return pathname === '/dms' || pathname.startsWith('/dms/');
     return pathname.startsWith(href);
   };
 

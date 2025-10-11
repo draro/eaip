@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Layout from '@/components/Layout';
+import Navigation from '@/components/Navigation';
 import FileFolderBrowser from '@/components/dms/FileFolderBrowser';
 
 export default function DMSPage() {
@@ -18,11 +18,9 @@ export default function DMSPage() {
 
   if (status === 'loading') {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
@@ -31,7 +29,8 @@ export default function DMSPage() {
   }
 
   return (
-    <Layout>
+    <>
+      <Navigation user={session?.user as any} />
       <div className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Document Management</h1>
@@ -50,6 +49,6 @@ export default function DMSPage() {
           }}
         />
       </div>
-    </Layout>
+    </>
   );
 }
