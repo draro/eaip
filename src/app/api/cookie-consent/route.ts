@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/db';
+import { authOptions } from '@/lib/auth/authOptions';
+import connectDB from '@/lib/mongodb';
 import CookieConsent from '@/models/CookieConsent';
 import { randomBytes } from 'crypto';
 
@@ -65,9 +65,7 @@ export async function POST(req: NextRequest) {
 
     if (userId) {
       consentData.userId = userId;
-      if (session?.user?.organization) {
-        consentData.organization = session.user.organization;
-      }
+      // Note: organization will be set via user lookup if needed
     } else if (sessionId) {
       consentData.sessionId = sessionId;
     }

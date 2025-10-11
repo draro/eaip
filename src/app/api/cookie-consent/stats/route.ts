@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/db';
+import { authOptions } from '@/lib/auth/authOptions';
+import connectDB from '@/lib/mongodb';
 import CookieConsent from '@/models/CookieConsent';
 import mongoose from 'mongoose';
 
@@ -27,6 +27,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Get user's organization from User model
+    const User = (await import('@/models/User')).default;
+    const user = await User.findById(session.user.id).select('organization');
+
+    if (!user || !user.organization) {
+      return NextResponse.json(
+        { error: 'User organization not found' },
+        { status: 404 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
@@ -41,7 +52,7 @@ export async function GET(req: NextRequest) {
       endDate = new Date(endDateParam);
     }
 
-    const organizationId = new mongoose.Types.ObjectId(session.user.organization);
+    const organizationId = new mongoose.Types.ObjectId(user.organization.toString());
 
     // Get overall statistics
     const stats = await (CookieConsent as any).getConsentStats(
