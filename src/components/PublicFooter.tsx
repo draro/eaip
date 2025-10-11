@@ -64,6 +64,7 @@ export default function PublicFooter() {
               <li><Link href="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
               <li><Link href="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/legal/cookies" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/legal/cookie-preferences" className="hover:text-white transition-colors">Cookie Preferences</Link></li>
               <li>
                 <a href="mailto:privacy@flyclim.com" className="hover:text-white transition-colors flex items-center">
                   <Mail className="h-3 w-3 mr-1" />

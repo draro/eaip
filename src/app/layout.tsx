@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import SessionProvider from "@/components/providers/SessionProvider";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
+import GoogleTagManager from "@/components/GoogleTagManager";
 import "./globals.css";
 import "../styles/eaip.css";
 
@@ -123,6 +125,8 @@ export default function RootLayout({
       <body>
         <SessionProvider>
           {children}
+          <CookieConsentBanner />
+          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || ''} />
         </SessionProvider>
       </body>
     </html>

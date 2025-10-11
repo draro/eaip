@@ -201,7 +201,7 @@ export default function PrivacyPolicy() {
               <p className="text-gray-700">
                 If you are in the EEA and believe we have not addressed your concerns adequately, you have the right to lodge a complaint with your local data protection supervisory authority.
               </p>
-            </div>
+            </section>
 
             <div className="border-t border-gray-200 pt-8">
               <p className="text-sm text-gray-500">
