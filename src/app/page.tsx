@@ -5,24 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import PublicNav from '@/components/PublicNav';
 import Image from "next/image";
-import {
-  FileText,
-  Download,
-  Users,
-  Shield,
-  Globe,
-  CheckCircle,
-  Zap,
-  Lock,
-  Workflow,
-  Plane,
-  MapPin,
-  Bell,
-  Award,
-  Clock,
-  ArrowRight,
-  Radio
-} from 'lucide-react';
+import { FileText, Download, Users, Shield, Globe, CircleCheck as CheckCircle, Zap, Lock, Workflow, Plane, MapPin, Bell, Award, Clock, ArrowRight, Radio } from 'lucide-react';
 
 export default function HomePage() {
   // Public landing page for Civil Aviation Authorities
