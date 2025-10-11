@@ -36,7 +36,8 @@ interface AuditLog {
 
 interface LogsResponse {
   success: boolean;
-  data: {
+  error?: string;
+  data?: {
     logs: AuditLog[];
     pagination: {
       page: number;
@@ -115,7 +116,7 @@ export default function AuditLogsPage() {
       const response = await fetch(`/api/admin/logs?${params}`);
       const data: LogsResponse = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.success || !data.data) {
         throw new Error(data.error || 'Failed to fetch logs');
       }
 
