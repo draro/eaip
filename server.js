@@ -8,7 +8,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
-
+const { log } = require('./server-tools/logger.js');
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
@@ -101,13 +101,27 @@ app.prepare().then(() => {
   });
 
   io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
+    log.http('WebSocket Client Connected', {
+      userId: socket.id,
+      organizationId: '',
+      action: 'connect',
+      resource: 'websocket',
+    });
 
     // Join a document editing room
     socket.on('join-document', (data) => {
-      const { documentId, userId, userName } = data;
-      const roomId = `document:${documentId}`;
 
+      const { documentId, userId, userName, organizationId } = data;
+      const roomId = `document:${documentId}`;
+      log.http('User joined document', {
+        userId,
+        userName,
+        documentId,
+        organizationId,
+        socketId: socket.id,
+        action: 'join-document',
+        resource: 'websocket',
+      });;
       socket.join(roomId);
 
       if (!documentPresences.has(documentId)) {
@@ -131,7 +145,12 @@ app.prepare().then(() => {
 
       const activePresences = Array.from(presences.values());
       socket.emit('presences-update', activePresences);
-
+      log.info('WebSocket User Joined Document', {
+        userId: userName,
+        organizationId: organizationId,
+        action: 'join-document ' + documentId,
+        resource: 'websocket',
+      })
       console.log(`User ${userName} joined document ${documentId}`);
     });
 
