@@ -1,4 +1,121 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// import mongoose, { Schema, Document } from 'mongoose';
+
+// export interface IFileView extends Document {
+//   file: mongoose.Types.ObjectId;
+//   user: mongoose.Types.ObjectId;
+//   organization: mongoose.Types.ObjectId;
+//   viewedAt: Date;
+//   duration: number; // in seconds
+//   viewType: 'preview' | 'download';
+//   ipAddress?: string;
+//   userAgent?: string;
+//   completedView: boolean; // whether the user viewed the full document
+//   metadata?: {
+//     scrollPercentage?: number;
+//     pagesViewed?: number[];
+//     totalPages?: number;
+//   };
+// }
+
+// const FileViewSchema = new Schema<IFileView>(
+//   {
+//     file: {
+//       type: Schema.Types.ObjectId,
+//       ref: 'DMSFile',
+//       required: true,
+//       index: true,
+//     },
+//     user: {
+//       type: Schema.Types.ObjectId,
+//       ref: 'User',
+//       required: true,
+//       index: true,
+//     },
+//     organization: {
+//       type: Schema.Types.ObjectId,
+//       ref: 'Organization',
+//       required: true,
+//       index: true,
+//     },
+//     viewedAt: {
+//       type: Date,
+//       required: true,
+//       default: Date.now,
+//       index: true,
+//     },
+//     duration: {
+//       type: Number,
+//       default: 0,
+//       min: 0,
+//     },
+//     viewType: {
+//       type: String,
+//       enum: ['preview', 'download'],
+//       required: true,
+//       default: 'preview',
+//     },
+//     ipAddress: {
+//       type: String,
+//       trim: true,
+//     },
+//     userAgent: {
+//       type: String,
+//       trim: true,
+//     },
+//     completedView: {
+//       type: Boolean,
+//       default: false,
+//     },
+//     metadata: {
+//       scrollPercentage: { type: Number, min: 0, max: 100 },
+//       pagesViewed: [{ type: Number }],
+//       totalPages: { type: Number },
+//     },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
+
+// // Compound indexes for efficient queries
+// FileViewSchema.index({ file: 1, user: 1, viewedAt: -1 });
+// FileViewSchema.index({ organization: 1, viewedAt: -1 });
+// FileViewSchema.index({ file: 1, viewedAt: -1 });
+// FileViewSchema.index({ user: 1, viewedAt: -1 });
+
+// // Static methods
+// FileViewSchema.statics.getFileViewCount = function (fileId: mongoose.Types.ObjectId) {
+//   return this.countDocuments({ file: fileId });
+// };
+
+// FileViewSchema.statics.getUniqueViewers = async function (fileId: mongoose.Types.ObjectId) {
+//   const viewers = await this.distinct('user', { file: fileId });
+//   return viewers.length;
+// };
+
+// FileViewSchema.statics.getAverageViewDuration = async function (fileId: mongoose.Types.ObjectId) {
+//   const result = await this.aggregate([
+//     { $match: { file: fileId } },
+//     { $group: { _id: null, avgDuration: { $avg: '$duration' } } },
+//   ]);
+//   return result.length > 0 ? Math.round(result[0].avgDuration) : 0;
+// };
+
+// FileViewSchema.statics.getRecentViewers = function (
+//   fileId: mongoose.Types.ObjectId,
+//   limit: number = 10
+// ) {
+//   return this.find({ file: fileId })
+//     .sort({ viewedAt: -1 })
+//     .limit(limit)
+//     .populate('user', 'name email role')
+//     .populate('file', 'originalName fileType');
+// };
+
+// export default mongoose.models.FileView ||
+//   mongoose.model<IFileView>('FileView', FileViewSchema);
+
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IFileView extends Document {
   file: mongoose.Types.ObjectId;
@@ -6,10 +123,10 @@ export interface IFileView extends Document {
   organization: mongoose.Types.ObjectId;
   viewedAt: Date;
   duration: number; // in seconds
-  viewType: 'preview' | 'download';
+  viewType: "preview" | "download";
   ipAddress?: string;
   userAgent?: string;
-  completedView: boolean; // whether the user viewed the full document
+  completedView: boolean;
   metadata?: {
     scrollPercentage?: number;
     pagesViewed?: number[];
@@ -17,100 +134,88 @@ export interface IFileView extends Document {
   };
 }
 
-const FileViewSchema = new Schema<IFileView>(
+export interface FileViewModel extends mongoose.Model<IFileView> {
+  getFileViewCount(fileId: mongoose.Types.ObjectId): Promise<number>;
+  getUniqueViewers(fileId: mongoose.Types.ObjectId): Promise<number>;
+  getAverageViewDuration(fileId: mongoose.Types.ObjectId): Promise<number>;
+  getRecentViewers(
+    fileId: mongoose.Types.ObjectId,
+    limit?: number
+  ): Promise<IFileView[]>;
+}
+
+const FileViewSchema = new Schema<IFileView, FileViewModel>(
   {
     file: {
       type: Schema.Types.ObjectId,
-      ref: 'DMSFile',
+      ref: "DMSFile",
       required: true,
       index: true,
     },
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
     organization: {
       type: Schema.Types.ObjectId,
-      ref: 'Organization',
+      ref: "Organization",
       required: true,
       index: true,
     },
-    viewedAt: {
-      type: Date,
-      required: true,
-      default: Date.now,
-      index: true,
-    },
-    duration: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
+    viewedAt: { type: Date, required: true, default: Date.now, index: true },
+    duration: { type: Number, default: 0, min: 0 },
     viewType: {
       type: String,
-      enum: ['preview', 'download'],
+      enum: ["preview", "download"],
       required: true,
-      default: 'preview',
+      default: "preview",
     },
-    ipAddress: {
-      type: String,
-      trim: true,
-    },
-    userAgent: {
-      type: String,
-      trim: true,
-    },
-    completedView: {
-      type: Boolean,
-      default: false,
-    },
+    ipAddress: { type: String, trim: true },
+    userAgent: { type: String, trim: true },
+    completedView: { type: Boolean, default: false },
     metadata: {
       scrollPercentage: { type: Number, min: 0, max: 100 },
       pagesViewed: [{ type: Number }],
       totalPages: { type: Number },
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Compound indexes for efficient queries
+// Indexes
 FileViewSchema.index({ file: 1, user: 1, viewedAt: -1 });
 FileViewSchema.index({ organization: 1, viewedAt: -1 });
 FileViewSchema.index({ file: 1, viewedAt: -1 });
 FileViewSchema.index({ user: 1, viewedAt: -1 });
 
-// Static methods
-FileViewSchema.statics.getFileViewCount = function (fileId: mongoose.Types.ObjectId) {
+// Static Methods
+FileViewSchema.statics.getFileViewCount = function (fileId) {
   return this.countDocuments({ file: fileId });
 };
 
-FileViewSchema.statics.getUniqueViewers = async function (fileId: mongoose.Types.ObjectId) {
-  const viewers = await this.distinct('user', { file: fileId });
+FileViewSchema.statics.getUniqueViewers = async function (fileId) {
+  const viewers = await this.distinct("user", { file: fileId });
   return viewers.length;
 };
 
-FileViewSchema.statics.getAverageViewDuration = async function (fileId: mongoose.Types.ObjectId) {
+FileViewSchema.statics.getAverageViewDuration = async function (fileId) {
   const result = await this.aggregate([
     { $match: { file: fileId } },
-    { $group: { _id: null, avgDuration: { $avg: '$duration' } } },
+    { $group: { _id: null, avgDuration: { $avg: "$duration" } } },
   ]);
   return result.length > 0 ? Math.round(result[0].avgDuration) : 0;
 };
 
-FileViewSchema.statics.getRecentViewers = function (
-  fileId: mongoose.Types.ObjectId,
-  limit: number = 10
-) {
+FileViewSchema.statics.getRecentViewers = function (fileId, limit = 10) {
   return this.find({ file: fileId })
     .sort({ viewedAt: -1 })
     .limit(limit)
-    .populate('user', 'name email role')
-    .populate('file', 'originalName fileType');
+    .populate("user", "name email role")
+    .populate("file", "originalName fileType");
 };
 
-export default mongoose.models.FileView ||
-  mongoose.model<IFileView>('FileView', FileViewSchema);
+// ✅ Fix: Use FileViewModel when registering the model
+export default (mongoose.models.FileView as FileViewModel) ||
+  mongoose.model<IFileView, FileViewModel>("FileView", FileViewSchema);
