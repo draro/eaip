@@ -1,5 +1,5 @@
-import winston from 'winston';
-import MongoDB from 'winston-mongodb';
+import * as winston from 'winston';
+import { MongoDB } from 'winston-mongodb';
 
 /**
  * Winston Structured Logging Configuration
@@ -57,7 +57,7 @@ transports.push(
 // MongoDB transport (only if MongoDB URI is configured)
 if (process.env.MONGODB_URI) {
   transports.push(
-    new MongoDB.MongoDB({
+    new MongoDB({
       db: process.env.MONGODB_URI,
       collection: 'auditlogs',
       level: 'info', // Only log info and above to database
@@ -312,9 +312,6 @@ export const log = new SecureLogger();
 
 // Export raw Winston logger for advanced use cases
 export { logger as winstonLogger };
-
-// Export types
-export type { LogContext };
 
 /**
  * Usage Examples:
