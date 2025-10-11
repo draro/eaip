@@ -2,8 +2,12 @@ node_modules
 .next/
 dist
 .next
+
+# Environment variables - NEVER commit these!
 .env
-.env.local
+.env.*
+!.env.example
+
 git-repos
 .DS_Store
 .vscode
