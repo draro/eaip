@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { PasswordHasher } from '@/lib/passwordHasher';
 
 export interface PasswordStrength {
   score: number;
@@ -52,7 +53,7 @@ export class SecurityUtils {
 
     return {
       password,
-      hashedPassword: bcrypt.hashSync(password, this.SALT_ROUNDS),
+      hashedPassword: bcrypt.hashSync(password, this.SALT_ROUNDS), // Use sync for immediate password generation
       entropy: Math.round(entropy * 100) / 100
     };
   }
@@ -187,11 +188,11 @@ export class SecurityUtils {
       throw new Error(`Invalid password: ${validation.errors.join(', ')}`);
     }
 
-    return bcrypt.hash(password, this.SALT_ROUNDS);
+    return PasswordHasher.hash(password);
   }
 
   static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    return bcrypt.compare(password, hashedPassword);
+    return PasswordHasher.verify(password, hashedPassword);
   }
 
   static generatePasswordResetToken(): string {

@@ -4,14 +4,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import { domainService, DomainService } from "@/lib/domainServer";
-import crypto from "crypto";
-
-function hashPassword(password: string) {
-  return crypto
-    .createHash("sha256")
-    .update(password + "eAIP_salt_2025")
-    .digest("hex");
-}
+import { PasswordHasher } from "@/lib/passwordHasher";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -108,17 +101,25 @@ export const authOptions: AuthOptions = {
 
           console.log("User found:", user);
 
-          const hashedInput = hashPassword(credentials.password);
-          const isPasswordValid = hashedInput === user.password;
+          // Authenticate with transparent migration from SHA-256 to bcrypt
+          const authResult = await PasswordHasher.authenticateAndMigrate(
+            credentials.password,
+            user.password
+          );
 
-          console.log("Password comparison:", {
-            inputPassword: credentials.password,
-            hashedInput,
-            storedHash: user.password,
-            match: isPasswordValid,
+          console.log("Password authentication:", {
+            authenticated: authResult.authenticated,
+            needsMigration: authResult.needsMigration,
           });
 
-          if (!isPasswordValid) return null;
+          if (!authResult.authenticated) return null;
+
+          // If password needs migration from SHA-256 to bcrypt, update it
+          if (authResult.needsMigration && authResult.newHash) {
+            console.log("Migrating password to bcrypt for user:", user.email);
+            user.password = authResult.newHash;
+            await user.save();
+          }
 
           return {
             id: user._id.toString(),
@@ -156,7 +157,23 @@ export const authOptions: AuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 8 * 60 * 60, // 8 hours (28800 seconds) - SOC 2 compliant
+    updateAge: 60 * 60, // Refresh session every hour
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true, // Prevents client-side JavaScript access (XSS protection)
+        sameSite: 'lax', // CSRF protection (use 'strict' for higher security)
+        path: '/',
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      },
+    },
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
   callbacks: {
     async jwt({ token, user }: any) {
       if (user) {
