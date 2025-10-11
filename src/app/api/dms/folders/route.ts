@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/authOptions';
 import connectDB from '@/lib/mongodb';
 import Folder from '@/models/Folder';
 import User from '@/models/User';
+import { createFolderInGCS } from '@/lib/googleCloudStorage';
 
 export async function GET(req: NextRequest) {
   try {
@@ -147,6 +148,18 @@ export async function POST(req: NextRequest) {
       isPublic: isPublic || false,
       allowedRoles: allowedRoles || ['org_admin', 'atc_supervisor', 'atc', 'editor'],
     });
+
+    // Create folder in Google Cloud Storage
+    try {
+      await createFolderInGCS(
+        user.organization.toString(),
+        folder._id.toString()
+      );
+      console.log(`✓ Created folder in GCS: organizations/${user.organization}/documents/folders/${folder._id}`);
+    } catch (gcsError) {
+      console.error('Warning: Failed to create folder in GCS:', gcsError);
+      // Continue even if GCS folder creation fails
+    }
 
     if (parentFolder) {
       await Folder.findByIdAndUpdate(parentFolder, {

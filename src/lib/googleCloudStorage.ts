@@ -289,3 +289,99 @@ export function generateAssetPath(
   const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
   return `organizations/${organizationId}/assets/${assetType}/${timestamp}-${randomString}-${safeFilename}`;
 }
+
+/**
+ * Create a folder in GCS by creating a placeholder file
+ * GCS doesn't have real folders, so we create a .folderkeeper file to represent the folder
+ */
+export async function createFolderInGCS(
+  organizationId: string,
+  folderPath: string,
+  bucketName?: string
+): Promise<boolean> {
+  try {
+    const storage = getGCSClient();
+    const bucket = storage.bucket(bucketName || process.env.GCS_BUCKET_NAME!);
+
+    // Create folder path in GCS structure
+    const gcsPath = `organizations/${organizationId}/documents/folders/${folderPath}/.folderkeeper`;
+    const file = bucket.file(gcsPath);
+
+    // Create empty placeholder file
+    await file.save('', {
+      contentType: 'text/plain',
+      metadata: {
+        metadata: {
+          type: 'folder_placeholder',
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error creating folder in GCS:', error);
+    return false;
+  }
+}
+
+/**
+ * Delete a folder from GCS by deleting all files with the folder prefix
+ */
+export async function deleteFolderFromGCS(
+  organizationId: string,
+  folderPath: string,
+  bucketName?: string
+): Promise<boolean> {
+  try {
+    const storage = getGCSClient();
+    const bucket = storage.bucket(bucketName || process.env.GCS_BUCKET_NAME!);
+
+    const prefix = `organizations/${organizationId}/documents/folders/${folderPath}/`;
+
+    // Delete all files with this prefix
+    const [files] = await bucket.getFiles({ prefix });
+
+    await Promise.all(files.map(file => file.delete()));
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting folder from GCS:', error);
+    return false;
+  }
+}
+
+/**
+ * Move/rename a folder in GCS
+ */
+export async function moveFolderInGCS(
+  organizationId: string,
+  sourceFolderPath: string,
+  destinationFolderPath: string,
+  bucketName?: string
+): Promise<boolean> {
+  try {
+    const storage = getGCSClient();
+    const bucket = storage.bucket(bucketName || process.env.GCS_BUCKET_NAME!);
+
+    const sourcePrefix = `organizations/${organizationId}/documents/folders/${sourceFolderPath}/`;
+    const destPrefix = `organizations/${organizationId}/documents/folders/${destinationFolderPath}/`;
+
+    // Get all files in source folder
+    const [files] = await bucket.getFiles({ prefix: sourcePrefix });
+
+    // Move each file
+    await Promise.all(
+      files.map(async (file) => {
+        const relativePath = file.name.substring(sourcePrefix.length);
+        const newPath = destPrefix + relativePath;
+        await file.move(newPath);
+      })
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Error moving folder in GCS:', error);
+    return false;
+  }
+}

@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import connectDB from '@/lib/mongodb';
-import DocumentFile from '@/models/DocumentFile';
+import DMSFile from '@/models/DMSFile';
+import Folder from '@/models/Folder';
 import User from '@/models/User';
+import { moveFileInGCS, generateGCSPath } from '@/lib/googleCloudStorage';
 
 export async function PATCH(
   req: NextRequest,
@@ -42,7 +44,7 @@ export async function PATCH(
     }
 
     // Find the file
-    const file = await DocumentFile.findById(params.id);
+    const file = await DMSFile.findById(params.id);
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -55,15 +57,84 @@ export async function PATCH(
       );
     }
 
+    // Get old and new folder info for metadata updates
+    const oldFolderId = file.folder?.toString();
+    const newFolderId = targetFolderId === 'root' ? null : targetFolderId;
+
+    // Verify target folder exists and belongs to same organization
+    let targetFolder = null;
+    if (newFolderId) {
+      targetFolder = await Folder.findById(newFolderId);
+      if (!targetFolder) {
+        return NextResponse.json({ error: 'Target folder not found' }, { status: 404 });
+      }
+      if (targetFolder.organization.toString() !== user.organization?.toString()) {
+        return NextResponse.json(
+          { error: 'Target folder belongs to different organization' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Move file in Google Cloud Storage
+    if (file.filePath) {
+      try {
+        const newGCSPath = generateGCSPath(
+          user.organization?.toString() || '',
+          newFolderId,
+          file.originalName
+        );
+
+        await moveFileInGCS(file.filePath, newGCSPath);
+
+        // Update file path in database
+        file.filePath = newGCSPath;
+        file.metadata = {
+          ...file.metadata,
+          gcsPath: newGCSPath,
+        };
+
+        console.log(`✓ Moved file in GCS from ${file.filePath} to ${newGCSPath}`);
+      } catch (gcsError) {
+        console.error('Error moving file in GCS:', gcsError);
+        return NextResponse.json(
+          { error: 'Failed to move file in Google Cloud Storage' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Update folder metadata
+    if (oldFolderId) {
+      await Folder.findByIdAndUpdate(oldFolderId, {
+        $inc: {
+          'metadata.fileCount': -1,
+          'metadata.totalSize': -file.size,
+        },
+      });
+    }
+
+    if (newFolderId) {
+      await Folder.findByIdAndUpdate(newFolderId, {
+        $inc: {
+          'metadata.fileCount': 1,
+          'metadata.totalSize': file.size,
+        },
+      });
+    }
+
     // Update the file's folder
-    const folderId = targetFolderId === 'root' ? null : targetFolderId;
-    file.folder = folderId;
+    file.folder = newFolderId as any;
     await file.save();
+
+    const populatedFile = await DMSFile.findById(file._id)
+      .populate('uploadedBy', 'name email role')
+      .populate('folder', 'name path');
 
     return NextResponse.json({
       success: true,
       message: 'File moved successfully',
-      file,
+      file: populatedFile,
     });
   } catch (error: any) {
     console.error('Error moving file:', error);
