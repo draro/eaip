@@ -246,7 +246,8 @@ export async function listFilesInFolder(
 }
 
 /**
- * Generate a unique file path for uploads
+ * Generate a unique file path for DMS document uploads
+ * Structure: organizations/{orgId}/documents/{folderId}/{file}
  */
 export function generateGCSPath(
   organizationId: string,
@@ -258,8 +259,33 @@ export function generateGCSPath(
   const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
 
   if (folderId && folderId !== 'root') {
-    return `organizations/${organizationId}/folders/${folderId}/${timestamp}-${randomString}-${safeFilename}`;
+    return `organizations/${organizationId}/documents/folders/${folderId}/${timestamp}-${randomString}-${safeFilename}`;
   } else {
-    return `organizations/${organizationId}/root/${timestamp}-${randomString}-${safeFilename}`;
+    return `organizations/${organizationId}/documents/root/${timestamp}-${randomString}-${safeFilename}`;
   }
+}
+
+/**
+ * Generate path for organization logos
+ * Structure: common/logos/{orgId}/{file}
+ */
+export function generateLogoPath(organizationId: string, filename: string): string {
+  const timestamp = Date.now();
+  const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  return `common/logos/${organizationId}/${timestamp}-${safeFilename}`;
+}
+
+/**
+ * Generate path for organization assets (other than logos)
+ * Structure: organizations/{orgId}/assets/{type}/{file}
+ */
+export function generateAssetPath(
+  organizationId: string,
+  assetType: 'avatar' | 'banner' | 'icon' | 'other',
+  filename: string
+): string {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 8);
+  const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  return `organizations/${organizationId}/assets/${assetType}/${timestamp}-${randomString}-${safeFilename}`;
 }

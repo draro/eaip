@@ -41,7 +41,9 @@ export default function NewWorkflowPage() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [workflowType, setWorkflowType] = useState<'document' | 'dms'>('document');
   const [documentTypes, setDocumentTypes] = useState<string[]>(['AIP']);
+  const [dmsFileTypes, setDmsFileTypes] = useState<string[]>(['pdf']);
   const [steps, setSteps] = useState<WorkflowStep[]>([
     {
       id: 'draft',
@@ -57,6 +59,7 @@ export default function NewWorkflowPage() {
   ]);
 
   const availableDocTypes = ['AIP', 'GEN', 'ENR', 'AD', 'SUPPLEMENT', 'NOTAM'];
+  const availableDmsFileTypes = ['document', 'image', 'pdf', 'excel', 'video', 'audio', 'other'];
   const availableRoles = ['viewer', 'editor', 'admin', 'super_admin'];
   const availableWorkflowRoles = ['reviewer', 'approver'];
 
@@ -89,11 +92,29 @@ export default function NewWorkflowPage() {
     }
   };
 
+  const toggleDmsFileType = (type: string) => {
+    if (dmsFileTypes.includes(type)) {
+      setDmsFileTypes(dmsFileTypes.filter(t => t !== type));
+    } else {
+      setDmsFileTypes([...dmsFileTypes, type]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || steps.length === 0 || documentTypes.length === 0) {
+    if (!name || steps.length === 0) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (workflowType === 'document' && documentTypes.length === 0) {
+      alert('Please select at least one document type');
+      return;
+    }
+
+    if (workflowType === 'dms' && dmsFileTypes.length === 0) {
+      alert('Please select at least one file type');
       return;
     }
 
@@ -114,7 +135,9 @@ export default function NewWorkflowPage() {
         body: JSON.stringify({
           name,
           description,
-          documentTypes,
+          workflowType,
+          documentTypes: workflowType === 'document' ? documentTypes : [],
+          dmsFileTypes: workflowType === 'dms' ? dmsFileTypes : undefined,
           steps: steps.map(step => ({
             id: step.id,
             name: step.name,
@@ -195,21 +218,70 @@ export default function NewWorkflowPage() {
               </div>
 
               <div>
-                <Label>Document Types *</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {availableDocTypes.map(type => (
-                    <Badge
-                      key={type}
-                      variant={documentTypes.includes(type) ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => toggleDocumentType(type)}
-                    >
-                      {type}
-                    </Badge>
-                  ))}
+                <Label>Workflow Type *</Label>
+                <div className="flex gap-4 mt-2">
+                  <div
+                    className={`flex-1 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                      workflowType === 'document'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setWorkflowType('document')}
+                  >
+                    <div className="font-medium">Document Workflow</div>
+                    <p className="text-sm text-gray-600">For AIP, NOTAM, and other aviation documents</p>
+                  </div>
+                  <div
+                    className={`flex-1 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                      workflowType === 'dms'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setWorkflowType('dms')}
+                  >
+                    <div className="font-medium">DMS Workflow</div>
+                    <p className="text-sm text-gray-600">For document management system files</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Select document types this workflow applies to</p>
               </div>
+
+              {workflowType === 'document' && (
+                <div>
+                  <Label>Document Types *</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {availableDocTypes.map(type => (
+                      <Badge
+                        key={type}
+                        variant={documentTypes.includes(type) ? 'default' : 'outline'}
+                        className="cursor-pointer"
+                        onClick={() => toggleDocumentType(type)}
+                      >
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Select document types this workflow applies to</p>
+                </div>
+              )}
+
+              {workflowType === 'dms' && (
+                <div>
+                  <Label>File Types *</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {availableDmsFileTypes.map(type => (
+                      <Badge
+                        key={type}
+                        variant={dmsFileTypes.includes(type) ? 'default' : 'outline'}
+                        className="cursor-pointer"
+                        onClick={() => toggleDmsFileType(type)}
+                      >
+                        {type.toUpperCase()}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Select file types this workflow applies to</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

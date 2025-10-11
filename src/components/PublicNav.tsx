@@ -72,6 +72,9 @@ export default function PublicNav() {
                   <Link href="/features/version-control" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">
                     Version Control
                   </Link>
+                  <Link href="/features/security" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    Security & Multi-tenancy
+                  </Link>
                 </div>
               </div>
             </div>
@@ -153,6 +156,9 @@ export default function PublicNav() {
             </Link>
             <Link href="/features/version-control" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
               Version Control
+            </Link>
+            <Link href="/features/security" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
+              Security
             </Link>
             <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50">
               Blog

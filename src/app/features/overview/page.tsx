@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
 import {
   FileText,
   Bell,
@@ -333,6 +334,7 @@ export default function FeaturesOverview() {
         </div>
       </div>
     </div>
+    <PublicFooter />
     </>
   );
 }

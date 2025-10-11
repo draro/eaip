@@ -22,7 +22,9 @@ export interface IWorkflow extends Document {
   organization?: mongoose.Types.ObjectId;
   isDefault: boolean; // System default workflows
   isActive: boolean;
+  workflowType: 'document' | 'dms'; // Type of workflow
   documentTypes: ('AIP' | 'GEN' | 'ENR' | 'AD' | 'SUPPLEMENT' | 'NOTAM')[];
+  dmsFileTypes?: ('document' | 'image' | 'pdf' | 'excel' | 'video' | 'audio' | 'other')[]; // For DMS workflows
   steps: IWorkflowStep[];
   airacAligned: boolean; // Whether this workflow follows AIRAC deadlines
   createdBy: mongoose.Types.ObjectId;
@@ -90,9 +92,20 @@ const WorkflowSchema = new Schema<IWorkflow>({
     type: Boolean,
     default: true
   },
+  workflowType: {
+    type: String,
+    enum: ['document', 'dms'],
+    default: 'document',
+    required: true,
+    index: true
+  },
   documentTypes: [{
     type: String,
     enum: ['AIP', 'GEN', 'ENR', 'AD', 'SUPPLEMENT', 'NOTAM']
+  }],
+  dmsFileTypes: [{
+    type: String,
+    enum: ['document', 'image', 'pdf', 'excel', 'video', 'audio', 'other']
   }],
   steps: {
     type: [WorkflowStepSchema],
@@ -126,6 +139,8 @@ const WorkflowSchema = new Schema<IWorkflow>({
 WorkflowSchema.index({ organization: 1, isActive: 1 });
 WorkflowSchema.index({ isDefault: 1, isActive: 1 });
 WorkflowSchema.index({ documentTypes: 1 });
+WorkflowSchema.index({ workflowType: 1, organization: 1 });
+WorkflowSchema.index({ workflowType: 1, isActive: 1 });
 
 const WorkflowTemplate: Model<IWorkflow> = mongoose.models.WorkflowTemplate || mongoose.model<IWorkflow>('WorkflowTemplate', WorkflowSchema);
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
 import Image from "next/image";
 import { FileText, Download, Users, Shield, Globe, CircleCheck as CheckCircle, Zap, Lock, Workflow, Plane, MapPin, Bell, Award, Clock, ArrowRight, Radio } from 'lucide-react';
 
@@ -513,52 +514,7 @@ export default function HomePage() {
         }}
       />
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-6">
-                <Plane className="h-8 w-8 text-blue-400" />
-                <span className="text-2xl font-bold">eAIP</span>
-              </div>
-              <p className="text-gray-400">
-                Professional eAIP management platform for Civil Aviation Authorities worldwide.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Features</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/features/document-management" className="hover:text-white transition-colors">Document Management</Link></li>
-                <li><Link href="/features/notam-management" className="hover:text-white transition-colors">NOTAM Integration</Link></li>
-                <li><Link href="/features/compliance" className="hover:text-white transition-colors">Compliance</Link></li>
-                <li><Link href="/features/workflow" className="hover:text-white transition-colors">Workflow</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Platform</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/features/security" className="hover:text-white transition-colors">Security</Link></li>
-                <li><Link href="/features/export" className="hover:text-white transition-colors">Export</Link></li>
-                <li><Link href="/features/version-control" className="hover:text-white transition-colors">Version Control</Link></li>
-                <li><Link href="/features/public-portal" className="hover:text-white transition-colors">Public Portal</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-                <li><Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 eAIP Platform. ICAO Annex 15 & EUROCONTROL Spec 3.0 Compliant.</p>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
     </>
   );
