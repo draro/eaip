@@ -50,6 +50,7 @@ const Workflow = mongoose.models.Workflow || mongoose.model('Workflow', Workflow
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
+    console.log("session",session)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

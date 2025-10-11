@@ -1,5 +1,5 @@
-import mammoth from 'mammoth';
-import * as pdfParse from 'pdf-parse';
+import mammoth from "mammoth";
+import * as pdfParse from "pdf-parse";
 
 export interface ConversionResult {
   success: boolean;
@@ -38,10 +38,11 @@ export class DocumentConverter {
         metadata: {},
       };
     } catch (error) {
-      console.error('DOCX conversion error:', error);
+      console.error("DOCX conversion error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to convert DOCX',
+        error:
+          error instanceof Error ? error.message : "Failed to convert DOCX",
       };
     }
   }
@@ -56,10 +57,13 @@ export class DocumentConverter {
         metadata: {},
       };
     } catch (error) {
-      console.error('DOCX text extraction error:', error);
+      console.error("DOCX text extraction error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to extract text from DOCX',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to extract text from DOCX",
       };
     }
   }
@@ -80,24 +84,24 @@ export class DocumentConverter {
         },
       };
     } catch (error) {
-      console.error('PDF parsing error:', error);
+      console.error("PDF parsing error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to parse PDF',
+        error: error instanceof Error ? error.message : "Failed to parse PDF",
       };
     }
   }
 
   htmlToTipTap(html: string): any {
     const cleanHtml = html
-      .replace(/<strong>/g, '<b>')
-      .replace(/<\/strong>/g, '</b>')
-      .replace(/<em>/g, '<i>')
-      .replace(/<\/em>/g, '</i>');
+      .replace(/<strong>/g, "<b>")
+      .replace(/<\/strong>/g, "</b>")
+      .replace(/<em>/g, "<i>")
+      .replace(/<\/em>/g, "</i>");
 
     const paragraphs = cleanHtml
       .split(/<\/(?:p|h[1-6]|li)>/)
-      .filter(p => p.trim());
+      .filter((p) => p.trim());
 
     const content: any[] = [];
 
@@ -105,54 +109,63 @@ export class DocumentConverter {
       const trimmed = para.trim();
       if (!trimmed) continue;
 
-      if (trimmed.includes('<h1>')) {
-        const text = trimmed.replace(/<\/?h1>/g, '').trim();
+      if (trimmed.includes("<h1>")) {
+        const text = trimmed.replace(/<\/?h1>/g, "").trim();
         content.push({
-          type: 'heading',
+          type: "heading",
           attrs: { level: 1 },
-          content: [{ type: 'text', text }],
+          content: [{ type: "text", text }],
         });
-      } else if (trimmed.includes('<h2>')) {
-        const text = trimmed.replace(/<\/?h2>/g, '').trim();
+      } else if (trimmed.includes("<h2>")) {
+        const text = trimmed.replace(/<\/?h2>/g, "").trim();
         content.push({
-          type: 'heading',
+          type: "heading",
           attrs: { level: 2 },
-          content: [{ type: 'text', text }],
+          content: [{ type: "text", text }],
         });
-      } else if (trimmed.includes('<h3>')) {
-        const text = trimmed.replace(/<\/?h3>/g, '').trim();
+      } else if (trimmed.includes("<h3>")) {
+        const text = trimmed.replace(/<\/?h3>/g, "").trim();
         content.push({
-          type: 'heading',
+          type: "heading",
           attrs: { level: 3 },
-          content: [{ type: 'text', text }],
+          content: [{ type: "text", text }],
         });
-      } else if (trimmed.includes('<p>')) {
-        const text = trimmed.replace(/<\/?p>/g, '').replace(/<b>(.*?)<\/b>/g, '$1').replace(/<i>(.*?)<\/i>/g, '$1').trim();
+      } else if (trimmed.includes("<p>")) {
+        const text = trimmed
+          .replace(/<\/?p>/g, "")
+          .replace(/<b>(.*?)<\/b>/g, "$1")
+          .replace(/<i>(.*?)<\/i>/g, "$1")
+          .trim();
         if (text) {
           content.push({
-            type: 'paragraph',
-            content: [{ type: 'text', text }],
+            type: "paragraph",
+            content: [{ type: "text", text }],
           });
         }
       }
     }
 
     if (content.length === 0) {
-      const plainText = html.replace(/<[^>]*>/g, '').trim();
+      const plainText = html.replace(/<[^>]*>/g, "").trim();
       if (plainText) {
         content.push({
-          type: 'paragraph',
-          content: [{ type: 'text', text: plainText }],
+          type: "paragraph",
+          content: [{ type: "text", text: plainText }],
         });
       }
     }
 
     return {
-      type: 'doc',
-      content: content.length > 0 ? content : [{
-        type: 'paragraph',
-        content: [],
-      }],
+      type: "doc",
+      content:
+        content.length > 0
+          ? content
+          : [
+              {
+                type: "paragraph",
+                content: [],
+              },
+            ],
     };
   }
 
@@ -172,10 +185,13 @@ export class DocumentConverter {
         metadata: tipTapContent,
       };
     } catch (error) {
-      console.error('TipTap conversion error:', error);
+      console.error("TipTap conversion error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to convert to TipTap format',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to convert to TipTap format",
       };
     }
   }

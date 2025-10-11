@@ -53,6 +53,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession();
+    console.log(session)
     if (!params?.id) {
       return NextResponse.json(
         { success: false, error: 'ID is required' },
@@ -73,6 +74,7 @@ export async function GET(
     }
 
     // Check access permissions
+    console.log("seesion ====>", session)
     const user = session.user as any;
     if (user.role !== 'super_admin' && workflow.organizationId.toString() !== user.organizationId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
