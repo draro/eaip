@@ -28,6 +28,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import FileUploadModal from './FileUploadModal';
+import CreateFolderModal from './CreateFolderModal';
 
 interface Folder {
   _id: string;
@@ -89,6 +91,8 @@ export default function FileFolderBrowser({
   ]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
 
   const canUpload = ['org_admin', 'atc_supervisor', 'atc'].includes(userRole);
 
@@ -165,6 +169,11 @@ export default function FileFolderBrowser({
     window.open(file.filePath, '_blank');
   };
 
+  const getCurrentFolderName = (): string => {
+    if (breadcrumbs.length === 0) return 'Home';
+    return breadcrumbs[breadcrumbs.length - 1].name;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -177,18 +186,23 @@ export default function FileFolderBrowser({
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>File Manager</CardTitle>
           <div className="flex gap-2">
             {canUpload && (
               <>
-                <Button size="sm" variant="outline">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCreateFolderModal(true)}
+                >
                   <FolderPlus className="w-4 h-4 mr-2" />
                   New Folder
                 </Button>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowUploadModal(true)}>
                   <Upload className="w-4 h-4 mr-2" />
                   Upload File
                 </Button>
@@ -358,5 +372,22 @@ export default function FileFolderBrowser({
         )}
       </CardContent>
     </Card>
+
+      {/* Modals */}
+      <FileUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUploadComplete={loadFolderContents}
+        currentFolderId={currentFolder}
+      />
+
+      <CreateFolderModal
+        isOpen={showCreateFolderModal}
+        onClose={() => setShowCreateFolderModal(false)}
+        onCreateComplete={loadFolderContents}
+        parentFolderId={currentFolder}
+        parentFolderName={getCurrentFolderName()}
+      />
+    </>
   );
 }
