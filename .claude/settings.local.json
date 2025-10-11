@@ -48,7 +48,9 @@
       "Bash(git log:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
-      "Bash(mongo:*)"
+      "Bash(mongo:*)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter )",
+      "Bash('git rm --cached --ignore-unmatch .env .env.local .env.development .env.production .env.test .env.staging' )"
     ],
     "deny": [],
     "ask": []
